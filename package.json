@@ -1,0 +1,31 @@
+{
+  "name": "content-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multi-brand social content pipeline: research, ideation, planning, AI generation (swappable provider), and posting.",
+  "type": "module",
+  "scripts": {
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed": "tsx scripts/seed-brands.ts",
+    "db:check": "tsx scripts/db-check.ts",
+    "idea:add": "tsx scripts/add-idea.ts",
+    "idea:list": "tsx scripts/list-pending.ts",
+    "plan:week": "tsx scripts/plan-week.ts",
+    "mark:generated": "tsx scripts/mark-generated.ts",
+    "mark:posted": "tsx scripts/mark-posted.ts",
+    "queue:due": "tsx scripts/queue-due.ts",
+    "yt:insights": "tsx scripts/pull-yt-insights.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.36.0",
+    "mysql2": "^3.11.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.28.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0"
+  }
+}
