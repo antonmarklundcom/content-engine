@@ -1,6 +1,6 @@
 import { db } from "../src/db";
 import { sql } from "drizzle-orm";
 
-const result = await db.execute(sql`SELECT 1 as ok`);
-console.log("DB connection OK:", result.rows[0]);
+const result = db.get(sql`SELECT 1 as ok`);
+console.log("DB connection OK:", result);
 process.exit(0);

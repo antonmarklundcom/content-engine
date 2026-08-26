@@ -1,31 +1,17 @@
-import {
-  pgTable,
-  varchar,
-  serial,
-  integer,
-  text,
-  timestamp,
-  pgEnum,
-  json,
-  boolean,
-} from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
 
-export const formatEnum = pgEnum("format", [
-  "reel",
-  "carousel",
-  "image_post",
-  "story",
-  "long_video",
-]);
+// SQLite has no enum type — these are documented here and enforced at the
+// application layer (scripts validate against them). Switching to a
+// server database later (Postgres/MySQL) would turn these into real enums;
+// nothing else about the schema needs to change to do that.
+export const FORMATS = ["reel", "carousel", "image_post", "story", "long_video"] as const;
+export type Format = (typeof FORMATS)[number];
 
-export const ideaStatusEnum = pgEnum("idea_status", [
-  "proposed",
-  "approved",
-  "rejected",
-  "planned",
-]);
+export const IDEA_STATUSES = ["proposed", "approved", "rejected", "planned"] as const;
+export type IdeaStatus = (typeof IDEA_STATUSES)[number];
 
-export const calendarStatusEnum = pgEnum("calendar_status", [
+export const CALENDAR_STATUSES = [
   "drafted",
   "ready_to_generate",
   "generating",
@@ -33,33 +19,39 @@ export const calendarStatusEnum = pgEnum("calendar_status", [
   "ready_to_post",
   "posted",
   "failed",
-]);
+] as const;
+export type CalendarStatus = (typeof CALENDAR_STATUSES)[number];
 
-export const assetKindEnum = pgEnum("asset_kind", ["image", "video", "audio"]);
+export const ASSET_KINDS = ["image", "video", "audio"] as const;
+export type AssetKind = (typeof ASSET_KINDS)[number];
 
 // One row per business/brand. Drives which content gets made for whom, in
-// what voice, on which platforms.
-export const brands = pgTable("brands", {
-  id: varchar("id", { length: 64 }).primaryKey(), // slug, e.g. "pozo"
-  name: varchar("name", { length: 191 }).notNull(),
-  domain: varchar("domain", { length: 191 }).notNull(),
-  niche: varchar("niche", { length: 191 }).notNull(), // e.g. "well drilling / water"
-  market: varchar("market", { length: 64 }).notNull(), // "paraguay" | "sweden" | "global"
-  language: varchar("language", { length: 16 }).notNull().default("es"), // es | en | sv
+// what voice, on which platforms. Works for any niche — nothing here is
+// specific to any one business; the niche/voice/market columns are what the
+// research+ideation step reads to tailor itself per brand.
+export const brands = sqliteTable("brands", {
+  id: text("id").primaryKey(), // slug, e.g. "pozo"
+  name: text("name").notNull(),
+  domain: text("domain").notNull(),
+  niche: text("niche").notNull(), // e.g. "well drilling / water"
+  market: text("market").notNull(), // "paraguay" | "sweden" | "global"
+  language: text("language").notNull().default("es"), // es | en | sv
   voice: text("voice"), // tone/style notes for research + captions
-  platforms: json("platforms").$type<string[]>().notNull(), // ["instagram","tiktok","facebook"]
-  active: boolean("active").notNull().default(true),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  platforms: text("platforms", { mode: "json" }).$type<string[]>().notNull(), // ["instagram","tiktok","facebook"]
+  active: integer("active", { mode: "boolean" }).notNull().default(true),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
 });
 
 // A raw content idea, before it's scheduled. Produced by the research/ideation
 // step (a Claude Code agent turn), consumed by planning.
-export const ideas = pgTable("ideas", {
-  id: serial("id").primaryKey(),
-  brandId: varchar("brand_id", { length: 64 }).notNull(),
-  title: varchar("title", { length: 255 }).notNull(),
+export const ideas = sqliteTable("ideas", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  brandId: text("brand_id").notNull(),
+  title: text("title").notNull(),
   angle: text("angle").notNull(), // why this idea, the hook
-  format: formatEnum("format").notNull(),
+  format: text("format", { enum: FORMATS }).notNull(),
   sourceNote: text("source_note"), // what research/trend prompted it
   /**
    * Every factual claim the idea rests on (a law, a price, a program name,
@@ -69,47 +61,57 @@ export const ideas = pgTable("ideas", {
    * an unverified claim (fewer than 2 independent sources) must not move
    * past "proposed".
    */
-  citations: json("citations").$type<{ claim: string; sources: string[] }[]>(),
-  status: ideaStatusEnum("status").notNull().default("proposed"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  citations: text("citations", { mode: "json" }).$type<
+    { claim: string; sources: string[] }[]
+  >(),
+  status: text("status", { enum: IDEA_STATUSES }).notNull().default("proposed"),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
 });
 
 // A scheduled, structured content piece — the unit the generation step
 // consumes and the posting step publishes.
-export const calendarItems = pgTable("calendar_items", {
-  id: serial("id").primaryKey(),
+export const calendarItems = sqliteTable("calendar_items", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   ideaId: integer("idea_id"),
-  brandId: varchar("brand_id", { length: 64 }).notNull(),
-  scheduledFor: timestamp("scheduled_for").notNull(),
-  platform: varchar("platform", { length: 32 }).notNull(), // "instagram" | "tiktok" | "facebook" | "linkedin"
-  format: formatEnum("format").notNull(),
+  brandId: text("brand_id").notNull(),
+  scheduledFor: integer("scheduled_for", { mode: "timestamp" }).notNull(),
+  platform: text("platform").notNull(), // "instagram" | "tiktok" | "facebook" | "linkedin"
+  format: text("format", { enum: FORMATS }).notNull(),
   caption: text("caption"),
   script: text("script"), // shot list / voiceover / scene breakdown for video
-  provider: varchar("provider", { length: 32 }).notNull().default("higgsfield"), // swap point
-  status: calendarStatusEnum("status").notNull().default("drafted"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  provider: text("provider").notNull().default("higgsfield"), // swap point
+  status: text("status", { enum: CALENDAR_STATUSES }).notNull().default("drafted"),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
 });
 
 // Generated media, keyed to a calendar item. One item can have multiple
 // assets (e.g. 3 image variants, or video + cover image).
-export const assets = pgTable("assets", {
-  id: serial("id").primaryKey(),
+export const assets = sqliteTable("assets", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   calendarItemId: integer("calendar_item_id").notNull(),
-  provider: varchar("provider", { length: 32 }).notNull(), // "higgsfield" | "runway" | "kling" | ...
-  kind: assetKindEnum("kind").notNull(),
+  provider: text("provider").notNull(), // "higgsfield" | "runway" | "kling" | ...
+  kind: text("kind", { enum: ASSET_KINDS }).notNull(),
   url: text("url").notNull(), // where the file actually lives (storage/CDN)
-  providerJobId: varchar("provider_job_id", { length: 191 }), // for lookup/debug on the provider side
-  meta: json("meta"), // model name, prompt, cost credits, duration, etc.
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  providerJobId: text("provider_job_id"), // for lookup/debug on the provider side
+  meta: text("meta", { mode: "json" }), // model name, prompt, cost credits, duration, etc.
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
 });
 
 // A record of what was actually published where, for reporting and to avoid
 // double-posting.
-export const posts = pgTable("posts", {
-  id: serial("id").primaryKey(),
+export const posts = sqliteTable("posts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   calendarItemId: integer("calendar_item_id").notNull(),
-  platform: varchar("platform", { length: 32 }).notNull(),
-  platformPostId: varchar("platform_post_id", { length: 191 }),
-  postedAt: timestamp("posted_at").notNull().defaultNow(),
+  platform: text("platform").notNull(),
+  platformPostId: text("platform_post_id"),
+  postedAt: integer("posted_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
   permalink: text("permalink"),
 });

@@ -1,9 +1,11 @@
 import "dotenv/config";
-import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import Database from "better-sqlite3";
 import * as schema from "./schema";
 
-const sql = neon(process.env.DATABASE_URL as string);
+const dbPath = process.env.DATABASE_PATH ?? "./data/content-engine.db";
+const sqlite = new Database(dbPath);
+sqlite.pragma("journal_mode = WAL");
 
-export const db = drizzle(sql, { schema });
+export const db = drizzle(sqlite, { schema });
 export { schema };

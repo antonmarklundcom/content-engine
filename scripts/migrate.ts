@@ -1,10 +1,15 @@
 import "dotenv/config";
-import { drizzle } from "drizzle-orm/neon-http";
-import { migrate } from "drizzle-orm/neon-http/migrator";
-import { neon } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import { migrate } from "drizzle-orm/better-sqlite3/migrator";
+import Database from "better-sqlite3";
+import fs from "node:fs";
+import path from "node:path";
 
-const sql = neon(process.env.DATABASE_URL as string);
-const db = drizzle(sql);
+const dbPath = process.env.DATABASE_PATH ?? "./data/content-engine.db";
+fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 
-await migrate(db, { migrationsFolder: "./drizzle" });
-console.log("Migrations applied.");
+const sqlite = new Database(dbPath);
+const db = drizzle(sqlite);
+
+migrate(db, { migrationsFolder: "./drizzle" });
+console.log(`Migrations applied to ${dbPath}.`);

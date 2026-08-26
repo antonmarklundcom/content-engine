@@ -23,17 +23,19 @@ Residency Guide, propia.com.py, and the .com.py brand family.
 
 ## Setup
 
-Database is Neon Postgres (free tier — no Hostinger Node.js slot needed):
-1. Create a free project at [console.neon.tech](https://console.neon.tech), copy its connection string.
+Database is a local SQLite file — no account, no hosting, works immediately:
 
 ```bash
 npm install
-cp .env.example .env   # paste the Neon connection string into DATABASE_URL
 npx drizzle-kit generate  # generate SQL migrations from src/db/schema.ts
-npm run db:migrate        # apply them
+npm run db:migrate        # creates ./data/content-engine.db and applies them
 npm run db:seed           # seeds all brands from src/lib/brands.ts
 npm run db:check
 ```
+
+That's it — the tool runs. (If this ever needs to be shared across machines
+or queried from elsewhere, swap `src/db/index.ts` for a server database —
+nothing else in the pipeline depends on which one it is.)
 
 ## Brands
 
