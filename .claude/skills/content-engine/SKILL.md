@@ -59,9 +59,22 @@ in that repo) so future runs have real signal.
 Propose 5-10 concrete ideas per brand: a title, a one-line angle/hook,
 and a format (`reel`, `carousel`, `image_post`, `story`, `long_video`).
 
+**Fact-check gate**: if an idea rests on a factual claim — a law/program name,
+a price, a visa requirement, a statistic, anything a viewer could act on and
+get burned if wrong — verify it against at least 2 independent sources
+before writing the idea, and pass them as `--citations`. This matters most
+for `residency-guide` (Paraguay immigration law changed twice in 2026 — the
+Investor Pass in April, DNM 407/2026's solvency rules) and any pricing claim
+for `propia`. Pure lifestyle/inspo ideas with no factual claim don't need
+citations. Never invent a number or a program name — if you can't verify it,
+either drop the claim from the idea or flag it to the user instead of
+guessing.
+
 Write each one with:
 ```
-npm run idea:add -- --brand <id> --title "..." --angle "..." --format reel --source "<what research prompted this>"
+npm run idea:add -- --brand <id> --title "..." --angle "..." --format reel \
+  --source "<what research prompted this>" \
+  --citations '[{"claim":"SUACE requires $70k investment","sources":["https://...","https://..."]}]'
 ```
 
 Then show the user the list (`npm run idea:list -- --brand <id>`) and stop —
@@ -138,6 +151,10 @@ brand row.
 ## Guardrails
 
 - Never invent a `brandId` — it must exist in `src/lib/brands.ts`.
+- Never invent a specific property (price, address, photos) for `propia` —
+  pull real listings from the `propia.node` repo/site (propia.com.py) or ask
+  the user for the listing. Market-level content (price trends, neighborhood
+  guides) is fine to write from research; a specific "for sale" post is not.
 - Never call `mark:posted` without an actual publish having happened (or
   explicit user confirmation they posted it manually).
 - Respect each brand's `market`/`language` — Paraguay-market brands get

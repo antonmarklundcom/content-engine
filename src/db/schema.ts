@@ -61,6 +61,15 @@ export const ideas = pgTable("ideas", {
   angle: text("angle").notNull(), // why this idea, the hook
   format: formatEnum("format").notNull(),
   sourceNote: text("source_note"), // what research/trend prompted it
+  /**
+   * Every factual claim the idea rests on (a law, a price, a program name,
+   * a statistic), each with the URL(s) it was checked against. Required
+   * whenever the idea makes a factual claim — not required for pure
+   * lifestyle/inspo content. See SKILL.md's fact-check gate: an idea with
+   * an unverified claim (fewer than 2 independent sources) must not move
+   * past "proposed".
+   */
+  citations: json("citations").$type<{ claim: string; sources: string[] }[]>(),
   status: ideaStatusEnum("status").notNull().default("proposed"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
