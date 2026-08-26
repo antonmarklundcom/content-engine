@@ -12,6 +12,24 @@ through the CLI scripts in `scripts/`; anything that requires judgment
 (research, angle selection, prompt writing, brand voice) is done by you, the
 agent, in-context.
 
+## Automation model
+
+This runs on a schedule (a Routine) with **one approval gate**: research +
+ideation run fully automatically; generation (spends provider credits) and
+posting do NOT start until the user approves which proposed ideas to run.
+Once an idea is approved, generation and posting both proceed automatically
+— there is no second gate before posting. So a scheduled run should:
+
+1. Run stage 1 (research + ideate) for every active brand, writing `proposed`
+   ideas.
+2. Stop and notify the user with the proposed list (don't silently continue)
+   — they reply with which ideas to approve (or approve/reject individually).
+3. On approval, run stages 2-4 (plan → generate → post) for just the
+   approved ideas, unattended, no further check-ins.
+
+A manual, in-conversation request ("plan this week for pozo") can skip
+straight to whichever stage was asked for.
+
 ## Modes
 
 Figure out which mode the request is asking for and run only that stage,
@@ -46,13 +64,18 @@ Write each one with:
 npm run idea:add -- --brand <id> --title "..." --angle "..." --format reel --source "<what research prompted this>"
 ```
 
-Then show the user the list (`npm run idea:list -- --brand <id>`) for
-approval before planning — don't auto-schedule ideas nobody has seen.
+Then show the user the list (`npm run idea:list -- --brand <id>`) and stop —
+wait for their reply naming which ideas to run. When they do, record it:
+```
+npm run idea:approve -- --idea 12 --idea 14 --idea 15
+npm run idea:approve -- --reject --idea 13
+```
+`plan:week` refuses any idea that isn't `approved` — this is the one gate in
+the whole pipeline, so never bypass it by editing the DB directly.
 
 ### 2. Plan
 
-Once the user approves ideas (or explicitly asks you to plan without
-review), turn each approved idea into a scheduled `calendar_items` row:
+For each approved idea, turn it into a scheduled `calendar_items` row:
 
 ```
 npm run plan:week -- --idea <ideaId> --platform instagram --date 2026-09-02T14:00:00Z --provider higgsfield

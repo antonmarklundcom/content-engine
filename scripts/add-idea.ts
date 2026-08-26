@@ -19,13 +19,10 @@ if (!brandId || !title || !angle || !format) {
   process.exit(1);
 }
 
-const [inserted] = await db.insert(schema.ideas).values({
-  brandId,
-  title,
-  angle,
-  format,
-  sourceNote,
-});
+const [inserted] = await db
+  .insert(schema.ideas)
+  .values({ brandId, title, angle, format, sourceNote })
+  .returning({ id: schema.ideas.id });
 
-console.log("Idea added:", { brandId, title, format, insertId: inserted.insertId });
+console.log("Idea added:", { brandId, title, format, insertId: inserted.id });
 process.exit(0);

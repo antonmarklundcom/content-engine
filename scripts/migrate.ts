@@ -1,11 +1,10 @@
 import "dotenv/config";
-import { drizzle } from "drizzle-orm/mysql2";
-import { migrate } from "drizzle-orm/mysql2/migrator";
-import mysql from "mysql2/promise";
+import { drizzle } from "drizzle-orm/neon-http";
+import { migrate } from "drizzle-orm/neon-http/migrator";
+import { neon } from "@neondatabase/serverless";
 
-const connection = await mysql.createConnection(process.env.DATABASE_URL as string);
-const db = drizzle(connection);
+const sql = neon(process.env.DATABASE_URL as string);
+const db = drizzle(sql);
 
 await migrate(db, { migrationsFolder: "./drizzle" });
 console.log("Migrations applied.");
-await connection.end();

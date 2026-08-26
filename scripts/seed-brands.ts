@@ -5,7 +5,8 @@ for (const brand of BRANDS) {
   await db
     .insert(schema.brands)
     .values(brand)
-    .onDuplicateKeyUpdate({
+    .onConflictDoUpdate({
+      target: schema.brands.id,
       set: {
         name: brand.name,
         domain: brand.domain,

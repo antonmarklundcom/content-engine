@@ -1,12 +1,9 @@
 import "dotenv/config";
-import { drizzle } from "drizzle-orm/mysql2";
-import mysql from "mysql2/promise";
+import { drizzle } from "drizzle-orm/neon-http";
+import { neon } from "@neondatabase/serverless";
 import * as schema from "./schema";
 
-const pool = mysql.createPool({
-  uri: process.env.DATABASE_URL,
-  connectionLimit: 5,
-});
+const sql = neon(process.env.DATABASE_URL as string);
 
-export const db = drizzle(pool, { schema, mode: "default" });
+export const db = drizzle(sql, { schema });
 export { schema };

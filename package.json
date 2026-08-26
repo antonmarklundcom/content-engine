@@ -10,6 +10,7 @@
     "db:check": "tsx scripts/db-check.ts",
     "idea:add": "tsx scripts/add-idea.ts",
     "idea:list": "tsx scripts/list-pending.ts",
+    "idea:approve": "tsx scripts/approve-idea.ts",
     "plan:week": "tsx scripts/plan-week.ts",
     "mark:generated": "tsx scripts/mark-generated.ts",
     "mark:posted": "tsx scripts/mark-posted.ts",
@@ -19,6 +20,7 @@
   },
   "dependencies": {
     "drizzle-orm": "^0.36.0",
+    "@neondatabase/serverless": "^0.10.0",
     "mysql2": "^3.11.0",
     "dotenv": "^16.4.5"
   },

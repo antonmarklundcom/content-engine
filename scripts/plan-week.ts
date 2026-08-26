@@ -25,6 +25,12 @@ if (!idea) {
   console.error(`No idea with id ${ideaId}`);
   process.exit(1);
 }
+if (idea.status !== "approved") {
+  console.error(
+    `Idea ${ideaId} is "${idea.status}", not "approved" — run idea:approve first. This gate exists so scheduled/unattended runs never generate or post something nobody signed off on.`,
+  );
+  process.exit(1);
+}
 
 await db.insert(schema.calendarItems).values({
   ideaId: idea.id,
