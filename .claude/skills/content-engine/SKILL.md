@@ -1,56 +1,41 @@
 ---
 name: content-engine
-description: Run the multi-brand content ideation pipeline — research, cross-brand topic sharing, ideation, and full ready-to-post copy/captions — for any brand in src/lib/brands.ts (Paraguay Residency Guide, propia, and the .com.py brands). Media generation (via Higgsfield or another wired provider) and posting are optional follow-on steps once copy exists, not the point of the tool. Trigger on "run content engine", "make content for [brand]", "plan this week's posts", "research ideas for [brand]", "generate the queued content", or a brand name + "content"/"posts"/"social".
+description: Run the multi-brand social content pipeline — research, ideate, plan, generate via Higgsfield (or another wired provider), and hand off for posting — for any brand in src/lib/brands.ts (Paraguay Residency Guide, propia, and the .com.py brands). Trigger on "run content engine", "make content for [brand]", "plan this week's posts", "generate the queued content", or a brand name + "content"/"posts"/"social".
 ---
 
 # Content Engine
 
-**The deliverable of this pipeline is research + ideas + ready-to-post
-copy.** Everything else — scheduling, media generation, posting — is
-optional execution downstream of that, useful when the user wants it but
-not what this tool exists to do. If a request is ambiguous, default to
-stopping after ideation with a batch of ideas and written copy, not
-pushing all the way through to generated media.
-
-The database (`brands`, `research_notes`, `ideas`, `calendar_items`,
+Multi-brand social pipeline. The database (`brands`, `ideas`, `calendar_items`,
 `assets`, `posts` — see `src/db/schema.ts`) is the source of truth. This skill
 is the agent loop that fills it and drains it. Deterministic bookkeeping goes
 through the CLI scripts in `scripts/`; anything that requires judgment
-(research, angle selection, copywriting, brand voice) is done by you, the
-agent, in-context — that judgment work, not the scripts, is the actual
-value of this pipeline.
+(research, angle selection, prompt writing, brand voice) is done by you, the
+agent, in-context.
 
 ## Automation model
 
 This runs on a schedule (a Routine) with **one approval gate**: research +
-ideation (including full copy) run fully automatically; generation (spends
-provider credits) and posting do NOT start until the user approves which
-proposed ideas to run. Once an idea is approved, generation and posting both
-proceed automatically — there is no second gate before posting. So a
-scheduled run should:
+ideation run fully automatically; generation (spends provider credits) and
+posting do NOT start until the user approves which proposed ideas to run.
+Once an idea is approved, generation and posting both proceed automatically
+— there is no second gate before posting. So a scheduled run should:
 
-1. Run stage 1 (research + ideate + copy) for every active brand, writing
-   `proposed` ideas with full draft copy attached.
+1. Run stage 1 (research + ideate) for every active brand, writing `proposed`
+   ideas.
 2. Stop and notify the user with the proposed list (don't silently continue)
    — they reply with which ideas to approve (or approve/reject individually).
-   **Stopping here is a complete, useful run on its own** — the user may
-   just want the copy to post manually and never touch stages 2-4.
-3. Only if the user wants media made and posted: on approval, run stages 2-4
-   (plan → generate → post) for just the approved ideas, unattended, no
-   further check-ins.
+3. On approval, run stages 2-4 (plan → generate → post) for just the
+   approved ideas, unattended, no further check-ins.
 
 A manual, in-conversation request ("plan this week for pozo") can skip
-straight to whichever stage was asked for. "Give me ideas/content for X" or
-similar should be read as stage 1 only unless generation/posting is asked
-for explicitly.
+straight to whichever stage was asked for.
 
 ## Modes
 
 Figure out which mode the request is asking for and run only that stage,
-unless the user asks for the full loop end-to-end. Most requests are stage 1
-only — treat that as the default, not generation.
+unless the user asks for the full loop end-to-end.
 
-### 1. Research + ideate + copy (the core stage)
+### 1. Research + ideate
 
 For the target brand(s), pull `src/lib/brands.ts` to get niche/voice/market/
 platforms. Research current trends relevant to that niche and market (use
@@ -108,20 +93,9 @@ citations. Never invent a number or a program name — if you can't verify it,
 either drop the claim from the idea or flag it to the user instead of
 guessing.
 
-**Write the actual copy, not just an angle.** Each idea's `--copy` is a
-ready-to-post caption in the brand's `voice`/`language`: opening hook line,
-body, call-to-action, hashtags — publish-ready, not a placeholder like
-"write caption about X". This is what stage 1 is actually for; treat an
-idea without real copy as unfinished. Only add `--prompt` (a media-generation
-brief — shot description, style notes, aspect ratio) if the idea is likely
-to go on to generation; skip it for a pure copy/text-post idea or when
-unsure whether media will be made.
-
 Write each one with:
 ```
 npm run idea:add -- --brand <id> --title "..." --angle "..." --format reel \
-  --copy "<full ready-to-post caption in the brand's voice/language>" \
-  --prompt "<media-generation brief, if this idea may go to generation>" \
   --source "<what research prompted this>" \
   --research <researchNoteId> \
   --citations '[{"claim":"SUACE requires $70k investment","sources":["https://...","https://..."]}]'
@@ -139,7 +113,7 @@ npm run idea:approve -- --reject --idea 13
 `plan:week` refuses any idea that isn't `approved` — this is the one gate in
 the whole pipeline, so never bypass it by editing the DB directly.
 
-### 2. Plan (optional — only if media/posting is wanted)
+### 2. Plan
 
 For each approved idea, turn it into a scheduled `calendar_items` row:
 
@@ -152,7 +126,7 @@ schedule everything for the same instant). Default `--provider` to
 `higgsfield` unless the user specifies another one already wired up in
 `src/lib/providers/registry.ts`.
 
-### 3. Generate (optional — spends provider credits, only on explicit ask)
+### 3. Generate
 
 Run `npm run queue:due` to see items with status `ready_to_generate`. For
 each:
@@ -160,14 +134,11 @@ each:
 1. Look up the item's `provider` and check `src/lib/providers/registry.ts`
    for its `mcpToolMap` — that names the actual MCP tool to call (e.g.
    `mcp__Higgsfield__generate_video`).
-2. Start from the idea's `mediaPrompt` if one was written at ideation time;
-   otherwise write the brief yourself from the idea's `angle`, the brand's
+2. Write the brief/prompt yourself from the idea's `angle`, the brand's
    `voice`, and the target `format`/`platform` aspect ratio (9:16 for
    Reels/TikTok/Stories, 1:1 or 4:5 for feed posts). For video, also write
    `script` (shot list / voiceover) into the calendar item if useful —
    update it directly via a one-off script or note it in the caption field.
-   The idea's `draftCopy` is the caption — use it as-is unless the user
-   asked for a rewrite.
 3. Call the MCP tool. For Higgsfield specifically: call
    `get_workflow_instructions` first if this looks like a templated video
    (ad, explainer, UGC-style) — there may be a purpose-built workflow.
@@ -186,7 +157,7 @@ server/connection, and set `--provider <newId>` on new `plan:week` calls (or
 `UPDATE calendar_items SET provider = '<newId>' WHERE ...` for existing
 drafted items). Nothing else in the pipeline needs to change.
 
-### 4. Post (optional — only if the user wants this tool to publish too)
+### 4. Post
 
 `posting/` isn't wired to a live API yet (see `src/lib/posting/README.md` —
 Ayrshare is the recommended default). Until it is, treat "post" requests as:
