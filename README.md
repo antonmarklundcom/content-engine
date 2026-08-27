@@ -7,9 +7,14 @@ Residency Guide, propia.com.py, and the .com.py brand family.
 ## How it works
 
 - **Database is the source of truth** (`src/db/schema.ts`): `brands`,
-  `ideas`, `calendar_items`, `assets`, `posts`. Deterministic bookkeeping —
-  adding ideas, scheduling, recording generated assets/posts — goes through
-  the scripts in `scripts/`.
+  `research_notes`, `ideas`, `calendar_items`, `assets`, `posts`.
+  Deterministic bookkeeping — adding research/ideas, scheduling, recording
+  generated assets/posts — goes through the scripts in `scripts/`.
+- **Research is shared across brands.** A finding relevant to more than one
+  brand (e.g. Paraguay real-estate/development news for both
+  `residency-guide` and `propia`) is written once as a `research_notes` row
+  tagged with every relevant brand, so it isn't re-researched per brand —
+  each brand then writes its own idea/angle off that shared note.
 - **Claude Code is the orchestrator.** Research, ideation, prompt-writing,
   and the actual media generation/posting calls (via MCP tools) happen as
   agent reasoning, driven by `.claude/skills/content-engine/SKILL.md`. Run it
@@ -46,7 +51,8 @@ Add a new business by adding an entry there and re-running `db:seed`.
 ## Day-to-day usage
 
 ```bash
-npm run idea:list -- --brand pozo         # see proposed ideas awaiting approval
+npm run research:list -- --brand pozo      # shared research relevant to this brand
+npm run idea:list -- --brand pozo          # see proposed ideas awaiting approval
 npm run plan:week -- --idea 12 --platform instagram --date 2026-09-02T14:00:00Z
 npm run queue:due                          # what's ready to generate/post
 ```

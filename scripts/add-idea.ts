@@ -1,5 +1,10 @@
 // Usage: npm run idea:add -- --brand pozo --title "..." --angle "..." --format reel \
-//          [--source "..."] [--citations '[{"claim":"...","sources":["https://..."]}]']
+//          [--source "..."] [--research <researchNoteId>] \
+//          [--citations '[{"claim":"...","sources":["https://..."]}]']
+//
+// --research links this idea to a shared research note (see research:add) —
+// use it when the idea is this brand's angle on a topic another brand may
+// also be covering, so the shared finding isn't re-researched per brand.
 //
 // --citations is required whenever the idea rests on a factual claim (a law,
 // a price, a program name, a stat) — see SKILL.md's fact-check gate. Purely
@@ -16,6 +21,7 @@ const title = arg("title");
 const angle = arg("angle");
 const format = arg("format") as (typeof schema.ideas.$inferInsert)["format"] | undefined;
 const sourceNote = arg("source");
+const researchNoteId = arg("research") ? Number(arg("research")) : undefined;
 const citationsRaw = arg("citations");
 
 if (!brandId || !title || !angle || !format) {
@@ -40,8 +46,8 @@ if (citationsRaw) {
 
 const [inserted] = await db
   .insert(schema.ideas)
-  .values({ brandId, title, angle, format, sourceNote, citations })
+  .values({ brandId, title, angle, format, sourceNote, researchNoteId, citations })
   .returning({ id: schema.ideas.id });
 
-console.log("Idea added:", { brandId, title, format, insertId: inserted.id });
+console.log("Idea added:", { brandId, title, format, researchNoteId, insertId: inserted.id });
 process.exit(0);

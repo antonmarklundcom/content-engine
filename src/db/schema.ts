@@ -44,6 +44,26 @@ export const brands = sqliteTable("brands", {
     .default(sql`(unixepoch())`),
 });
 
+// A research finding worth sharing across brands — e.g. "Paraguay approves
+// new investor visa rules" is relevant to both residency-guide and propia; a
+// tax-law change is relevant to contador and negocio. One research run can
+// write this once and tag every brand it applies to, instead of each brand
+// re-researching the same topic. Ideas for each relevant brand then each get
+// their own angle on it via `ideas.researchNoteId`.
+export const researchNotes = sqliteTable("research_notes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  topic: text("topic").notNull(), // short label, e.g. "DNM 407/2026 solvency rules"
+  summary: text("summary").notNull(), // what was found, in enough detail to write an angle from
+  market: text("market").notNull(), // "paraguay" | "sweden" | "global" — matches brands.market
+  relatedBrandIds: text("related_brand_ids", { mode: "json" })
+    .$type<string[]>()
+    .notNull(), // brand ids this topic is relevant to, e.g. ["residency-guide","propia"]
+  sources: text("sources", { mode: "json" }).$type<string[]>(), // URLs backing the summary
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
 // A raw content idea, before it's scheduled. Produced by the research/ideation
 // step (a Claude Code agent turn), consumed by planning.
 export const ideas = sqliteTable("ideas", {
@@ -52,6 +72,7 @@ export const ideas = sqliteTable("ideas", {
   title: text("title").notNull(),
   angle: text("angle").notNull(), // why this idea, the hook
   format: text("format", { enum: FORMATS }).notNull(),
+  researchNoteId: integer("research_note_id"), // shared research this idea was spun from, if any
   sourceNote: text("source_note"), // what research/trend prompted it
   /**
    * Every factual claim the idea rests on (a law, a price, a program name,

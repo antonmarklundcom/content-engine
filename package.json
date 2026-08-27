@@ -8,6 +8,8 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:seed": "tsx scripts/seed-brands.ts",
     "db:check": "tsx scripts/db-check.ts",
+    "research:add": "tsx scripts/add-research.ts",
+    "research:list": "tsx scripts/list-research.ts",
     "idea:add": "tsx scripts/add-idea.ts",
     "idea:list": "tsx scripts/list-pending.ts",
     "idea:approve": "tsx scripts/approve-idea.ts",

@@ -56,8 +56,31 @@ nothing useful, that's a sign to (a) fall back to WebSearch and (b) suggest
 the user add the relevant channels/videos to `yt` (`npm run ingest '<url>'`
 in that repo) so future runs have real signal.
 
+**Check for shared research first.** Some topics matter to more than one
+brand — Paraguay real-estate/development news is relevant to both
+`residency-guide` and `propia`; a tax or business-law change is relevant to
+`contador` and `negocio`. Before researching a brand from scratch, run
+`npm run research:list -- --brand <id>` to see if another brand's research
+run already covered something this brand can use. If it did, spin this
+brand's own angle from it (see `--research` below) instead of re-researching
+the same topic.
+
+When a research finding is relevant to more than one active brand, write it
+once as a shared note instead of duplicating it per brand:
+```
+npm run research:add -- --topic "..." --summary "..." --market paraguay \
+  --brands residency-guide,propia --sources "https://...,https://..."
+```
+Each relevant brand then gets its own idea off that note (own hook, own
+format, own voice) via `idea:add --research <id>` below — the research isn't
+repeated, only the angle is brand-specific.
+
 Propose 5-10 concrete ideas per brand: a title, a one-line angle/hook,
-and a format (`reel`, `carousel`, `image_post`, `story`, `long_video`).
+and a format. Formats are Instagram/Facebook-first: `reel`, `carousel`,
+`image_post`, `story`. `long_video` exists for brands that also run
+YouTube/long-form (e.g. `residency-guide`'s `youtube_shorts` platform) but
+is not the focus of this pipeline — most brands should stay in short-form/
+post formats.
 
 **Fact-check gate**: if an idea rests on a factual claim — a law/program name,
 a price, a visa requirement, a statistic, anything a viewer could act on and
@@ -74,8 +97,12 @@ Write each one with:
 ```
 npm run idea:add -- --brand <id> --title "..." --angle "..." --format reel \
   --source "<what research prompted this>" \
+  --research <researchNoteId> \
   --citations '[{"claim":"SUACE requires $70k investment","sources":["https://...","https://..."]}]'
 ```
+`--research` is optional — pass it when this idea was spun from a shared
+research note (see above) so it stays traceable to the same underlying
+finding other brands' ideas may also reference.
 
 Then show the user the list (`npm run idea:list -- --brand <id>`) and stop —
 wait for their reply naming which ideas to run. When they do, record it:
@@ -141,6 +168,17 @@ posted (manually or via API), record it:
 ```
 npm run mark:posted -- --item <id> --platform instagram --permalink <url>
 ```
+
+## Long-form → shorts (not core yet)
+
+The primary output of this pipeline is native IG/FB short-form content
+generated from scratch, not clipped from existing video. Turning an
+existing long-form YouTube video into shorts is a possible future addition,
+not implemented — if asked to do this, treat it as a one-off (find the
+video, identify a hook-worthy segment, note it as an idea with
+`format: reel` and a `sourceNote` pointing at the source video) rather than
+assuming a dedicated clipping tool exists. Check what's available (e.g.
+Higgsfield's clipper/video-analysis MCP tools) before building anything new.
 
 ## Adding a new brand
 
