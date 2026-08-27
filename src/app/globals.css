@@ -1,3 +1,51 @@
+@import "tailwindcss";
+
+/*
+ * Tailwind (added for the ported /youtube/* section, which uses Tailwind
+ * utility classes throughout) plus content-engine's original plain-CSS rules
+ * below, unchanged. Tailwind's preflight reset and content-engine's own rules
+ * coexist here because the later, more specific rules in this same cascade
+ * still win for the selectors content-engine already styled (h1/h2/button/
+ * textarea/etc.) — nothing below had to change to add Tailwind.
+ */
+
+/* -------------------------------------------------------------------------
+ * YouTube tool design tokens (ported from the yt repo's globals.css).
+ * Base tokens only — referenced throughout src/components and the
+ * src/app/youtube pages via var(--color-...) and the .surface-* utilities.
+ * ---------------------------------------------------------------------- */
+@theme {
+  --color-surface: oklch(0.18 0.015 250);
+  --color-surface-raised: oklch(0.23 0.018 250);
+  --color-border-subtle: oklch(0.32 0.02 250);
+  --color-ink: oklch(0.95 0.005 250);
+  --color-ink-muted: oklch(0.72 0.015 250);
+  --color-accent: oklch(0.72 0.15 165);
+  --color-accent-ink: oklch(0.18 0.04 165);
+
+  --color-warn: oklch(0.75 0.16 70);
+  --color-danger: oklch(0.68 0.19 25);
+
+  --radius-sm: 6px;
+  --radius-md: 14px;
+  --radius-lg: 28px;
+}
+
+.surface-border {
+  border: 1px solid color-mix(in srgb, var(--color-ink) 10%, transparent);
+}
+
+.surface-card {
+  background-color: var(--color-surface-raised);
+  border-radius: var(--radius-md);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, black 40%, transparent),
+    0 8px 24px color-mix(in srgb, black 25%, transparent);
+}
+
+/* -------------------------------------------------------------------------
+ * Content-engine's original design (brand ideation pages: "/", "/brand/[id]").
+ * ---------------------------------------------------------------------- */
 :root {
   color-scheme: light dark;
   --bg: #0b0c0f;
@@ -19,12 +67,20 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
 }
 
-.shell { max-width: 1000px; margin: 0 auto; padding: 0 20px 60px; }
+.shell { max-width: 1280px; margin: 0 auto; padding: 0 20px 60px; }
+/* The /youtube section renders its own inner max-width containers (Tailwind
+   max-w-5xl etc.) and its own vertical rhythm; it does not need the outer
+   shell's bottom padding doubling up under its own pages. */
+.shell:has(> main > [data-youtube-section]) { padding-bottom: 0; }
 
 .topbar {
   padding: 20px 0;
   border-bottom: 1px solid var(--border);
   margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .brand-mark {
@@ -33,6 +89,19 @@ body {
   font-weight: 600;
   font-size: 18px;
 }
+
+.top-nav { display: flex; gap: 4px; }
+
+.top-nav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+}
+.top-nav a:hover { color: var(--text); }
+.top-nav a.active { color: var(--text); background: var(--panel); }
 
 h1 { font-size: 22px; margin: 0 0 4px; }
 h2 { font-size: 16px; margin: 0; }

@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { TopNav } from "@/components/TopNav";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Content Engine",
-  description: "Research, ideas, and copy for social media — per brand.",
+  description: "Research, ideas, and copy for social media — per brand — plus a YouTube research tool.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -13,6 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="shell">
           <header className="topbar">
             <a href="/" className="brand-mark">Content Engine</a>
+            <TopNav />
           </header>
           <main>{children}</main>
         </div>
