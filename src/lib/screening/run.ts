@@ -10,7 +10,7 @@ import {
   toCostString,
   type AnalysisModel,
 } from "@/lib/analysis/pricing";
-import { assertWithinCap, recordSpend } from "@/lib/spend";
+import { recordSpend, withSpendCap } from "@/lib/spend";
 import { SCREENING_PROMPT_VERSION } from "./contract";
 import { parseScreeningResponse } from "./parse";
 import { screenInterests, screenMinScore } from "./policy";
@@ -316,35 +316,36 @@ export async function screenVideos(
   if (subjects.length === 0) return empty;
 
   const model = options.model ?? DEFAULT_MODEL;
-  await assertWithinCap(estimateScreeningBatchUsd(subjects, model));
 
-  const results: ScreenResult[] = new Array(subjects.length);
-  let next = 0;
+  return withSpendCap(estimateScreeningBatchUsd(subjects, model), async () => {
+    const results: ScreenResult[] = new Array(subjects.length);
+    let next = 0;
 
-  const worker = async (): Promise<void> => {
-    for (;;) {
-      const index = next;
-      next += 1;
-      if (index >= subjects.length) return;
-      const result = await screenVideo(subjects[index]!, { ...options, model });
-      results[index] = result;
-      options.onProgress?.(result);
-    }
-  };
+    const worker = async (): Promise<void> => {
+      for (;;) {
+        const index = next;
+        next += 1;
+        if (index >= subjects.length) return;
+        const result = await screenVideo(subjects[index]!, { ...options, model });
+        results[index] = result;
+        options.onProgress?.(result);
+      }
+    };
 
-  await Promise.all(
-    Array.from({ length: Math.min(SCREEN_CONCURRENCY, subjects.length) }, () => worker()),
-  );
+    await Promise.all(
+      Array.from({ length: Math.min(SCREEN_CONCURRENCY, subjects.length) }, () => worker()),
+    );
 
-  return results.reduce<ScreenRunResult>(
-    (acc, result) => ({
-      ...acc,
-      screened: acc.screened + (result.status === "ok" ? 1 : 0),
-      failed: acc.failed + (result.status === "failed" ? 1 : 0),
-      culled: acc.culled + (result.status === "ok" && result.score < minScore ? 1 : 0),
-      costUsd: acc.costUsd + result.costUsd,
-      results: [...acc.results, result],
-    }),
-    empty,
-  );
+    return results.reduce<ScreenRunResult>(
+      (acc, result) => ({
+        ...acc,
+        screened: acc.screened + (result.status === "ok" ? 1 : 0),
+        failed: acc.failed + (result.status === "failed" ? 1 : 0),
+        culled: acc.culled + (result.status === "ok" && result.score < minScore ? 1 : 0),
+        costUsd: acc.costUsd + result.costUsd,
+        results: [...acc.results, result],
+      }),
+      empty,
+    );
+  });
 }

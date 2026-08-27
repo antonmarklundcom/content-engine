@@ -1,6 +1,6 @@
 import { and, gte, inArray, lte, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { batches, spendLog } from "@/db/schema";
+import { batches, spendLog, spendReservation } from "@/db/schema";
 import { MODEL_RATES, type AnalysisModel } from "@/lib/analysis/pricing";
 
 /**
@@ -109,10 +109,23 @@ export type SpendStatus = {
   overCap: boolean;
 };
 
+/** In-flight, not yet in `spend_log` or `batches` — see spendReservation. */
+export async function reservedUsd(): Promise<number> {
+  const [row] = await db
+    .select({ reservedUsd: spendReservation.reservedUsd })
+    .from(spendReservation)
+    .where(sql`${spendReservation.id} = 1`);
+  return Number(row?.reservedUsd ?? 0) || 0;
+}
+
 export async function spendStatus(at: Date = new Date()): Promise<SpendStatus> {
   const capUsd = monthlyCapUsd();
-  const [spent, committed] = await Promise.all([monthToDateUsd(at), committedUsd()]);
-  const projected = spent + committed;
+  const [spent, committed, reserved] = await Promise.all([
+    monthToDateUsd(at),
+    committedUsd(),
+    reservedUsd(),
+  ]);
+  const projected = spent + committed + reserved;
   return {
     monthToDateUsd: spent,
     committedUsd: committed,
@@ -165,6 +178,82 @@ export async function assertWithinCap(
     );
   }
   return status;
+}
+
+/**
+ * Atomically hold `estimatedUsd` against the cap, or throw. Unlike
+ * `assertWithinCap` alone, this closes the TOCTOU race between the read and
+ * the caller's own spend: the UPDATE below takes Postgres's row lock on
+ * `spend_reservation`'s single row for the statement's duration, so a second
+ * concurrent reservation blocks until the first commits, then re-evaluates
+ * the WHERE clause against the now-updated total rather than the stale one it
+ * would have seen from a plain read-then-write.
+ *
+ * `monthToDateUsd`/`committedUsd` are still read just before this, so a charge
+ * that lands in that narrow window is missed — the tradeoff is a cap that can
+ * be very slightly under-strict rather than over-strict, which is the safe
+ * direction for a guard (PLAN.md §5 row 07's own reasoning for recording batch
+ * commitments before marking them collected).
+ */
+async function reserveSpend(estimatedUsd: number, at: Date = new Date()): Promise<void> {
+  if (estimatedUsd <= 0) return;
+  const capUsd = monthlyCapUsd();
+  const [spent, committed] = await Promise.all([monthToDateUsd(at), committedUsd()]);
+  const already = spent + committed;
+
+  await db
+    .insert(spendReservation)
+    .values({ id: 1, reservedUsd: "0" })
+    .onConflictDoNothing({ target: spendReservation.id });
+
+  const [row] = await db
+    .update(spendReservation)
+    .set({ reservedUsd: sql`${spendReservation.reservedUsd} + ${estimatedUsd.toFixed(6)}` })
+    .where(
+      sql`${spendReservation.id} = 1 and ${already} + ${spendReservation.reservedUsd} + ${estimatedUsd.toFixed(6)} <= ${capUsd}`,
+    )
+    .returning({ reservedUsd: spendReservation.reservedUsd });
+
+  if (!row) {
+    const status = await spendStatus(at);
+    throw new SpendCapExceededError(
+      `Refusing to start: estimated $${estimatedUsd.toFixed(4)} would take this month's ` +
+        `spend from $${status.projectedUsd.toFixed(4)} to $${(status.projectedUsd + estimatedUsd).toFixed(4)}, ` +
+        `over the $${status.capUsd.toFixed(2)} cap (MONTHLY_SPEND_CAP_USD). ` +
+        `Raise the cap, wait for the month to roll over, or process fewer videos.`,
+      status,
+      estimatedUsd,
+    );
+  }
+}
+
+async function releaseSpend(estimatedUsd: number): Promise<void> {
+  if (estimatedUsd <= 0) return;
+  await db
+    .update(spendReservation)
+    .set({
+      reservedUsd: sql`greatest(0, ${spendReservation.reservedUsd} - ${estimatedUsd.toFixed(6)})`,
+    })
+    .where(sql`${spendReservation.id} = 1`);
+}
+
+/**
+ * The gate to actually use from call sites: reserves `estimatedUsd` (throwing
+ * SpendCapExceededError if that would exceed the cap), runs `fn`, and always
+ * releases the reservation afterward — on success as much as on failure,
+ * since either way the reservation's job (holding the cap open against a
+ * concurrent caller) ends the moment this call is done with it. A successful
+ * `fn` is expected to have written its own durable record (`recordSpend`,
+ * `recordBatchSubmission`, …) before returning, which is what `spend_log`/
+ * `batches` pick up from here on.
+ */
+export async function withSpendCap<T>(estimatedUsd: number, fn: () => Promise<T>): Promise<T> {
+  await reserveSpend(estimatedUsd);
+  try {
+    return await fn();
+  } finally {
+    await releaseSpend(estimatedUsd);
+  }
 }
 
 // ---------------------------------------------------------------------------

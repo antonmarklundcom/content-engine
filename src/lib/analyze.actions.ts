@@ -11,10 +11,10 @@ import { ForbiddenError } from "@/lib/auth/roles";
 import { requireOwner } from "@/lib/auth/session";
 import { DEFAULT_MODEL, isAnalysisModel, type AnalysisModel } from "@/lib/analysis/pricing";
 import {
-  assertWithinCap,
   estimateAnalysisCostUsd,
   formatUsd,
   SpendCapExceededError,
+  withSpendCap,
 } from "@/lib/spend";
 
 /**
@@ -56,10 +56,13 @@ export async function analyzeVideoAction(
       return { ok: false, error: "No stored transcript, so there is nothing to analyse." };
     }
 
-    // The cap is checked before the call, not after the bill (PR-07).
-    await assertWithinCap(estimateAnalysisCostUsd(transcript.wordCount, model));
-
-    const result = await analyzeVideo(video, { model, force: options.force });
+    // The cap is checked before the call, not after the bill (PR-07), and held
+    // for the duration of the call so a concurrent request can't slip through
+    // the same gap (see withSpendCap).
+    const result = await withSpendCap(
+      estimateAnalysisCostUsd(transcript.wordCount, model),
+      () => analyzeVideo(video, { model, force: options.force }),
+    );
 
     revalidatePath("/youtube");
     revalidatePath(`/youtube/video/${videoId}`);

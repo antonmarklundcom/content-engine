@@ -2,7 +2,7 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { eq, inArray, notInArray } from "drizzle-orm";
 import { db } from "@/db";
 import { analyses, batches, transcripts, videos, type Batch, type Video } from "@/db/schema";
-import { assertWithinCap, estimateBatchCostUsd, recordSpend } from "@/lib/spend";
+import { estimateBatchCostUsd, recordSpend, withSpendCap } from "@/lib/spend";
 import { parseAnalysisResponse } from "./parse";
 import { DEFAULT_MODEL, estimateCostUsd, isAnalysisModel, toCostString, type AnalysisModel } from "./pricing";
 import { ANALYSIS_JSON_SCHEMA, ANALYSIS_SYSTEM_PROMPT, buildUserPrompt } from "./prompt";
@@ -66,57 +66,60 @@ export async function submitAnalysisBatch(
     { batch: true },
   );
 
-  // Throws SpendCapExceededError before a single request is sent.
-  await assertWithinCap(estimatedUsd);
+  // Held for the duration of submission, not just checked-then-forgotten: two
+  // concurrent submitAnalysisBatch calls (poller + a manual backfill, say)
+  // must not both pass the check before either's `batches` row exists (that
+  // row is what committedUsd() reads from here on — see withSpendCap).
+  return withSpendCap(estimatedUsd, async () => {
+    // The batch path stays English-only, deliberately (PR-22b). prompt_version is
+    // written at *collection* time, and a collecting run has no memory of what the
+    // submitting run asked for — making the batch multilingual means storing the
+    // language on `batches`, which is a schema change this PR is not approved to
+    // make. Whoever adds the language UI adds that column with it.
+    const requests = usable.map((video) => {
+      const transcript = byVideoId.get(video.id)!;
+      return {
+        custom_id: `${CUSTOM_ID_PREFIX}${video.id}`,
+        params: {
+          model,
+          max_tokens: MAX_OUTPUT_TOKENS,
+          system: [
+            {
+              type: "text" as const,
+              text: ANALYSIS_SYSTEM_PROMPT,
+              cache_control: { type: "ephemeral" as const },
+            },
+          ],
+          output_config: { format: { type: "json_schema" as const, schema: ANALYSIS_JSON_SCHEMA } },
+          messages: [
+            {
+              role: "user" as const,
+              content: buildUserPrompt({
+                title: video.title,
+                channelTitle: video.channelTitle,
+                durationSeconds: video.durationSeconds,
+                transcript: transcript.content,
+              }),
+            },
+          ],
+        },
+      };
+    });
 
-  // The batch path stays English-only, deliberately (PR-22b). prompt_version is
-  // written at *collection* time, and a collecting run has no memory of what the
-  // submitting run asked for — making the batch multilingual means storing the
-  // language on `batches`, which is a schema change this PR is not approved to
-  // make. Whoever adds the language UI adds that column with it.
-  const requests = usable.map((video) => {
-    const transcript = byVideoId.get(video.id)!;
-    return {
-      custom_id: `${CUSTOM_ID_PREFIX}${video.id}`,
-      params: {
-        model,
-        max_tokens: MAX_OUTPUT_TOKENS,
-        system: [
-          {
-            type: "text" as const,
-            text: ANALYSIS_SYSTEM_PROMPT,
-            cache_control: { type: "ephemeral" as const },
-          },
-        ],
-        output_config: { format: { type: "json_schema" as const, schema: ANALYSIS_JSON_SCHEMA } },
-        messages: [
-          {
-            role: "user" as const,
-            content: buildUserPrompt({
-              title: video.title,
-              channelTitle: video.channelTitle,
-              durationSeconds: video.durationSeconds,
-              transcript: transcript.content,
-            }),
-          },
-        ],
-      },
-    };
+    const batch = await anthropic().messages.batches.create({ requests });
+
+    // Record the id BEFORE returning, and never behind a caller's opt-in: the
+    // window between "the provider has taken the job" and "this app knows the id"
+    // is exactly the window in which a crash strands paid work.
+    await recordBatchSubmission({
+      providerBatchId: batch.id,
+      model,
+      videoCount: usable.length,
+      estimatedUsd,
+    });
+
+    return { batchId: batch.id, videoIds: usable.map((v) => v.id), estimatedUsd };
   });
-
-  const batch = await anthropic().messages.batches.create({ requests });
-
-  // Record the id BEFORE returning, and never behind a caller's opt-in: the
-  // window between "the provider has taken the job" and "this app knows the id"
-  // is exactly the window in which a crash strands paid work.
-  await recordBatchSubmission({
-    providerBatchId: batch.id,
-    model,
-    videoCount: usable.length,
-    estimatedUsd,
-  });
-
-  return { batchId: batch.id, videoIds: usable.map((v) => v.id), estimatedUsd };
 }
 
 /**

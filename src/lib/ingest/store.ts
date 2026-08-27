@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { sources, videos, type Source, type Video } from "@/db/schema";
 import type { ChannelMetadata, PlaylistMetadata, VideoMetadata } from "@/lib/youtube/data-api";
@@ -48,9 +48,18 @@ export async function upsertVideoFromMetadata(
         // as the last poll. The rest rarely change, and caption_status must NOT
         // be reset here or every re-run would re-probe videos already known to
         // have no captions.
-        viewCount: values.viewCount,
-        likeCount: values.likeCount,
-        commentCount: values.commentCount,
+        //
+        // COALESCE onto the stored value rather than overwriting outright: a
+        // fetch that omits a count (YouTube hides it, or a flaky response) means
+        // "unknown this time", not "zero" or "cleared" — falling back to what's
+        // already stored keeps a real prior count instead of a transient miss
+        // erasing it.
+        viewCount:
+          values.viewCount === null ? sql`${videos.viewCount}` : values.viewCount,
+        likeCount:
+          values.likeCount === null ? sql`${videos.likeCount}` : values.likeCount,
+        commentCount:
+          values.commentCount === null ? sql`${videos.commentCount}` : values.commentCount,
         thumbnailUrl: values.thumbnailUrl,
         // Only claim a video for a source if it does not already belong to one.
         ...(sourceId !== null ? { sourceId } : {}),

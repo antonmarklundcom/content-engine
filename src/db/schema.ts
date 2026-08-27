@@ -512,6 +512,22 @@ export const spendLog = pgTable(
 );
 
 // ---------------------------------------------------------------------------
+// spend_reservation
+// ---------------------------------------------------------------------------
+
+/**
+ * Single-row table (id always 1) holding in-flight spend not yet in `spend_log`
+ * or `batches`. Closes the gap between "checked the cap" and "billed for it":
+ * two concurrent analyses can each read the same spend_log/batches totals and
+ * both pass the check before either's bill lands. Reserving here first forces
+ * them to serialize on this row's write lock — see spend.ts's withSpendCap.
+ */
+export const spendReservation = pgTable("spend_reservation", {
+  id: integer("id").primaryKey(),
+  reservedUsd: numeric("reserved_usd", { precision: 10, scale: 6 }).notNull().default("0"),
+});
+
+// ---------------------------------------------------------------------------
 // relations
 // ---------------------------------------------------------------------------
 

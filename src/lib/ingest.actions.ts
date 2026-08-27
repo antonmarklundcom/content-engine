@@ -8,7 +8,7 @@ import { analyzeVideo } from "@/lib/analysis/run";
 import { isOwner } from "@/lib/auth/roles";
 import { getSession } from "@/lib/auth/session";
 import { DEFAULT_MODEL } from "@/lib/analysis/pricing";
-import { assertWithinCap, estimateAnalysisCostUsd, formatUsd, SpendCapExceededError } from "@/lib/spend";
+import { estimateAnalysisCostUsd, formatUsd, SpendCapExceededError, withSpendCap } from "@/lib/spend";
 import { ingestUrl } from "@/lib/ingest";
 import { BULK_INGEST_LIMIT } from "@/lib/ingest/limits";
 import { upsertVideoFromMetadata } from "@/lib/ingest/store";
@@ -125,9 +125,7 @@ export async function submitIngest(
     }
 
     const estimatedUsd = estimateAnalysisCostUsd(transcriptRow.wordCount, DEFAULT_MODEL);
-    await assertWithinCap(estimatedUsd);
-
-    const result = await analyzeVideo(video);
+    const result = await withSpendCap(estimatedUsd, () => analyzeVideo(video));
     revalidatePath("/youtube");
     revalidatePath(`/youtube/video/${video.id}`);
 

@@ -7,7 +7,7 @@ import type { OutlinePayload } from "./contract";
 import { buildOutlineUserPrompt, OUTLINE_JSON_SCHEMA, OUTLINE_SYSTEM_PROMPT } from "./outline-prompt";
 import { parseOutlineResponse } from "./outline-parse";
 import { DEFAULT_MODEL, estimateCostUsd, toCostString, type AnalysisModel } from "./pricing";
-import { assertWithinCap, recordSpend } from "@/lib/spend";
+import { recordSpend, withSpendCap } from "@/lib/spend";
 
 /**
  * PR-13: not yet built, per docs/HANDOFF-SONNET.md §3. Same shape as the
@@ -103,76 +103,80 @@ export async function generateOutline(
   const [video] = await db.select().from(videos).where(eq(videos.id, analysis.videoId)).limit(1);
   if (!video) return { status: "failed", error: "Source video not found." };
 
-  await assertWithinCap(estimateOutlineCostUsd(model));
+  return withSpendCap(estimateOutlineCostUsd(model), runGeneration);
 
-  let response: Anthropic.Message;
-  try {
-    response = await anthropic().messages.create({
-      model,
-      max_tokens: MAX_OUTPUT_TOKENS,
-      system: OUTLINE_SYSTEM_PROMPT,
-      output_config: { format: { type: "json_schema", schema: OUTLINE_JSON_SCHEMA } },
-      messages: [
-        {
-          role: "user",
-          content: buildOutlineUserPrompt({
-            videoTitle: video.title,
-            ideaTitle: idea.title,
-            ideaPremise: idea.premise,
-            ideaWhyNow: idea.why_now,
-            language: options.language,
-          }),
-        },
-      ],
-    });
-  } catch (err) {
-    // No usage, so nothing was charged — but the attempt still gets a row, or
-    // the next person to look wonders why this idea has no outline.
-    const message = err instanceof Error ? err.message : String(err);
-    await recordOutlineFailure({
+  async function runGeneration(): Promise<GenerateOutlineResult> {
+    let response: Anthropic.Message;
+    try {
+      response = await anthropic().messages.create({
+        model,
+        max_tokens: MAX_OUTPUT_TOKENS,
+        system: OUTLINE_SYSTEM_PROMPT,
+        output_config: { format: { type: "json_schema", schema: OUTLINE_JSON_SCHEMA } },
+        messages: [
+          {
+            role: "user",
+            content: buildOutlineUserPrompt({
+              videoTitle: video.title,
+              // Narrowed by the `if (!idea) return` above, but that narrowing
+              // does not cross into this nested function declaration's scope.
+              ideaTitle: idea!.title,
+              ideaPremise: idea!.premise,
+              ideaWhyNow: idea!.why_now,
+              language: options.language,
+            }),
+          },
+        ],
+      });
+    } catch (err) {
+      // No usage, so nothing was charged — but the attempt still gets a row, or
+      // the next person to look wonders why this idea has no outline.
+      const message = err instanceof Error ? err.message : String(err);
+      await recordOutlineFailure({
+        analysisId,
+        ideaIndex,
+        error: `api error: ${message}`,
+        model,
+        costUsd: 0,
+      });
+      return { status: "failed", error: message };
+    }
+
+    const usage = readUsage(response);
+    const costUsd = estimateCostUsd(model, usage);
+    const raw = response.content
+      .filter((b): b is Anthropic.TextBlock => b.type === "text")
+      .map((b) => b.text)
+      .join("");
+
+    const parsed = parseOutlineResponse(raw);
+    if (!parsed.ok) {
+      // The raw response is the only thing that explains a parse failure, and it
+      // was being thrown away while still being paid for.
+      await recordOutlineFailure({
+        analysisId,
+        ideaIndex,
+        error: parsed.error,
+        rawResponse: raw,
+        model,
+        costUsd,
+      });
+      await recordSpend(costUsd);
+      return { status: "failed", error: parsed.error };
+    }
+
+    const outline = await upsertOutline({
       analysisId,
       ideaIndex,
-      error: `api error: ${message}`,
-      model,
-      costUsd: 0,
-    });
-    return { status: "failed", error: message };
-  }
-
-  const usage = readUsage(response);
-  const costUsd = estimateCostUsd(model, usage);
-  const raw = response.content
-    .filter((b): b is Anthropic.TextBlock => b.type === "text")
-    .map((b) => b.text)
-    .join("");
-
-  const parsed = parseOutlineResponse(raw);
-  if (!parsed.ok) {
-    // The raw response is the only thing that explains a parse failure, and it
-    // was being thrown away while still being paid for.
-    await recordOutlineFailure({
-      analysisId,
-      ideaIndex,
-      error: parsed.error,
+      payload: parsed.payload,
       rawResponse: raw,
       model,
       costUsd,
     });
     await recordSpend(costUsd);
-    return { status: "failed", error: parsed.error };
+
+    return { status: "ok", outline, payload: parsed.payload, costUsd };
   }
-
-  const outline = await upsertOutline({
-    analysisId,
-    ideaIndex,
-    payload: parsed.payload,
-    rawResponse: raw,
-    model,
-    costUsd,
-  });
-  await recordSpend(costUsd);
-
-  return { status: "ok", outline, payload: parsed.payload, costUsd };
 }
 
 async function upsertOutline(input: {

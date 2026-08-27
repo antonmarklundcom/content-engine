@@ -15,6 +15,13 @@
       "when": 1787864688312,
       "tag": "0001_mushy_morlun",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787869781062,
+      "tag": "0002_square_klaw",
+      "breakpoints": true
     }
   ]
 }
