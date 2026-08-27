@@ -1,8 +1,11 @@
 # Content Engine
 
-Multi-brand social content pipeline: research → ideate → plan → generate
-(via a swappable AI provider — Higgsfield today) → post, for Paraguay
-Residency Guide, propia.com.py, and the .com.py brand family.
+Multi-brand content ideation pipeline: research → ideate → ready-to-post
+copy, for Paraguay Residency Guide, propia.com.py, and the .com.py brand
+family. **Research, ideas, and copy/prompting are the point** — scheduling,
+media generation (via a swappable provider — Higgsfield today), and posting
+are optional stages you can chain on afterward, not what this tool exists
+to do.
 
 ## How it works
 
@@ -15,16 +18,18 @@ Residency Guide, propia.com.py, and the .com.py brand family.
   `residency-guide` and `propia`) is written once as a `research_notes` row
   tagged with every relevant brand, so it isn't re-researched per brand —
   each brand then writes its own idea/angle off that shared note.
-- **Claude Code is the orchestrator.** Research, ideation, prompt-writing,
-  and the actual media generation/posting calls (via MCP tools) happen as
-  agent reasoning, driven by `.claude/skills/content-engine/SKILL.md`. Run it
-  by asking Claude Code to "run content engine" / "plan this week's posts for
-  pozo" / etc.
-- **Providers are swappable.** `src/lib/providers/registry.ts` maps a
-  provider id (`higgsfield`, `runway`, ...) to the MCP tool names that
-  generate for it. `calendar_items.provider` picks the provider per item.
-  Adding Runway/Kling/fal.ai later means: add an entry to the registry, wire
-  the MCP connection, done — no pipeline code changes.
+- **Claude Code is the orchestrator.** Research, ideation, and full
+  publish-ready copywriting happen as agent reasoning, driven by
+  `.claude/skills/content-engine/SKILL.md` — that judgment work is the
+  actual product. Run it by asking Claude Code to "run content engine" /
+  "give me ideas for pozo" / "plan this week's posts for pozo" / etc.
+- **Media generation/posting are optional, downstream.** An idea's
+  `draftCopy` (the caption) is written at ideation time, not deferred to a
+  generation step. If the user also wants media made, `src/lib/providers/
+  registry.ts` maps a provider id (`higgsfield`, `runway`, ...) to the MCP
+  tool names that generate for it — `calendar_items.provider` picks the
+  provider per item. Adding Runway/Kling/fal.ai later means: add an entry
+  to the registry, wire the MCP connection, done — no pipeline code changes.
 
 ## Setup
 

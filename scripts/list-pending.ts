@@ -20,6 +20,12 @@ const rows = await db
   );
 
 console.table(
-  rows.map((r) => ({ id: r.id, brand: r.brandId, title: r.title, format: r.format })),
+  rows.map((r) => ({
+    id: r.id,
+    brand: r.brandId,
+    title: r.title,
+    format: r.format,
+    hasCopy: Boolean(r.draftCopy),
+  })),
 );
 process.exit(0);

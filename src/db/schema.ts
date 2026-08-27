@@ -72,6 +72,20 @@ export const ideas = sqliteTable("ideas", {
   title: text("title").notNull(),
   angle: text("angle").notNull(), // why this idea, the hook
   format: text("format", { enum: FORMATS }).notNull(),
+  /**
+   * The actual ready-to-post copy: caption + hashtags (and, for video, an
+   * opening line/hook a voiceover or on-screen text would use). This is the
+   * core deliverable of this pipeline — research and angle exist to produce
+   * this. Written during ideation, not deferred to the generate step.
+   */
+  draftCopy: text("draft_copy"),
+  /**
+   * The brief a media-generation model would need to execute this idea
+   * (shot description / image prompt / video prompt, aspect ratio, style
+   * notes). Optional — only relevant if this idea is going on to generation.
+   * Ideation is complete without it; not every idea needs media made from it.
+   */
+  mediaPrompt: text("media_prompt"),
   researchNoteId: integer("research_note_id"), // shared research this idea was spun from, if any
   sourceNote: text("source_note"), // what research/trend prompted it
   /**
