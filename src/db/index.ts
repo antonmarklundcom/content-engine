@@ -1,11 +1,25 @@
 import "dotenv/config";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/neon-http";
+import { neon } from "@neondatabase/serverless";
 import * as schema from "./schema";
 
-const dbPath = process.env.DATABASE_PATH ?? "./data/content-engine.db";
-const sqlite = new Database(dbPath);
-sqlite.pragma("journal_mode = WAL");
+function createDb() {
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    throw new Error("DATABASE_URL is not set — see .env.example (a Neon Postgres connection string).");
+  }
+  return drizzle(neon(url), { schema });
+}
 
-export const db = drizzle(sqlite, { schema });
+let cached: ReturnType<typeof createDb> | undefined;
+
+// Lazy: avoids throwing at import time during `next build`'s route analysis,
+// which loads this module without env vars available.
+export const db = new Proxy({} as ReturnType<typeof createDb>, {
+  get(_target, prop, receiver) {
+    if (!cached) cached = createDb();
+    return Reflect.get(cached, prop, receiver);
+  },
+});
+
 export { schema };
