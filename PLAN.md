@@ -232,7 +232,7 @@ job; PR merged; final closing report to Anton (live URLs, manual-steps list).
 
 | Input | First needed | Status |
 |---|---|---|
-| 1. Confirm the app is actually deployed on Vercel + Neon env vars set | before O1 merge (migration hits Neon) | ☐ |
+| 1. Confirm the app is actually deployed on Vercel + Neon env vars set, then run `npm run db:migrate && npm run db:seed` | before O1 merge (migration hits Neon) — **still open, O1 could not reach a database** | ☐ |
 | 2. Caption probe verdict from Vercel (`npm run yt:probe-captions` from the deployed env, or ask a session to add a probe route) | S4 gate | ☐ |
 | 3. `CLIP_TOKEN` value set in Vercel env (session generates, Anton stores) | O2 | ☐ |
 | 4. iOS Shortcut created on the phone per `docs/CAPTURE.md` | after S3 | ☐ |
@@ -248,6 +248,35 @@ job; PR merged; final closing report to Anton (live URLs, manual-steps list).
 ## §9. Build log & handoff
 
 *(append-only; every phase adds an entry before merging its PR)*
+
+### 2026-08-28 — O1 Foundation (PR #6)
+
+- **Exists now:** `brands` is the single source of truth — `src/lib/brands.ts`
+  and the `BRANDS` constant are deleted, seed data lives in `src/db/seed.ts`
+  (insert-only by default, `--overwrite` to push edits back, never duplicates).
+  Migration `0003` adds the `clips` table and `ideas.source_analysis_id`, no FK
+  constraints, with relations for clip→video, clip→idea, idea→analysis.
+  `/api/generate` runs inside `withSpendCap` and logs its real cost (tokens +
+  $10/1k web searches) to `spend_log`; it answers 429 when the cap refuses.
+  `src/lib/bridge/` is the read-only query layer S3 must go through.
+- **Decisions/deviations:** (a) the seed no longer overwrites existing rows —
+  §5.O1 said "idempotent upsert", but an upsert that re-applies file literals
+  clobbers a voice edited in the database, so insert-only is the default and
+  overwrite is a flag; (b) retiring the constant meant touching `/` and
+  `/brand/[id]` despite the phase's "no UI" rule — the markup is unchanged,
+  only the data source, and both are now `force-dynamic`; (c) the ideation call
+  streams now (16k output on a thinking model exceeds the non-streaming
+  timeout); (d) the branch is `claude/opus-1-foundation-prompt-io65cd`, not
+  `phase/o1-foundation` — the session harness pins the branch name.
+- **Not done:** migration not applied and seed not run — no `DATABASE_URL` in
+  the build session (§7 item 1, still ☐). `/api/generate` therefore never
+  executed end-to-end. Two commands: `npm run db:migrate && npm run db:seed`.
+- **Next phase looks first at:** `src/lib/bridge/` (add O2's reads there, not
+  in the routes), `src/db/schema.ts`'s `clips` state machine for the statuses
+  O2 must drive, and `generateContentPlan` in `src/lib/anthropic.ts` for how a
+  paid call is wrapped — the promote endpoint's cheap adaptation call and the
+  `analysisId` grounding path both go through the same cap. `KNOWN-ISSUES.md`
+  is new; read it before assuming the dev DB has the tables.
 
 ## §10. Backlog
 

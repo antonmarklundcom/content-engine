@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { db, schema } from "../../../db";
-import { BRANDS } from "../../../lib/brands";
-import { generateContentPlan } from "../../../lib/anthropic";
+import { db, schema } from "@/db";
+import { generateContentPlan } from "@/lib/anthropic";
+import { getBrand, listBrands } from "@/lib/bridge";
+import { SpendCapExceededError } from "@/lib/spend";
 
 export const maxDuration = 300; // research + generation can take a couple minutes
 
@@ -12,10 +13,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "brandId required" }, { status: 400 });
   }
 
-  const brand = BRANDS.find((b) => b.id === brandId);
+  // The brands table is the source of truth (PLAN.md §1.5) — an unknown id is
+  // now "no such row", not "not in a constant someone forgot to redeploy".
+  const brand = await getBrand(brandId);
   if (!brand) {
     return NextResponse.json({ error: `unknown brandId "${brandId}"` }, { status: 400 });
   }
+  const allBrands = await listBrands();
 
   // Existing research relevant to this brand — check before asking Claude to
   // research from scratch.
@@ -24,7 +28,21 @@ export async function POST(request: Request) {
     .filter((n) => n.relatedBrandIds.includes(brandId))
     .map((n) => ({ topic: n.topic, summary: n.summary }));
 
-  const plan = await generateContentPlan(brand, BRANDS, existingResearch);
+  let plan;
+  try {
+    plan = await generateContentPlan(brand, allBrands, existingResearch);
+  } catch (error) {
+    // The one failure worth its own status code: nothing was spent, nothing is
+    // broken, and the caller's next move is to raise the cap or wait — which a
+    // 500 would not tell them (PLAN.md §1.10).
+    if (error instanceof SpendCapExceededError) {
+      return NextResponse.json(
+        { error: error.message, spend: error.status },
+        { status: 429 },
+      );
+    }
+    throw error;
+  }
 
   // Persist any new shared research notes.
   const insertedNoteIds: number[] = [];
@@ -61,5 +79,9 @@ export async function POST(request: Request) {
     )
     .returning();
 
-  return NextResponse.json({ ideas: insertedIdeas, researchNotesAdded: insertedNoteIds.length });
+  return NextResponse.json({
+    ideas: insertedIdeas,
+    researchNotesAdded: insertedNoteIds.length,
+    costUsd: plan.costUsd,
+  });
 }

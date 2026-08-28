@@ -40,7 +40,7 @@ No media generation, no scheduling, no posting integration.
    npm install
    npm run db:generate   # generate SQL migrations from src/db/schema.ts
    npm run db:migrate    # apply them to your Neon database
-   npm run db:seed       # seed brands from src/lib/brands.ts
+   npm run db:seed       # insert the initial brands from src/db/seed.ts
    ```
 5. Run it:
    ```bash
@@ -56,6 +56,12 @@ pairing; no extra config needed beyond the env vars.
 
 ## Brands
 
-See `src/lib/brands.ts` for the full list (Paraguay Residency Guide, propia,
+The `brands` table is the source of truth — the app reads it, nothing else.
+`src/db/seed.ts` holds the initial rows (Paraguay Residency Guide, propia,
 contador, negocio, obra, viaje, visas, pozo, clientes, sitiosweb, contenido).
-Add a new business by adding an entry there and re-running `npm run db:seed`.
+
+Add a new business by adding an entry there and re-running `npm run db:seed`:
+the run inserts what is missing and leaves existing rows exactly as they are,
+so a brand whose voice was tuned in the database is never clobbered by a
+re-seed. To push edits from the file back over the stored rows on purpose,
+run `npm run db:seed -- --overwrite`.
