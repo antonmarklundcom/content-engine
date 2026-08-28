@@ -1,13 +1,17 @@
-@import "tailwindcss";
-
 /*
- * Tailwind (added for the ported /youtube/* section, which uses Tailwind
- * utility classes throughout) plus content-engine's original plain-CSS rules
- * below, unchanged. Tailwind's preflight reset and content-engine's own rules
- * coexist here because the later, more specific rules in this same cascade
- * still win for the selectors content-engine already styled (h1/h2/button/
- * textarea/etc.) — nothing below had to change to add Tailwind.
+ * `legacy` declared first (and so lowest-priority) in the cascade layer order,
+ * before Tailwind's own `@layer theme, base, components, utilities;` — CSS
+ * layer order is set by first appearance, so this holds regardless of source
+ * order below. Bare-element rules in `legacy` (button/textarea/h1/etc., for
+ * the original "/" and "/brand/[id]" pages) must lose to ANY Tailwind utility
+ * class on the ported /youtube/* pages: an *unlayered* rule always beats a
+ * layered one no matter its specificity, so without this a plain `button {}`
+ * here would override every Tailwind-styled button in /youtube/*, which is
+ * exactly what shipped until this was caught (e.g. the locale toggle's
+ * inactive-state button rendering identically to its active one).
  */
+@layer legacy, theme, base, components, utilities;
+@import "tailwindcss";
 
 /* -------------------------------------------------------------------------
  * YouTube tool design tokens (ported from the yt repo's globals.css).
@@ -45,7 +49,11 @@
 
 /* -------------------------------------------------------------------------
  * Content-engine's original design (brand ideation pages: "/", "/brand/[id]").
+ * In the `legacy` layer (see the @layer statement up top) so these bare-
+ * element rules never win over a Tailwind utility class on the ported
+ * /youtube/* pages.
  * ---------------------------------------------------------------------- */
+@layer legacy {
 :root {
   color-scheme: light dark;
   --bg: #0b0c0f;
@@ -184,3 +192,4 @@ textarea {
 }
 
 .idea-actions { display: flex; gap: 8px; margin-top: 10px; }
+} /* end @layer legacy */
