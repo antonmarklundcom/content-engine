@@ -9,7 +9,10 @@ import { fetchCaptions, type StrategyName } from "@/lib/youtube/captions";
  *
  * This is the one place where PR-01's outcome becomes load-bearing. The
  * strategies are pluggable and ordered by env (CAPTION_STRATEGIES), so whichever
- * strategy the Hostinger box proves out is configuration, not a code change.
+ * strategy the host proves out is configuration, not a code change. On top of
+ * that list, fetchCaptions retires strategies that keep failing within a run
+ * (src/lib/youtube/captions/health.ts), so a host where nothing works stops
+ * paying six timeouts per video after the first few videos have said so.
  */
 
 export type CaptionOutcome =
@@ -115,10 +118,16 @@ export async function fetchAndStoreCaptions(
     return { status: "none" };
   }
 
-  const detail = result.attempts
+  const attempted = result.attempts
     .filter((a) => !a.ok)
     .map((a) => `${a.strategy}=${a.ok ? "" : a.reason}`)
     .join(" ");
+  // Name the strategies that were not tried at all. Without this a run where
+  // health tracking has retired everything reports an empty reason list, which
+  // reads like a bug rather than the deliberate saving it is.
+  const detail = result.skipped.length
+    ? `${attempted}${attempted ? " " : ""}(retired: ${result.skipped.join(",")})`
+    : attempted;
   await setStatus(video.id, "failed");
   return { status: "failed", error: `${result.reason}: ${detail}` };
 }

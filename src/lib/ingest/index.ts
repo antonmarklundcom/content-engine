@@ -1,4 +1,5 @@
 import type { Video } from "@/db/schema";
+import { runHealth, type StrategyHealthSnapshot } from "@/lib/youtube/captions";
 import { YouTubeDataClient } from "@/lib/youtube/data-api";
 import { parseYouTubeUrl, type YouTubeRef } from "@/lib/youtube/url";
 import {
@@ -43,6 +44,12 @@ export type IngestSummary = {
   videos: Video[];
   captionCounts: Record<CaptionOutcome["status"], number>;
   quota: string;
+  /**
+   * Per-strategy health for this process, as of the end of the call. Empty when
+   * no captions were attempted. Reported rather than logged so the CLI, the
+   * poller and the cron route can each say what they need to.
+   */
+  captionHealth: StrategyHealthSnapshot[];
 };
 
 /**
@@ -126,7 +133,13 @@ export async function ingestRef(ref: YouTubeRef, options: IngestOptions = {}): P
     }
   }
 
-  return { sourceId, videos: stored, captionCounts, quota: client.quota.summary() };
+  return {
+    sourceId,
+    videos: stored,
+    captionCounts,
+    quota: client.quota.summary(),
+    captionHealth: options.skipCaptions ? [] : runHealth().snapshot(),
+  };
 }
 
 export * from "./captions";

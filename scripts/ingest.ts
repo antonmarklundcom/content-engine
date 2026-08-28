@@ -14,6 +14,7 @@
 
 import { closeDb } from "../src/db";
 import { ingestUrl, type IngestProgress } from "../src/lib/ingest";
+import { summariseHealth } from "../src/lib/youtube/captions";
 import { QuotaExhaustedError } from "../src/lib/youtube/quota";
 
 const DEFAULT_LIMIT = 25;
@@ -45,10 +46,23 @@ async function main(): Promise<void> {
   );
   console.log(`Quota:         ${summary.quota}`);
 
+  const health = summariseHealth(summary.captionHealth);
+  if (health) console.log(`Strategies:    ${health}`);
+
+  const retired = summary.captionHealth.filter((s) => s.retired);
+  if (retired.length > 0) {
+    console.log(
+      `\n${retired.length} strateg${retired.length === 1 ? "y was" : "ies were"} retired for the ` +
+        "rest of this run after repeated failures.\nThat is the adaptive saving working, not an " +
+        "error — but if the list keeps growing\nrun `npm run yt:probe-captions` and read " +
+        "docs/CAPTION-FETCH-RESILIENCE.md.",
+    );
+  }
+
   if (c.failed > 0 && c.available === 0 && c.none === 0) {
     console.log(
       "\nEverything failed and nothing succeeded. That is the PR-01 failure mode,\n" +
-        "not a per-video problem — re-run `npm run probe:captions` before treating\n" +
+        "not a per-video problem — re-run `npm run yt:probe-captions` before treating\n" +
         "this as data. Do NOT fall back to AI audio transcription (PLAN.md §6).",
     );
   }

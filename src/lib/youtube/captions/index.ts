@@ -1,3 +1,4 @@
+import { runHealth, type StrategyHealth } from "./health";
 import { INNERTUBE_CLIENTS, listTracksViaInnertube } from "./innertube";
 import { countWords, fetchTrack, segmentsToText, selectTrack } from "./track";
 import { listTracksViaWatchPage } from "./watch-page";
@@ -12,6 +13,16 @@ import {
 } from "./types";
 
 export * from "./types";
+export {
+  DEFAULT_FAILURE_THRESHOLD,
+  StrategyHealth,
+  configuredFailureThreshold,
+  resetRunHealth,
+  runHealth,
+  summariseHealth,
+  type StrategyHealthSnapshot,
+} from "./health";
+export { configuredProxyUrl, redactProxyUrl, resetProxyCache } from "./proxy";
 export { selectTrack, segmentsToText, countWords } from "./track";
 export { parseVideoId, parseYouTubeUrl } from "../url";
 
@@ -131,8 +142,14 @@ export async function tryStrategy(
 }
 
 export type FetchCaptionsResult =
-  | { ok: true; result: CaptionResult; attempts: StrategyOutcome[] }
-  | { ok: false; reason: "no_captions" | "blocked" | "error"; attempts: StrategyOutcome[] };
+  | { ok: true; result: CaptionResult; attempts: StrategyOutcome[]; skipped: StrategyName[] }
+  | {
+      ok: false;
+      reason: "no_captions" | "blocked" | "error";
+      attempts: StrategyOutcome[];
+      /** Candidates not attempted because health tracking had already retired them. */
+      skipped: StrategyName[];
+    };
 
 /**
  * The production entry point (PR-05): walk the strategy list, return the first
@@ -141,6 +158,10 @@ export type FetchCaptionsResult =
  * A `no_captions` verdict short-circuits the remaining strategies — that is a
  * property of the video, not of the network path, so retrying with a different
  * client only burns requests and makes us look more like a scraper.
+ *
+ * Strategies that have already failed their way out of this run are skipped
+ * before they cost anything (see health.ts). `options.strategies` — i.e.
+ * CAPTION_STRATEGIES — remains the allowlist: health only ever prunes it.
  */
 export async function fetchCaptions(
   videoId: string,
@@ -148,21 +169,44 @@ export async function fetchCaptions(
     preferredLanguages?: string[];
     strategies?: StrategyName[];
     timeoutMs?: number;
+    /**
+     * Tracker to consult and update. Defaults to the process-wide one, so the
+     * CLI scripts and the poller get adaptive behaviour without threading it
+     * through every call. Pass `null` to attempt every strategy regardless —
+     * that is what the probe wants, since its job is evidence, not throughput.
+     */
+    health?: StrategyHealth | null;
   } = {},
 ): Promise<FetchCaptionsResult> {
-  const strategies = options.strategies?.length ? options.strategies : STRATEGY_ORDER;
+  const candidates = options.strategies?.length ? options.strategies : STRATEGY_ORDER;
   const preferred = options.preferredLanguages ?? ["en"];
+  const health = options.health === undefined ? runHealth() : options.health;
+
+  const live = health ? health.live(candidates) : [...candidates];
+  const skipped = candidates.filter((s) => !live.includes(s));
   const attempts: StrategyOutcome[] = [];
 
-  for (const strategy of strategies) {
+  if (live.length === 0) {
+    // Everything the allowlist offers is retired. Reporting it as `blocked`
+    // when the retirements were blocks keeps the caller's error text pointing
+    // at the real diagnosis instead of a generic failure.
+    const retiredBlocked =
+      health?.snapshot().some((s) => s.retired && s.lastReason === "blocked") ?? false;
+    return { ok: false, reason: retiredBlocked ? "blocked" : "error", attempts, skipped };
+  }
+
+  for (const strategy of live) {
     const outcome = await tryStrategy(strategy, videoId, preferred, {
       timeoutMs: options.timeoutMs,
     });
+    health?.record(outcome);
     attempts.push(outcome);
-    if (outcome.ok) return { ok: true, result: outcome.result, attempts };
-    if (outcome.reason === "no_captions") return { ok: false, reason: "no_captions", attempts };
+    if (outcome.ok) return { ok: true, result: outcome.result, attempts, skipped };
+    if (outcome.reason === "no_captions") {
+      return { ok: false, reason: "no_captions", attempts, skipped };
+    }
   }
 
   const blocked = attempts.some((a) => !a.ok && a.reason === "blocked");
-  return { ok: false, reason: blocked ? "blocked" : "error", attempts };
+  return { ok: false, reason: blocked ? "blocked" : "error", attempts, skipped };
 }

@@ -1,3 +1,4 @@
+import { configuredProxyUrl, proxiedFetch } from "./proxy";
 import { CaptionError, type CaptionSegment, type CaptionTrack } from "./types";
 
 /**
@@ -115,7 +116,14 @@ async function getInfo(videoId: string): Promise<unknown> {
   if (!Innertube) throw new CaptionError("youtubei.js exported no Innertube", "unavailable", "list");
 
   try {
-    const yt = await Innertube.create({ lang: "en", location: "US", retrieve_player: false });
+    // Only override the library's fetch when a proxy is actually configured —
+    // otherwise leave it on its own default, which is what it was tested with.
+    const yt = await Innertube.create({
+      lang: "en",
+      location: "US",
+      retrieve_player: false,
+      ...(configuredProxyUrl() ? { fetch: proxiedFetch } : {}),
+    });
     const fn = yt["getInfo"] as ((id: string) => Promise<unknown>) | undefined;
     if (!fn) throw new Error("client exposed no getInfo()");
     return await fn.call(yt, videoId);

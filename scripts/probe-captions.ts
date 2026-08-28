@@ -19,6 +19,7 @@
 import { hostname } from "node:os";
 import { parseVideoId } from "../src/lib/youtube/url";
 import { STRATEGY_ORDER, tryStrategy } from "../src/lib/youtube/captions";
+import { configuredProxyUrl, proxiedFetch, redactProxyUrl } from "../src/lib/youtube/captions/proxy";
 import type { StrategyName, StrategyOutcome } from "../src/lib/youtube/captions/types";
 
 /**
@@ -53,6 +54,9 @@ async function main(): Promise<void> {
     console.log();
     console.log(`  Probing ${videos.length} video(s) against ${STRATEGY_ORDER.length} strategies.`);
     console.log("  Every strategy runs even after one succeeds — this is evidence gathering.");
+    // Deliberately no adaptive health tracking here (tryStrategy does not
+    // consult it): retiring a strategy after three failures is right for a
+    // production run and wrong for the table this probe exists to print.
   }
 
   const reports: VideoReport[] = [];
@@ -102,7 +106,7 @@ async function main(): Promise<void> {
     console.log(`  ${verdict.detail}`);
     if (verdict.recommendedOrder.length > 0) {
       console.log();
-      console.log("  Set this in the Hostinger env so the pipeline skips dead strategies:");
+      console.log("  Set this in the deployment env so the pipeline skips dead strategies:");
       console.log(`    CAPTION_STRATEGIES=${verdict.recommendedOrder.join(",")}`);
     }
     if (!verdict.passed) {
@@ -110,6 +114,12 @@ async function main(): Promise<void> {
       console.log("  Per PLAN.md §5, do NOT start PR-02. Report the table above.");
       console.log("  Do NOT fall back to AI audio transcription — that is a ~20x cost");
       console.log("  change and needs a human decision (PLAN.md §6).");
+      console.log();
+      console.log("  If the refusals are blocks (403/429/bot wall) and this host is a");
+      console.log("  datacenter IP, the cheapest next step is a residential proxy:");
+      console.log("    CAPTION_PROXY_URL=http://user:pass@proxy.example:8080");
+      console.log("  then re-run this probe. See docs/CAPTION-FETCH-RESILIENCE.md for");
+      console.log("  all three options and the cost comparison.");
     }
   }
 
@@ -208,11 +218,15 @@ function printOutcome(o: StrategyOutcome): void {
 }
 
 async function describeEnvironment(): Promise<Record<string, string>> {
+  const proxy = configuredProxyUrl();
   return {
     host: hostname(),
     node: process.version,
     platform: `${process.platform}/${process.arch}`,
     time: new Date().toISOString(),
+    // Redacted: residential proxies carry their password in the URL, and this
+    // report gets pasted into chat threads and issues.
+    proxy: proxy ? redactProxyUrl(proxy) : "none (direct)",
     "outbound IPv4": await lookupIp("https://api.ipify.org"),
     "outbound IPv6": await lookupIp("https://api64.ipify.org"),
   };
@@ -220,13 +234,17 @@ async function describeEnvironment(): Promise<Record<string, string>> {
 
 /**
  * The outbound IP is the single most important line of the report: it is what
- * makes a Hostinger run self-evidencing rather than a claim.
+ * makes a run self-evidencing rather than a claim.
+ *
+ * It goes through the proxy when one is configured, for exactly that reason —
+ * reporting the function's own datacenter IP while the caption requests left
+ * from somewhere else would make the whole table impossible to interpret.
  */
 async function lookupIp(url: string): Promise<string> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8_000);
   try {
-    const res = await fetch(url, { signal: controller.signal });
+    const res = await proxiedFetch(url, { signal: controller.signal });
     if (!res.ok) return `unavailable (HTTP ${res.status})`;
     return (await res.text()).trim() || "unavailable (empty)";
   } catch (err) {
