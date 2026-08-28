@@ -23,3 +23,12 @@ export const db = new Proxy({} as ReturnType<typeof createDb>, {
 });
 
 export { schema };
+
+/**
+ * No-op. The Neon serverless HTTP driver has no persistent connection or pool
+ * to release — each query is its own HTTP request — but the CLI scripts
+ * ported from the YouTube tool (originally on a pooled mysql2 driver) all call
+ * this after finishing, so it stays as a compatibility shim rather than
+ * editing every script to remove the call.
+ */
+export async function closeDb(): Promise<void> {}

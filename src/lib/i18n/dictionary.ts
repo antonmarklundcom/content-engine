@@ -1,0 +1,526 @@
+/**
+ * The whole UI's copy, in two languages (PLAN.md §9 PR-22).
+ *
+ * A flat object and a `t()` helper — deliberately no i18n library and no
+ * `[locale]` routing. There are under a hundred strings and exactly one reader;
+ * next-intl would add a dependency, a middleware and a routing scheme to solve
+ * a problem this file solves in full. Locale lives in a cookie instead, so
+ * every URL keeps working and nothing has to be re-linked.
+ *
+ * `en` is the source of truth: `sv` is typed as a complete map of its keys, so
+ * adding an English string without a Swedish one fails typecheck rather than
+ * silently rendering a key.
+ */
+
+export const en = {
+  "app.name": "YT Intel",
+  "app.title": "YouTube Intelligence Workspace",
+  "app.description": "Private research workspace — read digests instead of watching videos.",
+
+  "nav.digest": "Digest",
+  "nav.sources": "Sources",
+  "nav.ingest": "Ingest",
+
+  "locale.label": "Language",
+  "locale.en": "English",
+  "locale.sv": "Svenska",
+  "locale.switch": "Switch language",
+
+  "spend.tooltip": "spent this month",
+  "spend.committed": "committed to open batches",
+
+  "digest.eyebrow": "Digest",
+  "digest.countOne": "video",
+  "digest.countMany": "videos",
+  "digest.empty.title": "Nothing ingested yet",
+  "digest.empty.body":
+    "Add a channel, playlist or single video from Ingest and its analysis will appear here.",
+  "digest.noMatch.title": "No videos match this filter",
+  "digest.noMatch.body": "Try a different search term, status, or read filter.",
+
+  "filters.search": "Search titles and analyses…",
+  "filters.submit": "Filter",
+  "filters.status.all": "All statuses",
+  "filters.status.available": "Captioned",
+  "filters.status.unknown": "Not probed",
+  "filters.status.none": "No captions",
+  "filters.status.failed": "Fetch failed",
+  "filters.read.all": "All videos",
+  "filters.read.unread": "Unread",
+  "filters.read.pinned": "Pinned",
+  "filters.read.marked": "Has marks",
+  "bulk.selected": "selected",
+  "bulk.none": "Select videos to analyse them in one batch",
+  "bulk.selectAll": "Select all analysable",
+  "bulk.clear": "Clear selection",
+  "bulk.submit": "Analyse selected",
+  "bulk.submitting": "Submitting…",
+
+  "filters.sort.published": "Newest published",
+  "filters.sort.added": "Recently added",
+  "filters.sort.views": "Most viewed",
+
+  "caption.unknown": "Not probed",
+  "caption.available": "Captioned",
+  "caption.none": "No captions",
+  "caption.failed": "Fetch failed",
+
+  // [PR-35] Gallringen. "Culled" rather than "skipped" or "filtered": the
+  // video is still there, still analysable, and still one click from being
+  // read — it has only been left out of what the poll run pays for.
+  "screen.culled": "Culled",
+  "screen.score": "Screen score",
+  "screen.culled.title": "Culled by the screen —",
+  "screen.kept.title": "Kept by the screen —",
+  "screen.culled.body":
+    "Scheduled runs will not spend an analysis on this video. Analysing it here still works.",
+
+  "analysisState.analysed": "Analysed",
+  "analysisState.failed": "Analysis failed",
+  "analysisState.pending": "Pending analysis",
+
+  "card.unread": "Unread",
+  "card.pinned": "Pinned",
+  "card.matchedAnalysis": "Matched inside the analysis",
+  "card.views": "views",
+  "card.likeRate": "likes/1k views",
+
+  // [PR-34] Cross-corpus grouping (PLAN.md §7).
+  "nav.topics": "Topics",
+  "topics.eyebrow": "Across everything indexed",
+  "topics.title": "Topics",
+  "topics.empty":
+    "Nothing to group yet. Topics are produced by the analysis itself, so this page fills in as videos are analysed — it has no categories of its own.",
+  "topics.subjects": "Subjects",
+  "topics.subjectsHint": "What the videos are about. Named by the analysis, not by a fixed list.",
+  "topics.entities": "Tools, products and people",
+  "topics.entitiesHint": "Named things the videos actually discuss.",
+  "topics.shapes": "Shapes",
+  "topics.shapesHint": "Cross a subject with a shape to turn a wide shelf into a reading list.",
+  "topics.none": "None yet.",
+  "topics.showSingles": "Include tags that appear on only one video",
+  "topics.hideSingles": "Hide tags that appear on only one video",
+  "topics.videosTagged": "videos tagged",
+  "topics.backToTopics": "All topics",
+  "error.topics.title": "Could not load topics",
+  "error.marks.title": "Could not load marks",
+  "notFound.topic.title": "No such topic",
+  "notFound.topic.body":
+    "Every topic here is written by an analysis, so one that does not exist was either mistyped or has been retagged away by a newer analysis.",
+  "video.likes": "likes",
+  "video.comments": "comments",
+  "card.noThumbnail": "No thumbnail",
+
+  "pagination.previous": "← Previous",
+  "pagination.next": "Next →",
+  "pagination.position": "Page {page} of {total}",
+
+  "video.unknownChannel": "Unknown channel",
+  "video.watch": "Watch on YouTube ↗",
+  "video.pin": "☆ Pin",
+  "video.unpin": "★ Unpin",
+  "video.markUnread": "Mark unread",
+  "video.delete": "Delete",
+  "video.deleteConfirm":
+    "Delete this video, its transcript and every analysis of it? Re-analysing later costs money again.",
+  "video.notAnalysed.title": "Not analysed yet",
+  "video.notAnalysed.ready": "A transcript is stored, so this video can be analysed now.",
+  "video.notAnalysed.noTranscript":
+    "This video has no stored transcript, so it cannot be analysed.",
+  "video.analyzeNow": "Analyze now",
+  "video.analysing": "Analysing…",
+  "video.retry": "Retry analysis",
+  "video.retrySonnet": "Retry with Sonnet",
+  "video.reanalyseSonnet": "Re-analyze with Sonnet",
+  "video.failed.title": "Analysis failed",
+  "video.failed.noMessage": "No error message was recorded.",
+  "video.copyRaw": "Copy raw response",
+  "video.copyAnalysis": "Copy full analysis",
+  "video.copied": "Copied",
+
+  "section.summary": "Summary",
+  "section.hook": "Hook",
+  "section.timeline": "Timeline",
+  "section.gaps": "Gaps",
+  "section.ideas": "Ideas",
+
+  // [PR-36] Listen mode. The unit labels are the singular names of the things
+  // in the analysis, because the readout numbers them ("Takeaway 3"); the
+  // section headings above stay plural.
+  "listen.title": "Listen",
+  "listen.play": "Play",
+  "listen.pause": "Pause",
+  "listen.previous": "Previous",
+  "listen.next": "Next",
+  "listen.restart": "Restart",
+  "listen.speed": "Speed",
+  "listen.position": "{position} of {total}",
+  "listen.unit.takeaway": "Takeaway",
+  "listen.unit.timeline": "Beat",
+  "listen.unit.gap": "Gap",
+  "listen.unit.idea": "Idea",
+  "listen.unsupported":
+    "This browser has no speech synthesis, so listen mode cannot read the analysis aloud.",
+
+  // [PR-37] Marking. "Mark" rather than "star" or "favourite": the gesture is
+  // recording that a passage was interesting, and the star is only its glyph.
+  "nav.marks": "Marks",
+  "marks.title": "Marks",
+  "marks.countOne": "marked passage",
+  "marks.countMany": "marked passages",
+  "marks.mark": "Mark as interesting",
+  "marks.unmark": "Remove mark",
+  "marks.search": "Search marked passages…",
+  "marks.type.all": "All kinds",
+  "marks.empty.title": "Nothing marked yet",
+  "marks.empty.body":
+    "Star a takeaway, an idea or a timeline beat on any analysis — or press Mark while listening — and it collects here.",
+  "marks.noMatch.title": "No marks match this filter",
+  "marks.noMatch.body": "Try a different search term or another kind of passage.",
+  "listen.markHeard": "Mark this",
+  "listen.marked": "Marked",
+  "hook.technique": "Technique",
+  "hook.first30s": "First 30 seconds",
+  "hook.whyItWorks": "Why it works",
+  "gaps.counterAngle": "Counter-angle",
+  "ideas.whyNow": "Why now",
+
+  "outline.generate": "Generate outline",
+  "outline.retry": "Retry outline",
+  "outline.failed": "Generation failed — show why",
+  "outline.failedNoMessage": "No error message was recorded.",
+  "outline.generating": "Generating…",
+  "outline.copy": "Copy outline",
+  "outline.hook": "Hook",
+  "outline.rehook": "Re-hook",
+  "outline.teachingPoints": "Teaching points",
+  "outline.twist": "Twist",
+  "outline.cta": "CTA",
+
+  "sources.eyebrow": "Sources",
+  "sources.title": "Tracked channels & playlists",
+  "sources.cronNote":
+    "Active sources are polled hourly by cron — new uploads are ingested and analysed in a batch without anyone opening this page. Pausing a source stops the poll but keeps its videos and its position in the queue.",
+  "sources.empty": "Nothing tracked yet.",
+  "sources.kind.channel": "Channel",
+  "sources.kind.playlist": "Playlist",
+  "sources.active": "Active",
+  "sources.paused": "Paused",
+  "sources.videoCountOne": "video",
+  "sources.videoCountMany": "videos",
+  "sources.lastPolled": "last polled",
+  "sources.never": "never",
+  "sources.pause": "Pause",
+  "sources.resume": "Resume",
+  "sources.remove": "Remove",
+  "sources.removeConfirm":
+    "Stop tracking this source? Its videos and analyses are kept — only the source row is removed.",
+  "sources.titleLabel": "Source title",
+  "sources.saveTitle": "Save title",
+  "sources.addPlaceholder": "Channel or playlist URL, or @handle",
+  "sources.add": "Track",
+  "sources.adding": "Adding…",
+  "sources.added": "Source added. It will be polled on the next hourly cron run.",
+
+  "ingest.eyebrow": "Ingest",
+  "ingest.title": "Add a URL",
+  "ingest.intro":
+    "A single video is ingested and analysed immediately. A playlist or channel is ingested (captions fetched, up to 25 videos) but not auto-analysed — run analysis from the digest feed afterward.",
+  "ingest.urlLabel": "Video, playlist or channel URL (or @handle)",
+  "ingest.urlPlaceholder": "https://youtube.com/watch?v=…",
+  "ingest.showTranscript": "No captions? Paste a transcript instead",
+  "ingest.hideTranscript": "Cancel manual transcript",
+  "ingest.transcriptLabel": "Transcript text (single video URL above required)",
+  "ingest.transcriptPlaceholder": "Paste the transcript…",
+  "ingest.submit": "Ingest & analyse",
+  "ingest.working": "Working…",
+  "ingest.progress.resolved": "Resolved {description}",
+  "ingest.progress.listed": "Found {count} video(s)",
+  "ingest.progress.stored": "Stored {index}/{total} — {title}",
+  "ingest.progress.captions": "Captions {index}/{total} ({outcome}) — {title}",
+  "ingest.failed": "Ingest failed.",
+
+  "result.success": "Done",
+  "result.info": "Note",
+  "result.error": "Failed",
+
+  "error.eyebrow": "Error",
+  "error.digest.title": "The digest could not be loaded",
+  "error.video.title": "This analysis could not be loaded",
+  "error.sources.title": "Sources could not be loaded",
+  "error.ingest.title": "The ingest page could not be loaded",
+  "error.retry": "Try again",
+  "error.noMessage": "No error message was recorded.",
+
+  "notFound.title": "Page not found",
+  "notFound.body": "Nothing lives at this URL.",
+  "notFound.video.title": "No such video",
+  "notFound.video.body":
+    "This video is not in the workspace. It may have been removed, or the link may be wrong.",
+  "notFound.back": "Back to the digest",
+
+  "login.title": "Sign in",
+  "login.intro": "This workspace is private. Sign in with the account the seed script created.",
+  "login.email": "Email",
+  "login.password": "Password",
+  "login.signIn": "Sign in",
+  "login.signingIn": "Signing in…",
+  "login.signOut": "Sign out",
+
+  "role.employeeIngestNote":
+    "You are signed in as an employee: videos you add are stored, but only the owner can start an analysis.",
+} as const;
+
+export type TranslationKey = keyof typeof en;
+
+export const sv: Record<TranslationKey, string> = {
+  "app.name": "YT Intel",
+  "app.title": "YouTube-analysarbetsyta",
+  "app.description": "Privat researchverktyg — läs sammanfattningar i stället för att titta.",
+
+  "nav.digest": "Flöde",
+  "nav.sources": "Källor",
+  "nav.ingest": "Lägg till",
+
+  "locale.label": "Språk",
+  "locale.en": "English",
+  "locale.sv": "Svenska",
+  "locale.switch": "Byt språk",
+
+  "spend.tooltip": "spenderat denna månad",
+  "spend.committed": "reserverat för öppna batchar",
+
+  "digest.eyebrow": "Flöde",
+  "digest.countOne": "video",
+  "digest.countMany": "videor",
+  "digest.empty.title": "Inget inläst ännu",
+  "digest.empty.body":
+    "Lägg till en kanal, spellista eller enskild video under Lägg till, så dyker analysen upp här.",
+  "digest.noMatch.title": "Inga videor matchar filtret",
+  "digest.noMatch.body": "Prova en annan sökterm, status eller lässtatus.",
+
+  "filters.search": "Sök i titlar och analyser…",
+  "filters.submit": "Filtrera",
+  "filters.status.all": "Alla statusar",
+  "filters.status.available": "Har undertexter",
+  "filters.status.unknown": "Inte kontrollerad",
+  "filters.status.none": "Saknar undertexter",
+  "filters.status.failed": "Hämtning misslyckades",
+  "filters.read.all": "Alla videor",
+  "filters.read.unread": "Olästa",
+  "filters.read.pinned": "Fästa",
+  "filters.read.marked": "Har markeringar",
+  "bulk.selected": "valda",
+  "bulk.none": "Välj videor för att analysera dem i en batch",
+  "bulk.selectAll": "Välj alla analyserbara",
+  "bulk.clear": "Rensa val",
+  "bulk.submit": "Analysera valda",
+  "bulk.submitting": "Skickar…",
+
+  "filters.sort.published": "Senast publicerat",
+  "filters.sort.added": "Senast tillagt",
+  "filters.sort.views": "Mest visade",
+
+  "caption.unknown": "Inte kontrollerad",
+  "caption.available": "Har undertexter",
+  "caption.none": "Saknar undertexter",
+  "caption.failed": "Hämtning misslyckades",
+
+  "screen.culled": "Gallrad",
+  "screen.score": "Gallringspoäng",
+  "screen.culled.title": "Gallrad av screeningen —",
+  "screen.kept.title": "Godkänd av screeningen —",
+  "screen.culled.body":
+    "Schemalagda körningar lägger ingen analys på den här videon. Att analysera den härifrån går fortfarande.",
+
+  "analysisState.analysed": "Analyserad",
+  "analysisState.failed": "Analysen misslyckades",
+  "analysisState.pending": "Väntar på analys",
+
+  "card.unread": "Oläst",
+  "card.pinned": "Fäst",
+  "card.matchedAnalysis": "Träff inne i analysen",
+  "card.views": "visningar",
+  "card.likeRate": "gillningar/1k visningar",
+
+  "nav.topics": "Ämnen",
+  "topics.eyebrow": "Över allt som indexerats",
+  "topics.title": "Ämnen",
+  "topics.empty":
+    "Inget att gruppera än. Ämnena skapas av analysen själv, så den här sidan fylls i allteftersom videor analyseras — den har inga egna kategorier.",
+  "topics.subjects": "Ämnen",
+  "topics.subjectsHint": "Vad videorna handlar om. Namngivet av analysen, inte av en fast lista.",
+  "topics.entities": "Verktyg, produkter och personer",
+  "topics.entitiesHint": "Namngivna saker som videorna faktiskt diskuterar.",
+  "topics.shapes": "Format",
+  "topics.shapesHint": "Korsa ett ämne med ett format för att göra en bred hylla till en läslista.",
+  "topics.none": "Inga än.",
+  "topics.showSingles": "Visa även taggar som bara finns på en video",
+  "topics.hideSingles": "Dölj taggar som bara finns på en video",
+  "topics.videosTagged": "videor taggade",
+  "topics.backToTopics": "Alla ämnen",
+  "error.topics.title": "Kunde inte ladda ämnen",
+  "error.marks.title": "Kunde inte ladda markeringar",
+  "notFound.topic.title": "Ämnet finns inte",
+  "notFound.topic.body":
+    "Varje ämne här är skrivet av en analys, så ett som inte finns är antingen felstavat eller borttaggat av en nyare analys.",
+  "video.likes": "gillningar",
+  "video.comments": "kommentarer",
+  "card.noThumbnail": "Ingen miniatyrbild",
+
+  "pagination.previous": "← Föregående",
+  "pagination.next": "Nästa →",
+  "pagination.position": "Sida {page} av {total}",
+
+  "video.unknownChannel": "Okänd kanal",
+  "video.watch": "Titta på YouTube ↗",
+  "video.pin": "☆ Fäst",
+  "video.unpin": "★ Lossa",
+  "video.markUnread": "Markera som oläst",
+  "video.delete": "Radera",
+  "video.deleteConfirm":
+    "Radera videon, dess transkript och alla analyser av den? Att analysera om kostar pengar igen.",
+  "video.notAnalysed.title": "Inte analyserad ännu",
+  "video.notAnalysed.ready": "Ett transkript finns lagrat, så videon kan analyseras nu.",
+  "video.notAnalysed.noTranscript":
+    "Videon har inget lagrat transkript och kan därför inte analyseras.",
+  "video.analyzeNow": "Analysera nu",
+  "video.analysing": "Analyserar…",
+  "video.retry": "Försök analysera igen",
+  "video.retrySonnet": "Försök igen med Sonnet",
+  "video.reanalyseSonnet": "Analysera om med Sonnet",
+  "video.failed.title": "Analysen misslyckades",
+  "video.failed.noMessage": "Inget felmeddelande sparades.",
+  "video.copyRaw": "Kopiera råsvar",
+  "video.copyAnalysis": "Kopiera hela analysen",
+  "video.copied": "Kopierat",
+
+  "section.summary": "Sammanfattning",
+  "section.hook": "Hook",
+  "section.timeline": "Tidslinje",
+  "section.gaps": "Luckor",
+  "section.ideas": "Idéer",
+
+  "listen.title": "Lyssna",
+  "listen.play": "Spela",
+  "listen.pause": "Pausa",
+  "listen.previous": "Föregående",
+  "listen.next": "Nästa",
+  "listen.restart": "Börja om",
+  "listen.speed": "Hastighet",
+  "listen.position": "{position} av {total}",
+  "listen.unit.takeaway": "Lärdom",
+  "listen.unit.timeline": "Avsnitt",
+  "listen.unit.gap": "Lucka",
+  "listen.unit.idea": "Idé",
+  "listen.unsupported":
+    "Den här webbläsaren saknar talsyntes, så lyssnaläget kan inte läsa upp analysen.",
+
+  "nav.marks": "Markeringar",
+  "marks.title": "Markeringar",
+  "marks.countOne": "markerat avsnitt",
+  "marks.countMany": "markerade avsnitt",
+  "marks.mark": "Markera som intressant",
+  "marks.unmark": "Ta bort markering",
+  "marks.search": "Sök i markerade avsnitt…",
+  "marks.type.all": "Alla sorter",
+  "marks.empty.title": "Inget markerat ännu",
+  "marks.empty.body":
+    "Stjärnmärk en lärdom, en idé eller ett avsnitt i en analys — eller tryck Markera medan du lyssnar — så samlas det här.",
+  "marks.noMatch.title": "Inga markeringar matchar filtret",
+  "marks.noMatch.body": "Prova ett annat sökord eller en annan sorts avsnitt.",
+  "listen.markHeard": "Markera",
+  "listen.marked": "Markerat",
+  "hook.technique": "Teknik",
+  "hook.first30s": "Första 30 sekunderna",
+  "hook.whyItWorks": "Varför det funkar",
+  "gaps.counterAngle": "Motvinkel",
+  "ideas.whyNow": "Varför nu",
+
+  "outline.generate": "Skapa disposition",
+  "outline.retry": "Försök igen",
+  "outline.failed": "Generering misslyckades — visa varför",
+  "outline.failedNoMessage": "Inget felmeddelande sparades.",
+  "outline.generating": "Skapar…",
+  "outline.copy": "Kopiera disposition",
+  "outline.hook": "Hook",
+  "outline.rehook": "Åter-hook",
+  "outline.teachingPoints": "Lärpunkter",
+  "outline.twist": "Vändning",
+  "outline.cta": "Uppmaning",
+
+  "sources.eyebrow": "Källor",
+  "sources.title": "Bevakade kanaler och spellistor",
+  "sources.cronNote":
+    "Aktiva källor pollas varje timme av cron — nya uppladdningar läses in och analyseras i en batch utan att någon öppnar den här sidan. Att pausa en källa stoppar pollningen men behåller dess videor och dess plats i kön.",
+  "sources.empty": "Inget bevakas ännu.",
+  "sources.kind.channel": "Kanal",
+  "sources.kind.playlist": "Spellista",
+  "sources.active": "Aktiv",
+  "sources.paused": "Pausad",
+  "sources.videoCountOne": "video",
+  "sources.videoCountMany": "videor",
+  "sources.lastPolled": "senast pollad",
+  "sources.never": "aldrig",
+  "sources.pause": "Pausa",
+  "sources.resume": "Återuppta",
+  "sources.remove": "Ta bort",
+  "sources.removeConfirm":
+    "Sluta bevaka den här källan? Dess videor och analyser behålls — bara källraden tas bort.",
+  "sources.titleLabel": "Källans titel",
+  "sources.saveTitle": "Spara titel",
+  "sources.addPlaceholder": "URL till kanal eller spellista, eller @handle",
+  "sources.add": "Bevaka",
+  "sources.adding": "Lägger till…",
+  "sources.added": "Källan tillagd. Den pollas vid nästa timkörning.",
+
+  "ingest.eyebrow": "Lägg till",
+  "ingest.title": "Lägg till en URL",
+  "ingest.intro":
+    "En enskild video läses in och analyseras direkt. En spellista eller kanal läses in (undertexter hämtas, upp till 25 videor) men analyseras inte automatiskt — kör analysen från flödet efteråt.",
+  "ingest.urlLabel": "URL till video, spellista eller kanal (eller @handle)",
+  "ingest.urlPlaceholder": "https://youtube.com/watch?v=…",
+  "ingest.showTranscript": "Inga undertexter? Klistra in ett transkript i stället",
+  "ingest.hideTranscript": "Avbryt manuellt transkript",
+  "ingest.transcriptLabel": "Transkripttext (kräver en enskild video-URL ovan)",
+  "ingest.transcriptPlaceholder": "Klistra in transkriptet…",
+  "ingest.submit": "Läs in och analysera",
+  "ingest.working": "Arbetar…",
+  "ingest.progress.resolved": "Hittade {description}",
+  "ingest.progress.listed": "Hittade {count} video(r)",
+  "ingest.progress.stored": "Sparade {index}/{total} — {title}",
+  "ingest.progress.captions": "Undertexter {index}/{total} ({outcome}) — {title}",
+  "ingest.failed": "Inläsningen misslyckades.",
+
+  "result.success": "Klart",
+  "result.info": "Obs",
+  "result.error": "Misslyckades",
+
+  "error.eyebrow": "Fel",
+  "error.digest.title": "Flödet kunde inte läsas in",
+  "error.video.title": "Analysen kunde inte läsas in",
+  "error.sources.title": "Källorna kunde inte läsas in",
+  "error.ingest.title": "Sidan kunde inte läsas in",
+  "error.retry": "Försök igen",
+  "error.noMessage": "Inget felmeddelande sparades.",
+
+  "notFound.title": "Sidan hittades inte",
+  "notFound.body": "Det finns ingenting på den här adressen.",
+  "notFound.video.title": "Videon finns inte",
+  "notFound.video.body":
+    "Videon finns inte i arbetsytan. Den kan ha tagits bort, eller så är länken fel.",
+  "notFound.back": "Tillbaka till flödet",
+
+  "login.title": "Logga in",
+  "login.intro": "Den här arbetsytan är privat. Logga in med kontot som seed-skriptet skapade.",
+  "login.email": "E-post",
+  "login.password": "Lösenord",
+  "login.signIn": "Logga in",
+  "login.signingIn": "Loggar in…",
+  "login.signOut": "Logga ut",
+
+  "role.employeeIngestNote":
+    "Du är inloggad som anställd: videor du lägger till sparas, men bara ägaren kan starta en analys.",
+};
+
+export const DICTIONARIES = { en, sv } as const;

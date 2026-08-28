@@ -1,7 +1,32 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { BrandSeed } from "./brands";
 
-const client = new Anthropic();
+/**
+ * One Anthropic client for the whole app — shared by the brand-ideation path
+ * (below) and the YouTube analysis/screening pipelines (src/lib/analysis,
+ * src/lib/screening), which otherwise would each construct their own SDK
+ * client. Lazy so importing this module never requires ANTHROPIC_API_KEY at
+ * build time (route analysis during `next build` loads modules without env).
+ */
+let cachedClient: Anthropic | undefined;
+
+export function anthropicClient(): Anthropic {
+  if (!cachedClient) {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      throw new Error(
+        "Missing ANTHROPIC_API_KEY. Create a key at console.anthropic.com and set it in .env.",
+      );
+    }
+    cachedClient = new Anthropic();
+  }
+  return cachedClient;
+}
+
+const client = new Proxy({} as Anthropic, {
+  get(_target, prop, receiver) {
+    return Reflect.get(anthropicClient(), prop, receiver);
+  },
+});
 
 const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-opus-5";
 

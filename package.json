@@ -1,33 +1,52 @@
 {
   "name": "content-engine",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
-  "description": "Web app for social media research, ideation, and copywriting across multiple brands.",
+  "description": "Web app for social media research, ideation, and copywriting across multiple brands, plus a YouTube research/digest tool.",
   "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
+    "test": "tsx --test \"src/**/*.test.ts\"",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
-    "db:seed": "tsx src/db/seed.ts"
+    "db:seed": "tsx src/db/seed.ts",
+    "db:check": "tsx scripts/check-db.ts",
+    "yt:seed-owner": "tsx scripts/seed-yt-owner.ts",
+    "yt:uploads": "tsx scripts/list-uploads.ts",
+    "yt:ingest": "tsx scripts/ingest.ts",
+    "yt:analyze": "tsx scripts/analyze.ts",
+    "yt:poll": "tsx scripts/poll-sources.ts",
+    "yt:screen": "tsx scripts/screen.ts",
+    "yt:backfill": "tsx scripts/backfill.ts",
+    "yt:spend": "tsx scripts/spend.ts",
+    "yt:probe-captions": "tsx scripts/probe-captions.ts"
   },
   "dependencies": {
-    "next": "^15.1.0",
+    "next": "^15.1.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "drizzle-orm": "^0.36.0",
+    "drizzle-orm": "^0.38.3",
     "@neondatabase/serverless": "^0.10.4",
     "@anthropic-ai/sdk": "^0.121.0",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "bcryptjs": "^3.0.3",
+    "youtubei.js": "^13.4.0",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
-    "drizzle-kit": "^0.28.0",
-    "tsx": "^4.19.0",
-    "typescript": "^5.6.0",
-    "@types/node": "^22.0.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0"
+    "drizzle-kit": "^0.30.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "@tailwindcss/postcss": "^4.0.0",
+    "tailwindcss": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=20.9.0"
   }
 }
