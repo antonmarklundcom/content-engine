@@ -240,6 +240,27 @@ job; PR merged; final closing report to Anton (live URLs, manual-steps list).
 
 ## §8. Open business questions (parked)
 
+- **Move the app's paid model calls from the Anthropic API to Gemini?**
+  Anton's preference, on cost, recorded 2026-08-28. Parked, not decided, and
+  explicitly NOT part of O2/S3/S4 — it is its own phase after the build lands,
+  because it touches money math and every generation path at once. What it
+  actually involves, so the decision is made on facts:
+  - Two paid paths: the YouTube analysis/screening pipeline (Haiku 4.5,
+    ~$0.02/video, uses the Batch API's 50% discount) and `/api/generate`
+    (Opus 5 + up to 8 paid web searches — the expensive one by an order of
+    magnitude).
+  - Portable: `spend_log`, `withSpendCap`, the reservation row, and the
+    per-model rate tables in `src/lib/analysis/pricing.ts`. None of that is
+    Anthropic-specific; only the numbers in it are.
+  - Not portable without work: tool-use/response shapes, the Batch API
+    discount the analysis pipeline is priced around, prompt caching, and the
+    server-side `web_search` tool (Gemini's equivalent is Search grounding,
+    billed differently).
+  - **The cheap lever first:** `ANTHROPIC_MODEL` already switches the
+    ideation call, and `IDEATION_MODEL_RATES` already prices Sonnet 5 and
+    Haiku 4.5. Dropping that one call from Opus to Sonnet cuts its token cost
+    ~60% with no code change at all. Measure a few real runs against the cap
+    before deciding a provider swap is what the bill needs.
 - Pay for audio transcription of IG/FB clips later? (~20x captions-based.)
 - Merge `research_notes` with `topics`/`entities` into one signal table, or
   keep the soft link? (~20 writer call-sites in `/youtube` make this a real
@@ -281,5 +302,8 @@ job; PR merged; final closing report to Anton (live URLs, manual-steps list).
 ## §10. Backlog
 
 - videos→brands join table, if a query ever needs it (§1.3).
+- Provider abstraction for paid calls (one module behind which Anthropic or
+  Gemini sits), if §8's Gemini question is answered yes. Until then: new call
+  sites go through the existing helpers, never their own client.
 - Telegram-bot capture path as an alternative to the PWA share target.
 - Retry/backoff policy for failed clip ingests beyond manual retry.
