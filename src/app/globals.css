@@ -1,16 +1,21 @@
 /*
- * `legacy` declared first (and so lowest-priority) in the cascade layer order,
- * before Tailwind's own `@layer theme, base, components, utilities;` — CSS
- * layer order is set by first appearance, so this holds regardless of source
- * order below. Bare-element rules in `legacy` (button/textarea/h1/etc., for
- * the original "/" and "/brand/[id]" pages) must lose to ANY Tailwind utility
- * class on the ported /youtube/* pages: an *unlayered* rule always beats a
- * layered one no matter its specificity, so without this a plain `button {}`
- * here would override every Tailwind-styled button in /youtube/*, which is
- * exactly what shipped until this was caught (e.g. the locale toggle's
- * inactive-state button rendering identically to its active one).
+ * `legacy` is placed BETWEEN Tailwind's `base` and `components`/`utilities`
+ * layers (CSS layer priority is set by first appearance in the cascade, not
+ * by specificity or source order). It needs both sides of that:
+ *
+ * - Below `components`/`utilities`: legacy's bare-element rules (button/
+ *   textarea/h1/etc., for the original "/" and "/brand/[id]" pages) must lose
+ *   to ANY Tailwind utility class on the ported /youtube/* pages — otherwise
+ *   a plain `button {}` here overrides every Tailwind-styled button there
+ *   (caught via the locale toggle's inactive button rendering identically to
+ *   the active one).
+ * - Above `base`: legacy's page-layout rules (`.topbar`, `.brand-card`, etc.)
+ *   rely on padding/margin/border values that Tailwind's own preflight reset
+ *   (in `base`) zeroes out. Putting legacy below `base` (as a first attempt
+ *   here did) fixed the button issue but broke the original layout instead,
+ *   since preflight's zeroing then won over legacy's own padding/border.
  */
-@layer legacy, theme, base, components, utilities;
+@layer theme, base, legacy, components, utilities;
 @import "tailwindcss";
 
 /* -------------------------------------------------------------------------
@@ -111,8 +116,18 @@ body {
 .top-nav a:hover { color: var(--text); }
 .top-nav a.active { color: var(--text); background: var(--panel); }
 
-h1 { font-size: 22px; margin: 0 0 4px; }
-h2 { font-size: 16px; margin: 0; }
+/*
+ * `:not([data-youtube-section] *)` on every bare-element selector below:
+ * the layer ordering above stops these from beating a Tailwind utility class
+ * that's actually present, but a ported /youtube/* component that never
+ * specifies e.g. a background (relying on Tailwind/preflight leaving it
+ * transparent) has nothing to out-rank these with — so without this scope,
+ * legacy's `button {}` still wins by default on any such element. Scoping
+ * these out of the ported section entirely removes that gap regardless of
+ * what any given ported component does or doesn't specify.
+ */
+h1:not([data-youtube-section] *) { font-size: 22px; margin: 0 0 4px; }
+h2:not([data-youtube-section] *) { font-size: 16px; margin: 0; }
 p.muted, span.muted { color: var(--muted); font-size: 13px; }
 
 .brand-grid {
@@ -134,7 +149,7 @@ p.muted, span.muted { color: var(--muted); font-size: 13px; }
 }
 .brand-card:hover { border-color: var(--accent); }
 
-button {
+button:not([data-youtube-section] *) {
   font: inherit;
   cursor: pointer;
   background: var(--accent);
@@ -144,14 +159,14 @@ button {
   padding: 10px 16px;
   font-weight: 600;
 }
-button:disabled { opacity: 0.5; cursor: default; }
-button.secondary {
+button:disabled:not([data-youtube-section] *) { opacity: 0.5; cursor: default; }
+button.secondary:not([data-youtube-section] *) {
   background: transparent;
   color: var(--text);
   border: 1px solid var(--border);
 }
-button.danger { background: var(--danger); color: #1a0d0d; }
-button.ok { background: var(--ok); color: #06210f; }
+button.danger:not([data-youtube-section] *) { background: var(--danger); color: #1a0d0d; }
+button.ok:not([data-youtube-section] *) { background: var(--ok); color: #06210f; }
 
 .idea-card {
   border: 1px solid var(--border);
@@ -178,7 +193,7 @@ button.ok { background: var(--ok); color: #06210f; }
 .tag.approved { color: var(--ok); border-color: var(--ok); }
 .tag.rejected { color: var(--danger); border-color: var(--danger); }
 
-textarea {
+textarea:not([data-youtube-section] *) {
   width: 100%;
   background: #0e0f13;
   color: var(--text);
