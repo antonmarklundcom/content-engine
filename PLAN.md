@@ -1,158 +1,256 @@
-# PLAN — merging YT + content-engine, and what's next
+# PLAN — content-engine: wire the two halves + clip inbox (phased autonomous build)
 
-This is the plan doc the repo didn't have. It exists because a merge already
-happened (§1) without anyone writing down what it did or didn't connect, and
-because this session made real infra decisions (§2) that weren't recorded
-anywhere either. Read this before starting new work here.
+One Next.js app on Vercel + Neon, two halves: the brand ideation tool
+(`brands`/`research_notes`/`ideas`, `/api/generate`) and the YouTube research
+tool (`/youtube/*`, `sources`→`videos`→`transcripts`→`analyses`→`topics`/
+`entities`). They share a repo, deploy, login, and Anthropic client — and no
+data. This plan wires them together and adds the save-clip inbox, as a
+sequence of autonomous phases: one PR each, all Opus phases first, then all
+Sonnet phases.
 
----
-
-## 0. What this app is, as of today
-
-One Next.js app, one Neon Postgres DB, two halves that don't talk to each
-other yet:
-
-- **The content half** (original scope): pick a brand, hit "Generate ideas",
-  get researched ideas + ready-to-post captions. `brands`, `research_notes`,
-  `ideas`. This is what `README.md` describes.
-- **The YouTube half** (ported in, §1): ingest a channel/video, fetch
-  captions, run a paid Anthropic analysis (summary/takeaways/topics/entities),
-  browse it, listen to it, mark passages. Lives under `/youtube/*`. This is
-  the entire former `yt` repo (Hostinger/MySQL) with its schema converted to
-  Postgres.
-
-They share one repo, one deploy, one login system, and one Anthropic client.
-They do **not** share data — see §3.
+| Phase | Model | Prompt file | Plan sections |
+|---|---|---|---|
+| O1 | Opus | `prompts/opus-1-foundation.md` | §5.O1 |
+| O2 | Opus | `prompts/opus-2-capture-bridge.md` | §5.O2 |
+| S3 | Sonnet | `prompts/sonnet-3-inbox-ui.md` | §6.S3 |
+| S4 | Sonnet | `prompts/sonnet-4-worker-igfb.md` | §6.S4 (conditional — see §1.9) |
 
 ---
 
-## 1. Status — the merge already happened
+## §1. Decisions already made — do not re-litigate
 
-Contrary to what I told you earlier in this conversation: **yes, we already
-combined them.** Commit `13433bf` ("Merge YouTube intelligence workspace into
-content-engine") ported the whole `yt` repo in as `/youtube/*` — schema
-converted MySQL→Postgres, shared login, shared Anthropic client — and a
-follow-up PR (#3, merged) added the caption-fetch resilience layer (health
-tracking + optional proxy) on top, explicitly "before the Vercel move." Both
-are on `main` today.
+1. **Home is Vercel + Neon.** Hostinger's existing Node slot is only a
+   background worker (webhook-triggered from the app, never cron-polling),
+   and only if/when a job needs it. Not a second app.
+2. **No GitHub Actions dependency at runtime.** Actions is CI only
+   (typecheck/build on push). Nothing the app needs to function may require
+   an Actions run.
+3. **Linkage is asymmetric.** `ideas.source_analysis_id` (nullable, →
+   `analyses.id`) is the only new cross-half link. Pointing at the analysis,
+   not the video, records exactly which payload grounded the idea (analyses
+   are append-only/versioned). **No `brand_id` on `videos`/`sources`** —
+   nothing writes it, nothing reads it, and one-to-one contradicts the
+   `relatedBrandIds`-array precedent. If videos→brand is ever needed, it's a
+   join table added then.
+4. **House convention: no FK constraints.** Soft links + drizzle `relations`
+   only (see the comment above `sourcesRelations` in `src/db/schema.ts`).
+   Ingest is idempotent and out-of-order; keep it that way.
+5. **The `brands` DB table becomes the single source of truth.** The
+   hardcoded `BRANDS` constant in `src/lib/brands.ts` is retired; a seed
+   script owns initial rows. `/api/generate` reads the table.
+6. **Capture before processing.** The clips inbox (capture, time-sensitive —
+   unlogged clips are lost forever) ships before/alongside seed-from-video
+   (processing over stored data, which doesn't decay). The inbox lives or
+   dies on phone ergonomics: share-sheet/shortcut capture, not
+   "open the app and paste".
+7. **A clip saved with zero fetched metadata must still be useful**: the
+   save payload includes an optional one-line `note` ("why I saved this").
+   IG/FB metadata fetch is best-effort (Meta gates oEmbed; scraping from
+   datacenter IPs is unreliable) — the URL + note is the guaranteed floor.
+8. **No audio transcription for IG/FB clips in this build** (~20x the cost
+   of a captions-based analysis). Metadata + note only; revisit later (§10).
+9. **The caption probe is a decision gate for S4 only.** O1–S3 do not depend
+   on it. S4 (Hostinger worker) is built only if the probe run from Vercel
+   comes back blocked, or a job genuinely needs the worker.
+10. **Spend goes through one cap.** `/api/generate`'s paid web-search calls
+    join the YouTube half's `spend_log`/`withSpendCap` machinery.
+11. **Model rule:** phases run on Opus or Sonnet exactly as the table says.
+    Fable/Mythos-class models are never used for phases, subagents, or
+    spawned sessions — if one ever seems needed, stop and ask Anton.
 
-What that merge did NOT do, because it wasn't its job:
+## §2. Roles & object model
 
-- **No data linkage.** `brands`/`research_notes`/`ideas` and
-  `sources`/`videos`/`transcripts`/`analyses`/`topics`/`entities` sit in the
-  same database with zero foreign keys between them. "Generate ideas" cannot
-  see anything the YouTube half has ever ingested or analyzed.
-- **No deploy verification.** `README.md` documents Vercel as the deploy
-  target; nothing in this repo confirms it has actually been deployed there,
-  or that the caption probe has been run from Vercel's IP (the reason PR #3
-  exists in the first place — see `docs/CAPTION-FETCH-RESILIENCE.md`).
-- **No save-clip inbox.** Neither half has a "save a link now, deal with it
-  later" surface. See §4.
+Unchanged from what exists: `yt_users` with `owner`/`employee` roles guards
+the whole app (`src/middleware.ts`); owner spends money and deletes. New
+objects this build adds:
 
----
+- **`clips`** — one row per saved link. `id`, `url` (unique), `platform`
+  (`youtube` | `instagram` | `facebook` | `other`, derived from the URL),
+  `note` (nullable text), `title`/`author`/`thumbnail_url` (nullable,
+  best-effort fetched), `status` (`unprocessed` | `ingesting` | `analyzed` |
+  `promoted` | `failed`), `video_id` (nullable soft link once a YouTube clip
+  is ingested), `idea_id` (nullable soft link once promoted), `error`
+  (nullable), `saved_at`. Indexed on `status`, `saved_at`.
+- **`ideas.source_analysis_id`** — nullable integer, soft link to
+  `analyses.id`. Sits beside the existing `researchNoteId` precedent.
+- Identifiers in English; UI copy matches the app's existing conventions.
 
-## 2. Infra decisions made this session (not yet written down anywhere else)
+## §3. Feature scope
 
-- **Home stays Vercel + Neon**, not Hostinger. This is a personal tool, not a
-  product being sold — Vercel's free tier and zero-maintenance deploys win
-  over saving a Hostinger Node.js slot you already have paid for and aren't
-  using elsewhere.
-- **The existing Hostinger slot becomes a background worker**, not a second
-  app. It handles the two things Vercel's serverless functions are a bad fit
-  for: long-running/blocking jobs (execution-time caps) and anything that
-  needs a stable, already-proven-working outbound IP (caption fetching —
-  datacenter IPs, Vercel's included, get blocked by YouTube; the Hostinger
-  box's IP was verified to work). Triggered by a webhook or queue from the
-  Vercel app, not cron-polled by it. **Not built yet.**
-- **No GitHub Actions dependency for anything the app needs to run.** GitHub
-  Actions stays CI-only (typecheck/build/test on push, standard usage). The
-  free tier is 2,000 min/month on private repos, unlimited on public — and
-  these repos are going back to private soon, which reintroduces that cap.
-  Nothing about ingest, analysis, rendering, or the clip inbox may require an
-  Actions run to function.
-- **`CAPTION_PROXY_URL` stays the fallback**, not the default. Run the probe
-  from Vercel first (`npm run yt:probe-captions`, per
-  `docs/CAPTION-FETCH-RESILIENCE.md`); only reach for a proxy or the
-  Hostinger relay if it comes back blocked.
+Dependency-grouped:
 
----
+- **A. Foundation** (O1): brands table as source of truth; `clips` table +
+  `ideas.source_analysis_id` migration; unified spend cap.
+- **B. Capture + bridge** (O2, needs A): token-authed save-clip route;
+  YouTube clips auto-route through existing ingest; "promote" endpoint
+  (marked unit / analysis idea → `ideas` row for a chosen brand); optional
+  seed-from-analysis path in `/api/generate`.
+- **C. Surfaces** (S3, needs B): inbox list view; promote/seed UI; PWA
+  `share_target` + iOS Shortcut capture path.
+- **D. Worker + IG/FB** (S4, needs C; conditional per §1.9): Hostinger
+  webhook worker; best-effort IG/FB metadata fetch (worker-side, since
+  Meta blocks datacenter IPs even harder than YouTube does).
 
-## 3. The real gap: wiring the two halves together
+## §4. Autonomy protocol
 
-The whole point of merging was "share and double tap on the research and
-ideas and data" — that's still undone. Concretely:
+Every phase session works under these rules; each prompt re-states the ones
+it most needs.
 
-- `ideas` generation (`/api/generate`) only calls the Anthropic web-search
-  tool. It has no path to read `analyses.payload` (takeaways/topics/entities)
-  for videos already ingested and paid for under `/youtube`.
-- `research_notes` (shared across brands, tagged by brand) and `topics`/
-  `entities` (shared across YouTube sources) are two independently-built
-  versions of the same idea — "signal worth reusing, tagged by what it's
-  relevant to" — that don't reference each other.
+1. Work until the phase's exit criteria all pass; never ask permission for
+   in-plan work.
+2. One PR per phase: branch `phase/<id>` off latest main; create, watch, and
+   merge the PR when green. A red build is always this session's own work.
+   Never start on top of an unmerged previous phase.
+3. Minor non-blocking issues → `KNOWN-ISSUES.md`, keep building.
+4. Stop and ask ONLY for: a missing credential with no graceful fallback, or
+   a bad-foundation decision (schema shape, auth, money math) where guessing
+   wrong forces a rewrite. Everything else: choose reasonably, record in §9,
+   continue.
+5. Missing env values never block: document in `.env.example`, degrade
+   gracefully.
+6. Every prompt is re-runnable: check what exists on the branch first,
+   continue from the first unmet exit criterion.
+7. Sonnet phases (S3/S4) hard limits: no schema, auth, spend-cap, or
+   ingest/analysis-pipeline changes. Data access only through the query/
+   action layer O1/O2 built. Blocked by the limit → workaround + §10 note.
+8. Model cost guardrail: Opus and Sonnet only, per §1.11. Spawning anything
+   on a Fable/Mythos-class model without Anton's explicit approval is
+   treated like a destructive action.
+9. Phase handoff — only when four gates pass: PR merged green; exit
+   checklist passed; pre-handoff audit done (re-run build/lint/typecheck,
+   adversarially re-read your own merged diff, fix findings); §9 build-log
+   entry committed. Then spawn the next phase as a NEW session via the
+   claude-code-remote `create_session` tool: inherit environment and
+   permission mode (never `plan`), set `model` per the phase table, prompt
+   exactly `Read prompts/<next-file>.md in this repo and execute it.`
+   Fallback without `create_session` (local CLI): same model → continue in
+   this window; model switch → stop and report.
+10. Build log: before merging, append a 5–10 line dated entry to §9 — phase
+    id + PR, what now exists, decisions/deviations, where the next phase
+    should look first. Fresh sessions orient from this file + §9 +
+    `KNOWN-ISSUES.md` only.
 
-**Proposed shape**, to validate before building: add a nullable
-`source_video_id` (→ `videos.id`) on `ideas`, and a `brand_id` (→ `brands.id`,
-nullable) on `videos`/`sources`, so either half can point at the other without
-forcing every row to have both. `/api/generate` gains an optional "seed from
-a video" path that pulls the stored `analyses` payload into the prompt instead
-of (or alongside) fresh web search — cheaper and grounded in something real
-rather than only what search turns up.
+## §5. Opus phases
 
----
+### O1 — Foundation: one source of truth, the migration, one spend cap
 
-## 4. New feature: the save-clip inbox
+1. **Brands reconciliation.** Retire the `BRANDS` constant: `/api/generate`
+   (and anything else importing `src/lib/brands.ts`) reads the `brands`
+   table. Move the constant's data into `src/db/seed.ts` (idempotent
+   upsert). Keep the exported `Brand` type where the prompt-building code
+   needs it.
+2. **Migration** (drizzle-kit, one migration): `clips` table per §2;
+   `ideas.source_analysis_id`. No FK constraints (§1.4); add drizzle
+   `relations` (clip→video, clip→idea, idea→analysis).
+3. **Unified spend.** Route `/api/generate`'s Anthropic call through the
+   same `withSpendCap`/`spend_log` path the YouTube half uses
+   (`src/lib/.../spend.ts`). Its cost lands in the same daily log and
+   respects the same cap.
+4. **Query layer.** Small server-side module (e.g. `src/lib/bridge/`)
+   exposing exactly what later phases need: list clips by status; get an
+   analysis payload + its marked units for a video; list a user's
+   `video_unit_marks` with video context. S3 may only read through this.
 
-The stated problem: clips saved from Instagram/Facebook/YouTube ("oh, a new
-open-source repo, save that") get saved and forgotten. Nothing currently
-catches them.
+Exit: migration applied to Neon; `npm run build` + lint + typecheck green;
+seed script run against dev DB; `/api/generate` works with the constant gone
+and logs spend; PR merged.
 
-**Shape:** a `clips` table (platform, url, saved_at, status, linked video/
-source id once processed) and one route to drop a link into. On save:
+### O2 — Capture + bridge
 
-1. If it's a YouTube URL, route it through the existing `/youtube` ingest
-   path (already does captions + analysis) instead of building a second
-   pipeline.
-2. If it's Instagram/Facebook, there is no caption/transcript to grab the
-   same way — this needs its own fetch step (oEmbed/scrape for metadata at
-   minimum; audio transcription if the point is searchable content, which
-   costs money per §11 of the old `yt` `PLAN.md`'s reasoning on that
-   tradeoff).
-3. Either way, the clip lands in a searchable inbox — status `unprocessed` →
-   `analyzed` → (optionally) `turned into an idea`, linking to `ideas` via
-   §3's `source_video_id` once that exists.
+1. **Save-clip route** `POST /api/clips`: body `{ url, note? }`. Auth:
+   existing session cookie OR `Authorization: Bearer <CLIP_TOKEN>` (new env
+   var, documented in `.env.example`) so share-sheet/Shortcut flows work
+   without a cookie. Dedupe on URL (re-save updates `note`, doesn't
+   duplicate). Derive `platform` from the URL.
+2. **YouTube wiring.** A YouTube clip immediately reuses the existing
+   by-URL ingest path (captions + screening/analysis as configured) —
+   status `ingesting` → `analyzed`, `video_id` set. Never a second
+   pipeline. Non-YouTube: store with metadata floor per §1.7, stay
+   `unprocessed`.
+3. **Promote endpoint.** `POST /api/ideas/promote`: from a
+   `video_unit_mark` or one entry of `analyses.ideas`, plus a `brandId` and
+   format/platform, insert an `ideas` row (status `proposed`,
+   `source_analysis_id` set). One cheap Anthropic call MAY adapt the copy to
+   the brand's voice/language (through the spend cap); no web search.
+4. **Seed-from-analysis in `/api/generate`.** Optional `analysisId` in the
+   body: the stored payload (summary/takeaways/topics) goes into the prompt
+   as grounding, replacing or supplementing web search. Ideas produced this
+   way carry `source_analysis_id`.
 
-This is genuinely new work, not a port — nothing in either original repo did
-"save now, understand later" for non-YouTube platforms. Build it after §3's
-linkage exists, so a saved clip has somewhere to plug into on day one instead
-of sitting in its own dead-end table.
+Exit: build/lint/typecheck green; saving a YouTube URL via Bearer token ends
+`analyzed` with a linked video (verified against dev DB); promote inserts a
+correctly-linked idea; `/api/generate` with `analysisId` produces grounded
+ideas; PR merged.
 
----
+## §6. Sonnet phases
 
-## 5. Suggested build order
+Hard limits per §4.7 apply to both.
 
-| # | Scope | Depends on |
+### S3 — Surfaces: inbox UI + capture ergonomics
+
+1. **Inbox page** (`/inbox` or similar, matching the app's existing UI
+   conventions/styles): clips newest-first, filter by status/platform,
+   showing note + fetched metadata; a clip links to its video page when
+   ingested; inline actions: promote (opens brand/format picker → calls
+   O2's endpoint), dismiss/delete, retry failed.
+2. **Promote/seed touchpoints** in the existing YouTube views: on an
+   analysis page, "promote to idea" on each takeaway/idea/marked unit; on
+   the brand ideas page, "seed from a video" (picker over analyzed videos →
+   `/api/generate` with `analysisId`).
+3. **Capture path**: web app manifest with `share_target` pointing at a
+   thin page that posts to `/api/clips`; plus `docs/CAPTURE.md` with exact
+   steps for an iOS Shortcut hitting the route with the Bearer token.
+4. Quick-add form on the inbox page (paste URL + note) as the fallback.
+
+Exit: build/lint/typecheck green; share-target manifest validates; full
+manual flow works on dev (save → appears in inbox → promote → idea appears
+for the brand); PR merged.
+
+### S4 — Hostinger worker + IG/FB metadata (conditional)
+
+**Gate first:** read §9 for the probe verdict (§7.2). No verdict recorded →
+stop and ask Anton to run it. Verdict PASS and no other job needs the
+worker → skip the worker, build only the IG/FB fetch below Vercel-side,
+note the skip in §9.
+
+1. **Worker** (if gated in): minimal Node service for the existing Hostinger
+   slot (deploy per the `nextjs-deploy-hostinger` skill): one authed webhook
+   endpoint the Vercel app calls with a job (`fetch_captions` | `fetch_clip_
+   metadata`); worker calls back to a Vercel callback route with the result.
+   Shared secret in env both sides. No polling, no queue infra beyond a
+   simple in-process queue.
+2. **IG/FB metadata fetch**: best-effort oEmbed/OpenGraph fetch for
+   title/author/thumbnail on saved IG/FB clips, run worker-side when the
+   worker exists, else Vercel-side. Failure is normal: clip stays useful on
+   URL + note (§1.7); record the failure on the clip row, no retry storms.
+
+Exit: build green both apps; a saved IG clip gains metadata when fetchable
+and degrades cleanly when not; worker (if built) deployed and round-trips a
+job; PR merged; final closing report to Anton (live URLs, manual-steps list).
+
+## §7. Human-inputs checklist
+
+| Input | First needed | Status |
 |---|---|---|
-| 1 | Run the caption probe from Vercel; confirm the deploy is actually live there | none — do this first, it's a decision gate like the old `yt` PLAN.md's A0 |
-| 2 | §3 data linkage: `source_video_id` on `ideas`, `brand_id` on `videos`/`sources`, migration only, no UI yet | 1 |
-| 3 | `/api/generate` "seed from a video" path | 2 |
-| 4 | Hostinger worker: webhook endpoint + the one job that needs it most (caption fetch, if Vercel's probe comes back blocked) | 1 |
-| 5 | `clips` table + save-link route + inbox list view (YouTube links only — reuses existing ingest) | 2 |
-| 6 | IG/FB clip support in the inbox (own fetch step, no transcript by default) | 5 |
+| 1. Confirm the app is actually deployed on Vercel + Neon env vars set | before O1 merge (migration hits Neon) | ☐ |
+| 2. Caption probe verdict from Vercel (`npm run yt:probe-captions` from the deployed env, or ask a session to add a probe route) | S4 gate | ☐ |
+| 3. `CLIP_TOKEN` value set in Vercel env (session generates, Anton stores) | O2 | ☐ |
+| 4. iOS Shortcut created on the phone per `docs/CAPTURE.md` | after S3 | ☐ |
+| 5. Hostinger SSH/panel access for the worker slot | S4, only if gated in | ☐ |
 
-Batches 2–3 and 4 are independent of each other — do 4 only if step 1 shows
-Vercel is actually blocked; otherwise skip it and revisit if/when a job
-genuinely needs the worker.
+## §8. Open business questions (parked)
 
----
+- Pay for audio transcription of IG/FB clips later? (~20x captions-based.)
+- Merge `research_notes` with `topics`/`entities` into one signal table, or
+  keep the soft link? (~20 writer call-sites in `/youtube` make this a real
+  refactor — not this build.)
 
-## 6. Open decisions (yours, not code)
+## §9. Build log & handoff
 
-- Does a saved IG/FB clip get transcribed (cost per §11 of the old `yt`
-  `PLAN.md` — audio transcription is ~20x a captions-based analysis) or does
-  the inbox work off title/caption/metadata only until you decide it's worth
-  paying for more?
-- Should `research_notes` and `topics`/`entities` actually merge into one
-  table, or stay separate with a link? Merging is cleaner long-term but the
-  ~20 `topics`/`entities` writers in `/youtube` and the `research_notes`
-  writer in `/api/generate` would both need updating — not a small find-and-
-  replace.
+*(append-only; every phase adds an entry before merging its PR)*
+
+## §10. Backlog
+
+- videos→brands join table, if a query ever needs it (§1.3).
+- Telegram-bot capture path as an alternative to the PWA share target.
+- Retry/backoff policy for failed clip ingests beyond manual retry.
