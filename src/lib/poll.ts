@@ -36,6 +36,7 @@ import {
   spendStatus,
   type SpendStatus,
 } from "@/lib/spend";
+import { runHealth, type StrategyHealthSnapshot } from "@/lib/youtube/captions";
 import { YouTubeDataClient } from "@/lib/youtube/data-api";
 import { QuotaExhaustedError } from "@/lib/youtube/quota";
 
@@ -116,6 +117,12 @@ export type PollResult = {
   skipped: { reason: PollSkipReason; detail: string; estimatedUsd?: number } | null;
   waited: { batchId: string; finished: boolean; outcome: BatchOutcome | null } | null;
   spend: { before: SpendStatus; after: SpendStatus };
+  /**
+   * Per-strategy caption health for this run. A run where every strategy shows
+   * `retired` is the datacenter-IP diagnosis, visible without reading through
+   * every per-video error — see docs/CAPTION-FETCH-RESILIENCE.md.
+   */
+  captionHealth: StrategyHealthSnapshot[];
 };
 
 export async function pollSources(options: PollOptions = {}): Promise<PollResult> {
@@ -199,6 +206,7 @@ export async function pollSources(options: PollOptions = {}): Promise<PollResult
       abandoned,
       screening,
       spend: { before, after: await spendStatus() },
+      captionHealth: runHealth().snapshot(),
       ...partial,
     };
   };

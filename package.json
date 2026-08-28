@@ -34,7 +34,8 @@
     "dotenv": "^16.4.5",
     "bcryptjs": "^3.0.3",
     "youtubei.js": "^13.4.0",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "undici": "^6.28.0"
   },
   "devDependencies": {
     "drizzle-kit": "^0.30.1",

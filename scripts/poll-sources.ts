@@ -22,6 +22,7 @@ import { closeDb } from "../src/db";
 import { STALE_BATCH_HOURS } from "../src/lib/analysis/batch";
 import { pollSources } from "../src/lib/poll";
 import { formatUsd } from "../src/lib/spend";
+import { summariseHealth } from "../src/lib/youtube/captions";
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
@@ -102,6 +103,18 @@ async function main(): Promise<void> {
       }
     },
   });
+
+  const health = summariseHealth(result.captionHealth);
+  if (health) {
+    console.log(`\nCaption strategies: ${health}`);
+    if (result.captionHealth.every((s) => s.retired)) {
+      console.log(
+        "Every caption strategy was retired this run — nothing reached YouTube.\n" +
+          "Run `npm run yt:probe-captions` from this host and read\n" +
+          "docs/CAPTION-FETCH-RESILIENCE.md before the next poll.",
+      );
+    }
+  }
 
   const { before, after } = result.spend;
   console.log(
