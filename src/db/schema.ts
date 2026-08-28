@@ -84,6 +84,14 @@ export const ideas = pgTable("ideas", {
   visualNotes: text("visual_notes"),
   researchNoteId: integer("research_note_id"), // shared research this was spun from, if any
   /**
+   * The analysis this idea was spun out of, if any (PLAN.md §1.3). Points at
+   * `analyses.id` rather than `videos.id` on purpose: analyses are append-only
+   * and versioned, so the analysis id records exactly which payload — which
+   * model, which prompt version — grounded the idea. Sits beside
+   * `researchNoteId`: an idea has at most one of the two, never both.
+   */
+  sourceAnalysisId: integer("source_analysis_id"),
+  /**
    * Every factual claim the idea rests on (a law, a price, a program name,
    * a statistic), each with the URL(s) it was checked against.
    */
@@ -91,6 +99,72 @@ export const ideas = pgTable("ideas", {
   status: text("status", { enum: IDEA_STATUSES }).notNull().default("proposed"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
+
+// =============================================================================
+// clips — the save-link inbox (PLAN.md §2)
+// =============================================================================
+
+export const CLIP_PLATFORMS = ["youtube", "instagram", "facebook", "other"] as const;
+export type ClipPlatform = (typeof CLIP_PLATFORMS)[number];
+
+export const CLIP_STATUSES = [
+  "unprocessed",
+  "ingesting",
+  "analyzed",
+  "promoted",
+  "failed",
+] as const;
+export type ClipStatus = (typeof CLIP_STATUSES)[number];
+
+/**
+ * One row per link saved from a phone share sheet — the capture half of the
+ * app (PLAN.md §1.6). Capture is time-sensitive in a way processing is not: a
+ * clip scrolled past and not logged is gone, so a row is written the moment a
+ * URL arrives, before anything is known about it.
+ *
+ * `status` is the pipeline's state machine:
+ *   unprocessed — stored, nothing fetched (the resting state for IG/FB)
+ *   ingesting   — a YouTube clip handed to the existing ingest path
+ *   analyzed    — ingest finished; `videoId` points at the video row
+ *   promoted    — turned into an idea; `ideaId` points at it
+ *   failed      — ingest or fetch broke; `error` says how, and a retry is manual
+ */
+export const clips = pgTable(
+  "clips",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    /** The saved link, verbatim. Unique: re-saving updates the note, never duplicates. */
+    url: varchar("url", { length: 1024 }).notNull(),
+    /** Derived from the URL at save time, not asked for — the share sheet sends no fields. */
+    platform: text("platform", { enum: CLIP_PLATFORMS }).notNull().default("other"),
+    /**
+     * "Why I saved this", one line, optional. PLAN.md §1.7: metadata fetching
+     * is best-effort (Meta gates oEmbed, YouTube blocks datacenter IPs), so the
+     * URL plus this note is the guaranteed floor of a clip's usefulness — the
+     * one field that never depends on a network call succeeding.
+     */
+    note: text("note"),
+    /** Best-effort fetched metadata. Null is normal, not an error state. */
+    title: varchar("title", { length: 512 }),
+    author: varchar("author", { length: 255 }),
+    thumbnailUrl: varchar("thumbnail_url", { length: 1024 }),
+    status: text("status", { enum: CLIP_STATUSES }).notNull().default("unprocessed"),
+    /** Soft link to `videos.id`, set once a YouTube clip has been ingested. */
+    videoId: integer("video_id"),
+    /** Soft link to `ideas.id`, set once the clip has been promoted. */
+    ideaId: integer("idea_id"),
+    /** Why the last attempt failed, for the inbox to show next to a retry. */
+    error: varchar("error", { length: 1024 }),
+    savedAt: timestamp("saved_at").notNull().defaultNow(),
+  },
+  (t) => [
+    // Dedupe key: the save route upserts on this rather than checking first.
+    uniqueIndex("clips_url_idx").on(t.url),
+    // The inbox's two queries: filter by status, order newest-first.
+    index("clips_status_idx").on(t.status),
+    index("clips_saved_idx").on(t.savedAt),
+  ],
+);
 
 // =============================================================================
 // YouTube research tool — ported from the standalone "yt" repo, converted
@@ -579,6 +653,27 @@ export const outlinesRelations = relations(outlines, ({ one }) => ({
   analysis: one(analyses, { fields: [outlines.analysisId], references: [analyses.id] }),
 }));
 
+export const clipsRelations = relations(clips, ({ one }) => ({
+  video: one(videos, { fields: [clips.videoId], references: [videos.id] }),
+  idea: one(ideas, { fields: [clips.ideaId], references: [ideas.id] }),
+}));
+
+export const ideasRelations = relations(ideas, ({ one }) => ({
+  brand: one(brands, { fields: [ideas.brandId], references: [brands.id] }),
+  sourceAnalysis: one(analyses, {
+    fields: [ideas.sourceAnalysisId],
+    references: [analyses.id],
+  }),
+  researchNote: one(researchNotes, {
+    fields: [ideas.researchNoteId],
+    references: [researchNotes.id],
+  }),
+}));
+
+export const brandsRelations = relations(brands, ({ many }) => ({
+  ideas: many(ideas),
+}));
+
 export const topicsRelations = relations(topics, ({ many }) => ({
   videoTopics: many(videoTopics),
 }));
@@ -592,6 +687,14 @@ export const videoTopicsRelations = relations(videoTopics, ({ one }) => ({
 // inferred types — import these rather than redeclaring row shapes in the UI
 // ---------------------------------------------------------------------------
 
+export type Brand = typeof brands.$inferSelect;
+export type NewBrand = typeof brands.$inferInsert;
+export type Idea = typeof ideas.$inferSelect;
+export type NewIdea = typeof ideas.$inferInsert;
+export type ResearchNote = typeof researchNotes.$inferSelect;
+export type NewResearchNote = typeof researchNotes.$inferInsert;
+export type Clip = typeof clips.$inferSelect;
+export type NewClip = typeof clips.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Source = typeof sources.$inferSelect;

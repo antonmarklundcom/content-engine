@@ -1,5 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { BrandSeed } from "./brands";
+import type { Brand } from "@/db/schema";
+import {
+  costUsdAtRates,
+  ideationRates,
+  WEB_SEARCH_USD_PER_REQUEST,
+} from "@/lib/analysis/pricing";
+import { recordSpend, withSpendCap } from "@/lib/spend";
 
 /**
  * One Anthropic client for the whole app — shared by the brand-ideation path
@@ -30,6 +36,58 @@ const client = new Proxy({} as Anthropic, {
 
 const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-opus-5";
 
+/**
+ * Ceilings this call is allowed to reach — and, because they are ceilings, the
+ * numbers the spend estimate is built from (PLAN.md §1.10: this path's cost
+ * joins the YouTube half's cap rather than running beside it).
+ */
+const MAX_OUTPUT_TOKENS = 16_000;
+const MAX_WEB_SEARCHES = 8;
+
+/**
+ * What the search results themselves add to the input, per search, as an order
+ * of magnitude. The prompt this route sends is ~2k tokens; everything else in
+ * the input is fetched pages, which is the part that actually varies. Rounded
+ * up on purpose — an over-estimate trips the cap early, which is the safe
+ * direction for a guard (see the same reasoning in lib/spend.ts).
+ */
+const ESTIMATED_TOKENS_PER_SEARCH = 6_000;
+const PROMPT_OVERHEAD_TOKENS = 2_000;
+
+/**
+ * The worst case this call can bill, reserved against the monthly cap before a
+ * request is sent. The reservation is released the moment the call returns;
+ * what is actually billed is recorded from `usage` (see generateContentPlan).
+ */
+export function estimateContentPlanCostUsd(model: string = MODEL): number {
+  const tokens = costUsdAtRates(ideationRates(model), {
+    inputTokens: PROMPT_OVERHEAD_TOKENS + MAX_WEB_SEARCHES * ESTIMATED_TOKENS_PER_SEARCH,
+    outputTokens: MAX_OUTPUT_TOKENS,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+  });
+  return tokens + MAX_WEB_SEARCHES * WEB_SEARCH_USD_PER_REQUEST;
+}
+
+/**
+ * What a finished call actually cost: tokens at the model's rates, plus the
+ * per-search fee for however many searches the model chose to run (a call that
+ * searches nothing pays nothing for search).
+ */
+export function contentPlanCostUsd(response: Anthropic.Message, model: string = MODEL): number {
+  const usage = response.usage;
+  const searches = usage.server_tool_use?.web_search_requests ?? 0;
+  return (
+    costUsdAtRates(ideationRates(model), {
+      inputTokens: usage.input_tokens ?? 0,
+      outputTokens: usage.output_tokens ?? 0,
+      cacheReadTokens: usage.cache_read_input_tokens ?? 0,
+      cacheWriteTokens: usage.cache_creation_input_tokens ?? 0,
+    }) +
+    searches * WEB_SEARCH_USD_PER_REQUEST
+  );
+}
+
 export type GeneratedIdea = {
   title: string;
   angle: string;
@@ -50,6 +108,8 @@ export type GeneratedResearchNote = {
 export type GenerateResult = {
   ideas: GeneratedIdea[];
   researchNotes: GeneratedResearchNote[];
+  /** What this call billed, already written to `spend_log`. */
+  costUsd: number;
 };
 
 const IDEAS_TOOL: Anthropic.Tool = {
@@ -121,8 +181,8 @@ const IDEAS_TOOL: Anthropic.Tool = {
 };
 
 export async function generateContentPlan(
-  brand: BrandSeed,
-  allBrands: BrandSeed[],
+  brand: Brand,
+  allBrands: Brand[],
   existingResearch: { topic: string; summary: string }[],
 ): Promise<GenerateResult> {
   const otherBrandList = allBrands
@@ -142,7 +202,7 @@ export async function generateContentPlan(
 Niche: ${brand.niche}
 Market: ${brand.market}
 Language for copy: ${brand.language}
-Voice: ${brand.voice}
+Voice: ${brand.voice ?? "no voice notes on file — write in a plain, concrete house voice"}
 Platforms: ${brand.platforms.join(", ")}
 
 Other brands in this portfolio (for cross-brand research notes only — do not write ideas for them):
@@ -151,14 +211,30 @@ ${researchContext}
 
 Research current trends/news relevant to this brand's niche and market, then propose 5-10 concrete content ideas with full ready-to-post copy. Call submit_content_plan with the result.`;
 
-  const response = await client.messages.create({
-    model: MODEL,
-    max_tokens: 16000,
-    system,
-    thinking: { type: "adaptive" },
-    tools: [{ type: "web_search_20260209", name: "web_search", max_uses: 8 }, IDEAS_TOOL],
-    tool_choice: { type: "auto" },
-    messages: [{ role: "user", content: userPrompt }],
+  // The whole paid call sits inside the cap: the estimate is held against the
+  // monthly budget before the request goes out, and the real figure is logged
+  // as soon as it comes back — the same shape the analysis pipeline uses, so
+  // both halves of the app share one budget rather than one each (PLAN.md
+  // §1.10). Streaming, because 16k output tokens on a thinking model is well
+  // past the SDK's non-streaming timeout.
+  const { response, costUsd } = await withSpendCap(estimateContentPlanCostUsd(), async () => {
+    const stream = client.messages.stream({
+      model: MODEL,
+      max_tokens: MAX_OUTPUT_TOKENS,
+      system,
+      thinking: { type: "adaptive" },
+      tools: [
+        { type: "web_search_20260209", name: "web_search", max_uses: MAX_WEB_SEARCHES },
+        IDEAS_TOOL,
+      ],
+      tool_choice: { type: "auto" },
+      messages: [{ role: "user", content: userPrompt }],
+    });
+    const message = await stream.finalMessage();
+    // Billed whether or not the response parses below: the tokens were spent.
+    const cost = contentPlanCostUsd(message);
+    await recordSpend(cost);
+    return { response: message, costUsd: cost };
   });
 
   const toolUse = response.content.find(
@@ -173,5 +249,5 @@ Research current trends/news relevant to this brand's niche and market, then pro
   }
 
   const input = toolUse.input as { ideas: GeneratedIdea[]; researchNotes?: GeneratedResearchNote[] };
-  return { ideas: input.ideas, researchNotes: input.researchNotes ?? [] };
+  return { ideas: input.ideas, researchNotes: input.researchNotes ?? [], costUsd };
 }
