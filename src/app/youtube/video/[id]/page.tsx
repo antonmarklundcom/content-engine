@@ -17,8 +17,10 @@ import { translator, type Locale, type TranslationKey } from "@/lib/i18n";
 import type { UnitType } from "@/lib/listen/units";
 import { analysisRowUnits, unitKey } from "@/lib/listen/units";
 import { markedUnitKeys } from "@/lib/marks";
+import { listBrands } from "@/lib/bridge";
 import { AnalyzeButton } from "@/components/AnalyzeButton";
 import { ListenPlayer } from "@/components/ListenPlayer";
+import { PromoteButton } from "@/components/PromoteButton";
 import { UnitMarkButton } from "@/components/UnitMarkButton";
 import { VideoReadControls } from "@/components/VideoReadControls";
 import { CaptionBadge } from "@/components/CaptionBadge";
@@ -128,20 +130,39 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
   const marked = analysis ? await markedUnitKeys(video.id, user.id) : new Set<string>();
   // Every unit's current text, by address — what a star stores as its snapshot.
   const unitText = new Map(units.map((u) => [u.key, u.text]));
+
+  // [S3] The promote touchpoint (PLAN.md §6.S3.2): every starrable unit is also
+  // promotable — "turn this into an idea for a brand" is the same gesture on a
+  // takeaway as it is on a proposed idea. Brands are fetched once, up front,
+  // rather than per-unit.
+  const brands = await listBrands();
+  const brandOptions = brands.map((b) => ({ id: b.id, name: b.name, platforms: b.platforms }));
+
   const star = (unitType: UnitType, unitIndex: number) => {
     const key = unitKey(unitType, unitIndex);
     const text = unitText.get(key);
     // No text means nothing to mark: the section is empty and is not a unit.
     if (text === undefined) return null;
     return (
-      <UnitMarkButton
-        videoId={video.id}
-        unitType={unitType}
-        unitIndex={unitIndex}
-        unitText={text}
-        marked={marked.has(key)}
-        locale={locale}
-      />
+      <div className="flex shrink-0 items-center gap-1">
+        <UnitMarkButton
+          videoId={video.id}
+          unitType={unitType}
+          unitIndex={unitIndex}
+          unitText={text}
+          marked={marked.has(key)}
+          locale={locale}
+        />
+        {brandOptions.length > 0 && (
+          <PromoteButton
+            sources={[
+              { label: text, source: { kind: "unit", videoId: video.id, unitType, unitIndex } },
+            ]}
+            brands={brandOptions}
+            canAdapt={canSpend}
+          />
+        )}
+      </div>
     );
   };
 

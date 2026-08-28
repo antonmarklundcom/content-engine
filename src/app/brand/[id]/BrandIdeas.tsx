@@ -15,11 +15,26 @@ type Idea = {
   createdAt: string;
 };
 
-export default function BrandIdeas({ brandId }: { brandId: string }) {
+export type AnalyzedVideoOption = {
+  analysisId: number;
+  videoId: number;
+  title: string;
+  channelTitle: string | null;
+};
+
+export default function BrandIdeas({
+  brandId,
+  analyzedVideos,
+}: {
+  brandId: string;
+  /** The "seed from a video" picker's list (PLAN.md §6.S3.2) — bridge.listAnalyzedVideos(). */
+  analyzedVideos: AnalyzedVideoOption[];
+}) {
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [analysisId, setAnalysisId] = useState<string>("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -32,14 +47,16 @@ export default function BrandIdeas({ brandId }: { brandId: string }) {
     load();
   }, [load]);
 
-  async function generate() {
+  async function generate(seedAnalysisId?: number) {
     setGenerating(true);
     setError(null);
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ brandId }),
+        body: JSON.stringify(
+          seedAnalysisId === undefined ? { brandId } : { brandId, analysisId: seedAnalysisId },
+        ),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -73,7 +90,7 @@ export default function BrandIdeas({ brandId }: { brandId: string }) {
   return (
     <div>
       <div style={{ margin: "20px 0" }}>
-        <button onClick={generate} disabled={generating}>
+        <button onClick={() => generate()} disabled={generating}>
           {generating ? "Researching + writing…" : "Generate ideas"}
         </button>
         {generating && (
@@ -83,6 +100,34 @@ export default function BrandIdeas({ brandId }: { brandId: string }) {
         )}
         {error && <p style={{ color: "var(--danger)" }}>{error}</p>}
       </div>
+
+      {analyzedVideos.length > 0 && (
+        <div style={{ margin: "20px 0" }}>
+          <p className="muted" style={{ marginBottom: 6 }}>
+            Seed from a video already analysed in the YouTube tool, instead of a fresh web search:
+          </p>
+          <select
+            value={analysisId}
+            onChange={(e) => setAnalysisId(e.target.value)}
+            style={{ marginRight: 8 }}
+          >
+            <option value="">Choose a video…</option>
+            {analyzedVideos.map((v) => (
+              <option key={v.analysisId} value={v.analysisId}>
+                {v.title}
+                {v.channelTitle ? ` — ${v.channelTitle}` : ""}
+              </option>
+            ))}
+          </select>
+          <button
+            className="secondary"
+            onClick={() => generate(Number(analysisId))}
+            disabled={generating || !analysisId}
+          >
+            {generating ? "Researching + writing…" : "Seed from this video"}
+          </button>
+        </div>
+      )}
 
       {loading ? (
         <p className="muted">Loading…</p>

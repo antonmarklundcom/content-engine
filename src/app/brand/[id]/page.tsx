@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getBrand } from "@/lib/bridge";
+import { getBrand, listAnalyzedVideos } from "@/lib/bridge";
 import BrandIdeas from "./BrandIdeas";
 
 // The brand list comes from the `brands` table now (PLAN.md §1.5), so this
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default async function BrandPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const brand = await getBrand(id);
+  const [brand, analyzedVideos] = await Promise.all([getBrand(id), listAnalyzedVideos()]);
   if (!brand) notFound();
 
   return (
@@ -18,7 +18,7 @@ export default async function BrandPage({ params }: { params: Promise<{ id: stri
       <a href="/" className="muted">&larr; All brands</a>
       <h1 style={{ marginTop: 8 }}>{brand.name}</h1>
       <p className="muted">{brand.niche} · {brand.market} · {brand.platforms.join(", ")}</p>
-      <BrandIdeas brandId={brand.id} />
+      <BrandIdeas brandId={brand.id} analyzedVideos={analyzedVideos} />
     </div>
   );
 }

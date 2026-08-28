@@ -20,6 +20,7 @@ export async function Header() {
     { href: "/youtube", label: t("nav.digest") },
     { href: "/youtube/topics", label: t("nav.topics") },
     { href: "/youtube/marks", label: t("nav.marks") },
+    { href: "/inbox", label: t("nav.inbox") },
     { href: "/youtube/sources", label: t("nav.sources") },
     { href: "/youtube/ingest", label: t("nav.ingest") },
   ];
