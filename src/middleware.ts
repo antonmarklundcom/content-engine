@@ -36,7 +36,12 @@ export const config = {
    *   /api/cron/*     — the hourly poll cron authenticates with its own
    *                     shared secret header (PR-14); it has no cookie and
    *                     never will
+   *   /api/clips      — the capture endpoint (PLAN.md §5.O2.1). A phone share
+   *                     sheet or iOS Shortcut sends a Bearer token and no
+   *                     cookie; redirecting it to the login page would look
+   *                     like a 200 to the Shortcut and silently lose the clip.
+   *                     The route authenticates itself — cookie OR token.
    *   /_next, favicon — static assets, which never carry a session
    */
-  matcher: ["/((?!youtube/login|api/cron|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!youtube/login|api/cron|api/clips|_next/static|_next/image|favicon.ico).*)"],
 };

@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { analyses, videos, videoUnitMarks, type Analysis, type Video } from "@/db/schema";
 import { latestAnalysisForVideo } from "@/lib/analysis/latest";
@@ -35,17 +35,26 @@ export type AnalysisBundle = {
  */
 export async function analysisBundleForVideo(
   videoId: number,
-  userId: number,
+  /**
+   * Whose marks to tag. Optional: a caller that only wants the material —
+   * the promote endpoint resolving what a unit says — has no user in hand and
+   * should not have to invent one. Omitted means every unit reads `marked:
+   * false`, which is true of "nobody in particular".
+   */
+  userId?: number,
 ): Promise<AnalysisBundle | null> {
   const videoRows = await db.select().from(videos).where(eq(videos.id, videoId)).limit(1);
   const video = videoRows[0];
   if (!video) return null;
 
   const analysis = await latestAnalysisForVideo(videoId);
-  const markRows = await db
-    .select({ unitType: videoUnitMarks.unitType, unitIndex: videoUnitMarks.unitIndex })
-    .from(videoUnitMarks)
-    .where(and(eq(videoUnitMarks.videoId, videoId), eq(videoUnitMarks.userId, userId)));
+  const markRows =
+    userId === undefined
+      ? []
+      : await db
+          .select({ unitType: videoUnitMarks.unitType, unitIndex: videoUnitMarks.unitIndex })
+          .from(videoUnitMarks)
+          .where(and(eq(videoUnitMarks.videoId, videoId), eq(videoUnitMarks.userId, userId)));
   const marked = new Set(markRows.map((row) => unitKey(row.unitType, row.unitIndex)));
 
   return {
@@ -53,6 +62,34 @@ export async function analysisBundleForVideo(
     analysis,
     units: analysisRowUnits(analysis).map((unit) => ({ ...unit, marked: marked.has(unit.key) })),
   };
+}
+
+/**
+ * Videos with an analysis worth seeding from, newest analysis first — the
+ * "seed from a video" picker's list (§6.S3.2). Only `ok` analyses: a failed
+ * row has no payload to ground anything in.
+ */
+export async function listAnalyzedVideos(
+  limit = 100,
+): Promise<{ analysisId: number; videoId: number; title: string; channelTitle: string | null; analyzedAt: Date }[]> {
+  const rows = await db
+    .select({
+      analysisId: analyses.id,
+      videoId: videos.id,
+      title: videos.title,
+      channelTitle: videos.channelTitle,
+      analyzedAt: analyses.createdAt,
+    })
+    .from(analyses)
+    .innerJoin(videos, eq(videos.id, analyses.videoId))
+    .where(eq(analyses.status, "ok"))
+    .orderBy(desc(analyses.id))
+    .limit(limit);
+
+  // One entry per video: analyses are append-only, so a re-analysed video would
+  // otherwise appear once per run — and the newest is the one to seed from.
+  const seen = new Set<number>();
+  return rows.filter((row) => (seen.has(row.videoId) ? false : (seen.add(row.videoId), true)));
 }
 
 /** One analysis row by id — what `/api/generate`'s `analysisId` grounding reads. */

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db, schema } from "@/db";
 import { generateContentPlan } from "@/lib/anthropic";
-import { getBrand, listBrands } from "@/lib/bridge";
+import { getAnalysisWithVideo, getBrand, listBrands } from "@/lib/bridge";
 import { SpendCapExceededError } from "@/lib/spend";
 
 export const maxDuration = 300; // research + generation can take a couple minutes
@@ -21,6 +21,30 @@ export async function POST(request: Request) {
   }
   const allBrands = await listBrands();
 
+  // Optional grounding: generate from a video this portfolio already analysed
+  // rather than from a cold web search (PLAN.md §5.O2.4). Ideas produced this
+  // way carry `source_analysis_id`, so where they came from survives.
+  const analysisId = body.analysisId === undefined ? null : Number(body.analysisId);
+  if (analysisId !== null && (!Number.isInteger(analysisId) || analysisId <= 0)) {
+    return NextResponse.json({ error: "analysisId must be an analysis id" }, { status: 400 });
+  }
+
+  let grounding = null;
+  if (analysisId !== null) {
+    const found = await getAnalysisWithVideo(analysisId);
+    if (!found) {
+      return NextResponse.json({ error: `unknown analysisId ${analysisId}` }, { status: 404 });
+    }
+    grounding = {
+      videoTitle: found.video?.title ?? "an analysed video",
+      channelTitle: found.video?.channelTitle,
+      summary: found.analysis.summary,
+      takeaways: found.analysis.takeaways,
+      topics: found.analysis.topics,
+      ideas: found.analysis.ideas,
+    };
+  }
+
   // Existing research relevant to this brand — check before asking Claude to
   // research from scratch.
   const allNotes = await db.select().from(schema.researchNotes);
@@ -30,7 +54,7 @@ export async function POST(request: Request) {
 
   let plan;
   try {
-    plan = await generateContentPlan(brand, allBrands, existingResearch);
+    plan = await generateContentPlan(brand, allBrands, existingResearch, grounding);
   } catch (error) {
     // The one failure worth its own status code: nothing was spent, nothing is
     // broken, and the caller's next move is to raise the cap or wait — which a
@@ -74,6 +98,7 @@ export async function POST(request: Request) {
         visualNotes: idea.visualNotes,
         citations: idea.citations,
         researchNoteId: insertedNoteIds[0], // best-effort link to this run's research, if any
+        sourceAnalysisId: analysisId,
         status: "proposed" as const,
       })),
     )
