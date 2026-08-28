@@ -70,11 +70,12 @@ export function estimateContentPlanCostUsd(model: string = MODEL): number {
 }
 
 /**
- * What a finished call actually cost: tokens at the model's rates, plus the
- * per-search fee for however many searches the model chose to run (a call that
- * searches nothing pays nothing for search).
+ * What a finished call actually cost: tokens at the given model's rates, plus
+ * the per-search fee for however many searches it chose to run (a call with no
+ * search tool pays nothing for search, which is why the promote call shares
+ * this function rather than having its own).
  */
-export function contentPlanCostUsd(response: Anthropic.Message, model: string = MODEL): number {
+export function messageCostUsd(response: Anthropic.Message, model: string = MODEL): number {
   const usage = response.usage;
   const searches = usage.server_tool_use?.web_search_requests ?? 0;
   return (
@@ -103,6 +104,23 @@ export type GeneratedResearchNote = {
   summary: string;
   sources: string[];
   relatedBrandIds: string[];
+};
+
+/**
+ * A stored analysis used as grounding for a generation run (PLAN.md §5.O2.4).
+ *
+ * The corpus the YouTube half has already paid to read is better evidence than
+ * a fresh web search for "what is happening in this niche" — it is what Anton
+ * actually watched. Passed as context, not as instructions: the system prompt's
+ * verification rule still applies to anything checkable inside it.
+ */
+export type AnalysisGrounding = {
+  videoTitle: string;
+  channelTitle?: string | null;
+  summary?: string | null;
+  takeaways?: string[] | null;
+  topics?: string[] | null;
+  ideas?: { title?: string; premise?: string; why_now?: string }[] | null;
 };
 
 export type GenerateResult = {
@@ -184,6 +202,7 @@ export async function generateContentPlan(
   brand: Brand,
   allBrands: Brand[],
   existingResearch: { topic: string; summary: string }[],
+  grounding?: AnalysisGrounding | null,
 ): Promise<GenerateResult> {
   const otherBrandList = allBrands
     .filter((b) => b.id !== brand.id)
@@ -194,6 +213,22 @@ export async function generateContentPlan(
     ? `\n\nExisting shared research already on file that may be relevant — reuse it instead of re-researching if it fits:\n${existingResearch
         .map((r) => `- ${r.topic}: ${r.summary}`)
         .join("\n")}`
+    : "";
+
+  const groundingContext = grounding
+    ? `\n\nGROUNDING — a video from this portfolio's own research corpus, already analysed. Build the ideas from THIS material first; use web search only to verify facts in it or to fill a gap it leaves.
+Video: ${grounding.videoTitle}${grounding.channelTitle ? ` (${grounding.channelTitle})` : ""}
+${grounding.summary ? `Summary: ${grounding.summary}\n` : ""}${
+        grounding.takeaways?.length
+          ? `Takeaways:\n${grounding.takeaways.map((t) => `- ${t}`).join("\n")}\n`
+          : ""
+      }${grounding.topics?.length ? `Topics: ${grounding.topics.join(", ")}\n` : ""}${
+        grounding.ideas?.length
+          ? `Ideas the analysis already proposed (adapt for THIS brand, do not copy):\n${grounding.ideas
+              .map((i) => `- ${[i.title, i.premise, i.why_now].filter(Boolean).join(" — ")}`)
+              .join("\n")}\n`
+          : ""
+      }`
     : "";
 
   const system = `You are a social media researcher and copywriter for a portfolio of small businesses in Paraguay and abroad. Your job for each brand is to: (1) research current, real, relevant trends/news/topics for its niche and market using web search, (2) turn that research into concrete content ideas, and (3) write full, ready-to-post captions for each idea — not placeholders. Copy must be in the brand's own language and voice. Never invent facts, prices, laws, or statistics — verify anything checkable with at least 2 independent web sources and attach them as citations. If you can't verify a claim, drop it or write around it instead of guessing. If research surfaces something relevant to OTHER brands in the portfolio too, report it as a shared research note so it isn't re-researched per brand.`;
@@ -207,7 +242,7 @@ Platforms: ${brand.platforms.join(", ")}
 
 Other brands in this portfolio (for cross-brand research notes only — do not write ideas for them):
 ${otherBrandList}
-${researchContext}
+${researchContext}${groundingContext}
 
 Research current trends/news relevant to this brand's niche and market, then propose 5-10 concrete content ideas with full ready-to-post copy. Call submit_content_plan with the result.`;
 
@@ -232,7 +267,7 @@ Research current trends/news relevant to this brand's niche and market, then pro
     });
     const message = await stream.finalMessage();
     // Billed whether or not the response parses below: the tokens were spent.
-    const cost = contentPlanCostUsd(message);
+    const cost = messageCostUsd(message);
     await recordSpend(cost);
     return { response: message, costUsd: cost };
   });
@@ -250,4 +285,125 @@ Research current trends/news relevant to this brand's niche and market, then pro
 
   const input = toolUse.input as { ideas: GeneratedIdea[]; researchNotes?: GeneratedResearchNote[] };
   return { ideas: input.ideas, researchNotes: input.researchNotes ?? [], costUsd };
+}
+
+// ---------------------------------------------------------------------------
+// promote — adapting one unit of an analysis into a brand's voice
+// ---------------------------------------------------------------------------
+
+/**
+ * The cheap model. Promoting rewrites one paragraph in a known voice from
+ * material that is already on file — no research, no judgement about what is
+ * true, nothing the analysis pipeline's own default model cannot do (PLAN.md
+ * §5.O2.3 calls for "one cheap call"). Overridable for the same reason
+ * ANTHROPIC_MODEL is.
+ */
+const PROMOTE_MODEL = process.env.ANTHROPIC_PROMOTE_MODEL ?? "claude-haiku-4-5";
+
+/** Enough for a caption with hashtags, not enough for an essay. */
+const PROMOTE_MAX_TOKENS = 2_000;
+const PROMOTE_PROMPT_OVERHEAD_TOKENS = 1_500;
+
+export type AdaptedIdea = {
+  title: string;
+  angle: string;
+  draftCopy: string;
+  visualNotes?: string;
+};
+
+export type AdaptIdeaInput = {
+  /** What was marked or proposed, as it reads in the analysis. */
+  sourceText: string;
+  /** Where it came from, for the angle line. */
+  videoTitle: string;
+  format: string;
+  platform: string;
+};
+
+const ADAPT_TOOL: Anthropic.Tool = {
+  name: "submit_adapted_idea",
+  description: "Submit the source material rewritten as a post for this brand.",
+  input_schema: {
+    type: "object",
+    properties: {
+      title: { type: "string", description: "Short internal name for the idea." },
+      angle: {
+        type: "string",
+        description: "Why this works for THIS brand's audience, one or two sentences.",
+      },
+      draftCopy: {
+        type: "string",
+        description:
+          "The FULL ready-to-post caption in the brand's language and voice: hook line, body, call-to-action, hashtags. Actual publishable text, not a summary.",
+      },
+      visualNotes: {
+        type: "string",
+        description: "Optional: what the photo/video should show.",
+      },
+    },
+    required: ["title", "angle", "draftCopy"],
+  },
+};
+
+export function estimateAdaptCostUsd(model: string = PROMOTE_MODEL): number {
+  return costUsdAtRates(ideationRates(model), {
+    inputTokens: PROMOTE_PROMPT_OVERHEAD_TOKENS,
+    outputTokens: PROMOTE_MAX_TOKENS,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+  });
+}
+
+/**
+ * Rewrite one piece of an analysis as a post for a brand — the paid half of
+ * the promote endpoint, and optional per request: promoting verbatim must
+ * work at zero cost (§5.O2.3).
+ *
+ * No web search on purpose. The source material is already on file and already
+ * paid for; searching here would turn a $0.001 call into a $0.10 one and
+ * re-open the verification question the analysis already answered.
+ */
+export async function adaptIdeaToBrand(
+  brand: Brand,
+  input: AdaptIdeaInput,
+): Promise<{ idea: AdaptedIdea; costUsd: number }> {
+  const system = `You adapt research findings into ready-to-post social copy for one specific brand. Write in the brand's language and voice. Never invent facts, prices, laws or statistics that are not in the source material — if the source does not support a claim, write around it. Return the result by calling submit_adapted_idea.`;
+
+  const userPrompt = `Brand: ${brand.name} (${brand.niche})
+Market: ${brand.market}
+Language for copy: ${brand.language}
+Voice: ${brand.voice ?? "plain, concrete, no hype"}
+Format: ${input.format}
+Platform: ${input.platform}
+
+Source material, from an analysis of "${input.videoTitle}":
+${input.sourceText}
+
+Adapt it into one post for this brand.`;
+
+  return withSpendCap(estimateAdaptCostUsd(), async () => {
+    const response = await client.messages.create({
+      model: PROMOTE_MODEL,
+      max_tokens: PROMOTE_MAX_TOKENS,
+      system,
+      tools: [ADAPT_TOOL],
+      tool_choice: { type: "tool", name: "submit_adapted_idea" },
+      messages: [{ role: "user", content: userPrompt }],
+    });
+
+    const costUsd = messageCostUsd(response, PROMOTE_MODEL);
+    await recordSpend(costUsd);
+
+    const toolUse = response.content.find(
+      (block): block is Anthropic.ToolUseBlock =>
+        block.type === "tool_use" && block.name === "submit_adapted_idea",
+    );
+    if (!toolUse) {
+      throw new Error(
+        `The model returned no adapted idea (stop_reason: ${response.stop_reason}).`,
+      );
+    }
+
+    return { idea: toolUse.input as AdaptedIdea, costUsd };
+  });
 }

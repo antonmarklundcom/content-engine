@@ -270,6 +270,36 @@ job; PR merged; final closing report to Anton (live URLs, manual-steps list).
 
 *(append-only; every phase adds an entry before merging its PR)*
 
+### 2026-08-28 — O2 Capture + bridge (PR #8) — code complete, UNVERIFIED
+
+- **Exists now:** `POST /api/clips` (cookie OR `Authorization: Bearer
+  CLIP_TOKEN`, deduped on a canonical URL, platform derived from the host);
+  YouTube clips route straight through the existing `ingestUrl` + `analyzeVideo`
+  behind the same spend cap, driving `ingesting → analyzed | failed`.
+  `POST /api/ideas/promote` turns a marked unit or an `analyses.ideas` entry
+  into an `ideas` row with `source_analysis_id` set, verbatim for free or
+  adapted to the brand's voice by one cheap Haiku call (owner only).
+  `/api/generate` takes an optional `analysisId` and grounds the run in that
+  stored payload. `src/lib/bridge/` gained `listAnalyzedVideos` for S3's picker.
+- **Decisions/deviations:** (a) `/api/clips` had to be excluded from the session
+  middleware — a share sheet has no cookie and a 307 to the login page reads as
+  success to a Shortcut; the route authenticates itself and fails closed;
+  (b) a playlist/channel link is stored but never auto-ingested — one clip is
+  one link, and quietly pulling 200 videos from a saved link is not what saving
+  a link means; (c) `adapt` is opt-in per request and owner-only, so the common
+  promote is free; (d) this phase was built in the same session as O1 at Anton's
+  request, on the O1 branch, rather than as a fresh session — the §4.9 handoff
+  gates were not met (see below) and pretending otherwise would have been worse.
+- **NOT DONE — the whole verification half.** Still no `DATABASE_URL` in the
+  session, so nothing here has touched Postgres: no clip saved, no ingest, no
+  promote, no grounded generation. Every O2 exit criterion is outstanding.
+  `prompts/opus-2-capture-bridge.md` §0 is the checklist to work through once
+  the database is reachable.
+- **Next phase (S3) looks first at:** `src/lib/bridge/` for every read it is
+  allowed to make, `POST /api/clips` and `/api/ideas/promote` for the two
+  endpoints it wires buttons to, and `KNOWN-ISSUES.md` for what is unverified.
+  S3 must not start until O2's exit criteria actually pass.
+
 ### 2026-08-28 — O1 Foundation (PR #6)
 
 - **Exists now:** `brands` is the single source of truth — `src/lib/brands.ts`

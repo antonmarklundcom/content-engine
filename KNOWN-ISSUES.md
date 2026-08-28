@@ -3,6 +3,34 @@
 Minor, non-blocking findings recorded per PLAN.md §4.3 — things a later phase
 should know about but that were not worth stopping a build for.
 
+## O2 — Capture + bridge
+
+- **Nothing in O2 has been run against a database.** Same missing
+  `DATABASE_URL` as O1 (below). The code typechecks, builds and passes its unit
+  tests, but no clip has been saved, no video ingested through `/api/clips`, no
+  idea promoted, and no grounded generation run. Every O2 exit criterion is
+  waiting on the two commands in the O1 entry. Treat the routes as unverified
+  until someone runs them.
+
+- **A clip can get stuck in `ingesting`.** `processYouTubeClip` sets that
+  status, then does the work in the same request. If the request dies mid-way
+  (a Vercel timeout on a very long video, a redeploy), the row keeps a status
+  nothing will clear on its own. Re-saving the same URL re-runs the pipeline,
+  which is the manual retry — S3's inbox should expose that as a retry button.
+  A reaper for rows stuck in `ingesting` is not worth building until one
+  actually sticks.
+
+- **`/api/clips` is excluded from the session middleware.** It has to be — a
+  share sheet sends no cookie and would get a 307 to the login page, which a
+  Shortcut reports as success. The route authenticates itself (cookie OR
+  Bearer) and fails closed on both paths, but it is now the second route whose
+  auth is its own (the first is `/api/cron/poll`). Worth re-reading whenever
+  either is touched.
+
+- **Non-YouTube clips are stored and left alone.** No metadata fetch for
+  Instagram/Facebook yet — that is S4's job, and §1.7 is the reason it is safe
+  to defer: URL + note is the floor.
+
 ## O1 — Foundation
 
 - **The migration and seed have not been run against the Neon dev DB by a
