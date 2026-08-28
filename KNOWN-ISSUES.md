@@ -3,6 +3,44 @@
 Minor, non-blocking findings recorded per PLAN.md §4.3 — things a later phase
 should know about but that were not worth stopping a build for.
 
+## S3 — Inbox UI + capture ergonomics
+
+- **Still no `DATABASE_URL` in the build session — the whole live flow is
+  unverified.** Same constraint as O1/O2 (below): `npm run build`, `npm run
+  typecheck` and `npm run test` (177 tests) are all green, but no clip has
+  actually been saved through `/inbox`'s quick-add form or the simulated
+  `/share` POST, no promote button has actually been clicked against a real
+  analysis, and no seed-from-video run has actually happened. This session
+  also confirmed a local Postgres cannot stand in for Neon here:
+  `src/db/index.ts` uses `@neondatabase/serverless`'s `neon()` HTTP driver,
+  which speaks Neon's HTTP proxy protocol, not the Postgres wire protocol a
+  local `postgresql-16` install answers — changing that is a foundation-layer
+  decision (§4.7), not something this phase should do to get a local test rig.
+  Whoever runs the two commands from the O1 entry should also click through
+  `/inbox` once against the real dev DB.
+- **Promote buttons only ever offer `analysis-idea` sources on the inbox
+  page**, one per entry in `analyses.ideas`. The analysis page's promote
+  buttons (next to every star) cover `unit` sources for summary/takeaways/
+  hook/timeline/gaps/ideas — the inbox intentionally doesn't duplicate that
+  full picker per clip; "promote one of this video's proposed ideas" is the
+  common case a saved link is for. Promoting a specific starred takeaway
+  from a clip still works — from the video page's own promote button, one
+  click away via "Open analysis".
+- **The `/share` page's URL/note guess is heuristic** (first `https?://…`
+  substring in `url`, then `text`, then `title`; the note is whatever text is
+  left over). Different apps hand the share target wildly different payloads
+  — this is editable before saving specifically because the guess sometimes
+  needs a correction, not because it usually will.
+- **Retry is YouTube-only and owner-only.** A stuck/failed Instagram or
+  Facebook clip has nothing to retry (§1.8 — no fetch pipeline exists yet for
+  them); re-pasting the same URL through quick-add is the workaround until
+  S4. Dismiss is also owner-only, matching the spend/destroy boundary
+  `src/lib/auth/roles.ts` already draws for `removeSource`.
+- **`share_target`'s manifest field isn't in Next's `MetadataRoute.Manifest`
+  type** (`src/app/manifest.ts`) — cast around it rather than widen the type,
+  since it's a real, broadly-supported manifest field the type just hasn't
+  caught up to yet.
+
 ## O2 — Capture + bridge
 
 - **Nothing in O2 has been run against a database.** Same missing

@@ -270,6 +270,56 @@ job; PR merged; final closing report to Anton (live URLs, manual-steps list).
 
 *(append-only; every phase adds an entry before merging its PR)*
 
+### 2026-08-28 — S3 Inbox UI + capture ergonomics (PR #9) — code complete, UNVERIFIED
+
+- **Exists now:** `/inbox` — filterable (status/platform), paginated clip
+  list matching `/youtube/marks`'s layout, with a quick-add form (paste URL +
+  note → `POST /api/clips`, same route the share sheet and the Shortcut use),
+  a status-counts line, retry (YouTube, owner, failed clips only) and dismiss
+  (owner, deletes the inbox row, leaves any linked video/idea alone) actions,
+  and a promote button per analysed clip offering each idea in that video's
+  latest analysis. `PromoteButton` (`src/components/PromoteButton.tsx`) is
+  the one promote UI, reused on `/youtube/video/[id]` next to every star
+  (summary/takeaways/hook/timeline/gaps/ideas — unit-kind sources) and on the
+  inbox (analysis-idea-kind sources); both call `POST /api/ideas/promote`.
+  `/brand/[id]` gained a "seed from a video" picker over
+  `bridge.listAnalyzedVideos()` that calls `/api/generate` with `analysisId`.
+  Capture: `src/app/manifest.ts` (GET `share_target` → `/share`) and
+  `/share`, a thin page that best-guesses the shared URL/note and posts to
+  `/api/clips`; `docs/CAPTURE.md` covers both the PWA share-sheet path and
+  the iOS Shortcut/Bearer-token path in full, copy-pasteable detail.
+- **Decisions/deviations:** (a) promote reads went through
+  `bridge.analysisBundleForVideo` (already exported for exactly this) rather
+  than adding a new bridge function — the inbox calls it once per analysed
+  clip on the page (bounded by `CLIPS_PAGE_SIZE`, an internal single-user
+  tool); (b) dismiss and retry are new writes straight to `clips` /
+  `processYouTubeClip` in `src/lib/clips.actions.ts`, not new O2 endpoints —
+  the same pattern `sources.actions.ts`'s `removeSource` already uses for
+  `sources`, and §4.7 restricts S3 from schema/ingest/pipeline changes, not
+  from a small owner-gated row delete or from calling O2's own exported
+  `processYouTubeClip` again; (c) GET `share_target` (not POST) — POST needs
+  a service worker to read the multipart body, which nothing else in this app
+  uses, so GET's query-param form (parsed server-side on `/share`) was the
+  one thin page could handle with no new infra; (d) checked whether a local
+  Postgres could stand in for the missing Neon `DATABASE_URL` (postgresql-16
+  is installed in this session) — it can't without changing
+  `src/db/index.ts`'s Neon-HTTP driver, which is a foundation-layer decision
+  this phase should not make just to get a local test rig, so verification
+  stayed blocked on the same missing credential as O1/O2 (see KNOWN-ISSUES.md).
+- **NOT DONE — the whole verification half**, same reason as O1/O2: no
+  `DATABASE_URL` in the build session. `npm run build` + `typecheck` + `test`
+  (177 tests) are green; no clip has actually been saved, promoted, or
+  seeded through the real UI. §0 checklist for whoever has DB access: run the
+  two O1 commands, then click through `/inbox` — quick-add a URL, promote an
+  analysed clip's idea, confirm it lands on the brand's page; hit `/share?
+  url=https://youtube.com/watch?v=...` directly to simulate a share-sheet
+  POST.
+- **Next phase (S4, conditional) looks first at:** §1.9's gate — the caption
+  probe from Vercel has not been run (§7 item 2 still ☐), so S4 cannot start
+  until that verdict is recorded. `PromoteButton` and `ClipRow` are the
+  components to extend if IG/FB metadata fetch changes what an inbox row
+  shows.
+
 ### 2026-08-28 — O2 Capture + bridge (PR #8) — code complete, UNVERIFIED
 
 - **Exists now:** `POST /api/clips` (cookie OR `Authorization: Bearer
