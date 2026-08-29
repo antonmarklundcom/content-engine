@@ -35,12 +35,20 @@ export function geminiClient(): GoogleGenAI {
 }
 
 /**
- * The Pro seat — the model that has to research, verify and write publishable
- * copy in the brand's own language. Overridable, and the rates for anything it
- * can be set to live in IDEATION_MODEL_RATES (an unlisted model bills at the
- * most expensive rate on file, so the cap over-counts rather than under-counts).
+ * The ideation seat — the model that has to research, verify and write
+ * publishable copy in the brand's own language.
+ *
+ * Flash, not Pro (Anton's call, 2026-08-29): the Pro tier is currently
+ * preview-only, and the work here is grounded writing rather than hard
+ * reasoning, which Flash does at roughly a third of Pro's output rate. The
+ * research quality is carried by Search grounding, not by the model's own
+ * recall, so the tier buys less here than it would elsewhere.
+ *
+ * Overridable, and the rates for anything it can be set to live in
+ * IDEATION_MODEL_RATES (an unlisted model bills at the most expensive rate on
+ * file — still the Pro row — so the cap over-counts rather than under-counts).
  */
-const MODEL = process.env.GEMINI_MODEL ?? "gemini-3.1-pro-preview";
+const MODEL = process.env.GEMINI_MODEL ?? "gemini-3.7-flash";
 
 /**
  * Ceilings this call is allowed to reach — and, because they are ceilings, the

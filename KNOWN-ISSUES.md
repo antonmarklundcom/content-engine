@@ -43,12 +43,23 @@ should know about but that were not worth stopping a build for.
   should therefore be 0 on every call. If it ever isn't, the stored cost runs
   high rather than low.
 
-- **Ideation runs on a preview model.** `gemini-3.1-pro-preview` is the only Pro
-  tier on Google's current pricing page, so it took the seat Opus 5 held.
-  Preview models get retired; `GEMINI_MODEL` is the escape hatch, and
-  `IDEATION_MODEL_RATES` needs a row for whatever replaces it (an unlisted model
-  bills at the Pro rate, so the cap over-counts rather than under-counts in the
-  meantime).
+- **Ideation runs on Flash, and is billed at next year's rate.** Anton's call:
+  `gemini-3.7-flash` holds the seat Opus 5 held, not the Pro tier — Pro is
+  preview-only right now, and grounded writing leans on Search rather than on
+  the model's own reasoning. The rate table prices 3.7 Flash at its standard
+  $1.50/$7.50 rather than the $0.75/$3.75 introductory rate that runs through
+  2026-12-31, so **until New Year `spend_log` will read roughly double what
+  Google actually invoices for ideation**. That is the deliberate direction (the
+  cap trips early rather than late) but it is now on the app's main cost path,
+  not a footnote — worth remembering before raising `MONTHLY_SPEND_CAP_USD` in
+  response to a figure that is not the real bill.
+
+- **The Pro row stays in `IDEATION_MODEL_RATES` even though nothing defaults to
+  it.** It is the ceiling `ideationRates()` falls back to for an unrecognised
+  `GEMINI_MODEL`. Removing it would quietly make Flash the most expensive rate
+  on file, and an unknown model that turned out to be Pro-class would then
+  under-report. Any model added to that table must not exceed the Pro row
+  without the fallback being updated too.
 
 - **Reasoning is set to MINIMAL across the analysis/screening/outline paths.**
   Gemini counts reasoning tokens against `maxOutputTokens` as well as billing

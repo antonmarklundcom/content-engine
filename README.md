@@ -9,9 +9,9 @@ No media generation, no scheduling, no posting integration.
 
 - **Next.js** (App Router) — UI + API routes, deployable to Vercel
 - **Neon Postgres** — via `drizzle-orm`
-- **Gemini API** (`gemini-3.1-pro-preview` by default) — does the actual
-  research (Grounding with Google Search) and writes the ideas + captions,
-  called server-side from `/api/generate`
+- **Gemini API** (`gemini-3.7-flash` by default) — does the actual research
+  (Grounding with Google Search) and writes the ideas + captions, called
+  server-side from `/api/generate`
 
 ## How it works
 
