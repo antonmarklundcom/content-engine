@@ -351,6 +351,25 @@ job; PR merged; final closing report to Anton (live URLs, manual-steps list).
 
 *(append-only; every phase adds an entry before merging its PR)*
 
+### 2026-08-29 — O3 follow-up: ideation defaults to Flash, not Pro
+
+- **Exists now:** `GEMINI_MODEL` defaults to `gemini-3.7-flash` instead of
+  `gemini-3.1-pro-preview`. Anton's call, made while setting up the Vercel env:
+  Flash across the board. Nothing else changed — the rate row for 3.7 Flash was
+  already in `IDEATION_MODEL_RATES`, so this is a one-line default plus the
+  comments and docs that named the old one.
+- **Decisions/deviations:** the Pro row stays in `IDEATION_MODEL_RATES` even
+  though nothing defaults to it — it is the ceiling `ideationRates()` falls back
+  to for an unrecognised model, and dropping it would make Flash the most
+  expensive rate on file and let a Pro-class unknown under-report.
+- **Worth knowing:** 3.7 Flash is priced in the table at its standard
+  $1.50/$7.50, not the $0.75/$3.75 introductory rate that runs to 2026-12-31,
+  so until New Year `spend_log` reads about double the real invoice for
+  ideation. Deliberate (the cap trips early rather than late), but it is now on
+  the main cost path — see KNOWN-ISSUES.md before reacting to the figure.
+- **Next phase looks first at:** unchanged — S4 is still gated on §1.9's caption
+  probe, and O3's live verification is still outstanding.
+
 ### 2026-08-29 — O3 Provider migration: Anthropic → Gemini — code complete, UNVERIFIED
 
 - **Exists now:** every paid call in the app runs on Gemini through
