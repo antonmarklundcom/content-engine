@@ -404,7 +404,7 @@ async function reconcileBatches(options: {
     const id = row.providerBatchId;
     let status: string;
     try {
-      status = mapProviderStatus((await batchStatus(id)).processing_status);
+      status = mapProviderStatus((await batchStatus(id)).state);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       // Transient failures leave the row open — the next run collects it. But a

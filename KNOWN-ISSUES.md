@@ -3,6 +3,82 @@
 Minor, non-blocking findings recorded per PLAN.md §4.3 — things a later phase
 should know about but that were not worth stopping a build for.
 
+## O3 — Provider migration: Anthropic → Gemini
+
+- **Nothing in this phase has been run against a real Gemini API call or a
+  database.** `npm run build`, `npm run typecheck` and `npm test` (191 tests,
+  including the new `src/lib/ai.test.ts` money-math guards) are green, but the
+  build session has neither `GEMINI_API_KEY` nor `DATABASE_URL` — the same wall
+  O1/O2/S3 hit, plus a new key Anton has to create. So no `/api/generate` run
+  has grounded anything through Google Search, no promote call has been adapted,
+  no analysis or batch has been submitted, and no row has been written to
+  `spend_log` from the new code. Every request shape here was written against
+  the installed SDK's own typings (`@google/genai` 2.19.0) and Google's current
+  docs; none of it has met the live API. **Treat the whole phase as unverified
+  until someone with the two credentials runs it.**
+
+- **Gemini's Search grounding has no `max_uses`.** Anthropic's `web_search` tool
+  took a hard cap, and `MAX_GROUNDING_QUERIES = 8` was that cap. On Gemini it is
+  only the reservation estimate plus a line in the system prompt asking the
+  model to stay inside it. A run that searches more than eight times is still
+  billed correctly (the count comes from the response's own
+  `groundingMetadata.webSearchQueries`), but it will have reserved less against
+  the cap than it spent — the one direction `src/lib/ai.ts` otherwise avoids.
+  Worth re-baselining against a few real runs.
+
+- **The monthly free grounding allowance is not modelled.** The first 5,000
+  grounding queries a month are free, aggregated across Gemini 3 models; this
+  app bills $0.014 from the first query. At the volume `/api/generate` runs at,
+  the real bill for grounding is likely to be $0 for a long time while
+  `spend_log` shows ~$0.11 per call. Over-reporting is the safe direction and
+  the alternative is a per-calendar-month counter shared across every deploy
+  using the key, but it does mean the cap will trip earlier than the invoice
+  justifies. Revisit if it starts refusing real work.
+
+- **Cached tokens are billed at the full input rate, deliberately.** Gemini
+  prices a cache hit at 0.1x input, but the discount is only clearly documented
+  as reaching the bill on the 2.5 family, and nothing in this app builds a cache
+  anyway (implicit caching needs a shared 4,096-token prefix; the analysis
+  system prompt is ~700 tokens and each transcript differs). `cachedContentTokenCount`
+  should therefore be 0 on every call. If it ever isn't, the stored cost runs
+  high rather than low.
+
+- **Ideation runs on a preview model.** `gemini-3.1-pro-preview` is the only Pro
+  tier on Google's current pricing page, so it took the seat Opus 5 held.
+  Preview models get retired; `GEMINI_MODEL` is the escape hatch, and
+  `IDEATION_MODEL_RATES` needs a row for whatever replaces it (an unlisted model
+  bills at the Pro rate, so the cap over-counts rather than under-counts in the
+  meantime).
+
+- **Reasoning is set to MINIMAL across the analysis/screening/outline paths.**
+  Gemini counts reasoning tokens against `maxOutputTokens` as well as billing
+  them as output, and the screening call's 400-token ceiling has no room to
+  think first. The Anthropic models these replaced were called without extended
+  thinking at all, so this is the faithful port — but if analyses start coming
+  back thin, `THINKING_LEVEL` in `src/lib/analysis/run.ts` is the one lever, and
+  raising it costs money on every video.
+
+- **The ideation call could still truncate.** `MAX_OUTPUT_TOKENS = 16_000` was
+  set when reasoning tokens shared that budget on Anthropic, and they share it
+  on Gemini too — but a Pro model left at its default thinking level may spend
+  more of it on thoughts. The failure is loud (the JSON does not parse and the
+  error names the finish reason, so `MAX_TOKENS` is visible) and the tokens are
+  still billed. Worth watching on the first few real runs before tuning.
+
+- **Batch submission is inlined, so it inherits an inlined payload ceiling.**
+  `submitAnalysisBatch` sends every transcript in the `batches.create` call
+  rather than uploading a file. A poll run submits at most `findPendingVideos()`'s
+  page, which is comfortably inside the limit; a much larger one-off backfill
+  would need the file-based path instead. Nothing enforces this today — the
+  first symptom would be a rejected create call.
+
+- **Streaming usage is read from the last chunk that carries it.** Gemini
+  documents the totals as arriving on the final chunk; if a future version
+  streamed per-chunk deltas instead, this would under-count. The fallback for a
+  stream that reports no usage at all is to bill the reservation estimate and
+  log a warning — never $0, which is the silent under-report the cap cannot
+  survive.
+
 ## S3 — Inbox UI + capture ergonomics
 
 - **Still no `DATABASE_URL` in the build session — the whole live flow is

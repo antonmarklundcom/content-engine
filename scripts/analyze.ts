@@ -2,12 +2,12 @@
  * PR-06 done-when: "one video produces a stored analysis".
  *
  *   export DATABASE_URL='postgres://...'
- *   export ANTHROPIC_API_KEY='sk-ant-...'
+ *   export GEMINI_API_KEY='...'
  *   npx tsx scripts/analyze.ts <youtube-url-or-id>   # one video
  *   npx tsx scripts/analyze.ts --pending [--limit N] # everything not yet analysed
  *
  * Flags:
- *   --model sonnet   use Sonnet 5 instead of the Haiku 4.5 default
+ *   --model flash    use Gemini 3.7 Flash instead of the Flash-Lite default
  *   --force          re-analyse even if a successful analysis exists
  *   --show           print the analysis
  */
@@ -16,17 +16,21 @@ import { eq } from "drizzle-orm";
 import { closeDb, db } from "../src/db";
 import { videos, type Video } from "../src/db/schema";
 import { analyzeVideo, findPendingVideos } from "../src/lib/analysis/run";
-import { MODEL_RATES, type AnalysisModel } from "../src/lib/analysis/pricing";
+import {
+  DEFAULT_MODEL,
+  MODEL_RATES,
+  UPGRADE_MODEL,
+  type AnalysisModel,
+} from "../src/lib/analysis/pricing";
 import type { AnalysisPayload } from "../src/lib/analysis/contract";
 import { parseVideoId } from "../src/lib/youtube/url";
 
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
-  const model: AnalysisModel = argv.includes("--model")
-    ? argv[argv.indexOf("--model") + 1] === "sonnet"
-      ? "claude-sonnet-5"
-      : "claude-haiku-4-5"
-    : "claude-haiku-4-5";
+  const model: AnalysisModel =
+    argv.includes("--model") && argv[argv.indexOf("--model") + 1] === "flash"
+      ? UPGRADE_MODEL
+      : DEFAULT_MODEL;
   const force = argv.includes("--force");
   const show = argv.includes("--show");
 

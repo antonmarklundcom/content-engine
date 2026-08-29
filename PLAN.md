@@ -3,7 +3,7 @@
 One Next.js app on Vercel + Neon, two halves: the brand ideation tool
 (`brands`/`research_notes`/`ideas`, `/api/generate`) and the YouTube research
 tool (`/youtube/*`, `sources`→`videos`→`transcripts`→`analyses`→`topics`/
-`entities`). They share a repo, deploy, login, and Anthropic client — and no
+`entities`). They share a repo, deploy, login, and Gemini client — and no
 data. This plan wires them together and adds the save-clip inbox, as a
 sequence of autonomous phases: one PR each, all Opus phases first, then all
 Sonnet phases.
@@ -13,6 +13,7 @@ Sonnet phases.
 | O1 | Opus | `prompts/opus-1-foundation.md` | §5.O1 |
 | O2 | Opus | `prompts/opus-2-capture-bridge.md` | §5.O2 |
 | S3 | Sonnet | `prompts/sonnet-3-inbox-ui.md` | §6.S3 |
+| O3 | Opus | `prompts/opus-3-gemini-migration.md` | §5.O3 (decided 2026-08-29 — see §8) |
 | S4 | Sonnet | `prompts/sonnet-4-worker-igfb.md` | §6.S4 (conditional — see §1.9) |
 
 ---
@@ -182,6 +183,85 @@ Exit: build/lint/typecheck green; saving a YouTube URL via Bearer token ends
 correctly-linked idea; `/api/generate` with `analysisId` produces grounded
 ideas; PR merged.
 
+### O3 — Provider migration: Anthropic → Gemini
+
+**Decided 2026-08-29** (resolves the §8 parked question — Anton confirmed:
+move off Anthropic, on cost). Opus, not Sonnet: this touches money math and
+every paid-call path at once, the same bar O1 was held to.
+
+Every paid call in the app moves from the Anthropic API to Gemini. Money math
+must stay at least as trustworthy after the swap as before it — a wrong rate
+here silently under-reports spend and the cap trips too late.
+
+1. **Client swap.** Replace `src/lib/anthropic.ts`'s `@anthropic-ai/sdk`
+   client with the Gemini SDK (`@google/genai` or current first-party
+   equivalent — check `claude-api`-adjacent docs/the Gemini API docs for the
+   current package name before installing). Both call sites it exports —
+   `generateContentPlan` (brand ideation, `/api/generate`) and
+   `adaptIdeaToBrand` (promote) — keep their existing signatures; only what's
+   inside changes. Env var renamed `ANTHROPIC_API_KEY` → `GEMINI_API_KEY`
+   (or the SDK's expected name), `ANTHROPIC_MODEL` → `GEMINI_MODEL`,
+   `ANTHROPIC_PROMOTE_MODEL` → `GEMINI_PROMOTE_MODEL`. Update every reference
+   (`src/lib/anthropic.ts`, `src/app/api/generate/route.ts`, `promote.ts`)
+   and consider whether the module is worth renaming (`src/lib/anthropic.ts`
+   → `src/lib/ai.ts` or similar) — a rename is fine here since every call site
+   already goes through this one module (that discipline is why O2 flagged
+   not to deepen the coupling further).
+2. **Analysis/screening pipeline.** `src/lib/analysis/run.ts`,
+   `src/lib/analysis/batch.ts`, `src/lib/screening/run.ts` and
+   `src/lib/screening/sql.ts` currently call the Anthropic client directly
+   (`anthropic` export from `run.ts`) for the YouTube summarise/screen paths,
+   and `batch.ts` specifically relies on Anthropic's Batch API for its flat
+   50% discount. Gemini has its own batch API with a comparable discount —
+   confirm the current rate and request/response shape before wiring it in;
+   do not assume feature parity, verify against the docs.
+3. **Web search → Search grounding.** `/api/generate`'s research step uses
+   Anthropic's server-side `web_search` tool (`web_search_20260209`,
+   `MAX_WEB_SEARCHES = 8`, billed via `WEB_SEARCH_USD_PER_REQUEST` in
+   `pricing.ts`). Replace with Gemini's Search grounding tool. Its billing
+   model differs from Anthropic's per-request fee — read the current pricing
+   page, don't guess, and update `WEB_SEARCH_USD_PER_REQUEST` (rename if the
+   unit changes, e.g. per-grounded-query vs per-request) to match.
+4. **Pricing table.** `src/lib/analysis/pricing.ts`'s `MODEL_RATES`,
+   `IDEATION_MODEL_RATES`, and `ideationRates()`'s unknown-model fallback all
+   assume Anthropic model names/rates. Replace with the Gemini models
+   actually used (research current model + pricing pages, for whichever tier
+   maps to today's Opus/Sonnet/Haiku roles) and their real per-million-token
+   rates. Keep the "unknown model
+   bills at the most expensive rate on file" safety behavior — the direction
+   to be wrong in doesn't change with the provider. Re-verify
+   `pricing.test.ts` still asserts real numbers, not stale Anthropic ones.
+5. **Response shape differences.** Anthropic's tool-use flow
+   (`tool_choice`, `ToolUseBlock`, `stop_reason`, streaming via
+   `.messages.stream()`, `thinking: { type: "adaptive" }`) has a Gemini
+   equivalent (function calling / structured output) but not an identical
+   shape — port `IDEAS_TOOL`/`ADAPT_TOOL`'s JSON schemas faithfully rather
+   than approximating them, and confirm the 5-10 item ideas array and
+   required citations still validate the same way on the far side.
+6. **`.env.example` + Vercel.** This is the part Anton actually asked for:
+   once the swap is done, `.env.example` at repo root must list the new
+   Gemini var names (not the old Anthropic ones) so that importing this repo
+   fresh into Vercel pre-populates the correct env var keys immediately —
+   Vercel reads `.env.example` to build that import screen. Remove
+   `ANTHROPIC_API_KEY`/`ANTHROPIC_MODEL`/`ANTHROPIC_PROMOTE_MODEL` entirely;
+   add the Gemini equivalents with the same explanatory comment style the
+   file already uses. Every other var (`DATABASE_URL`, `CLIP_TOKEN`,
+   `SESSION_SECRET`, `YOUTUBE_API_KEY`, `MONTHLY_SPEND_CAP_USD`,
+   `CRON_SECRET`, etc.) is untouched by this phase — do not reorganize or
+   rewrite unrelated sections.
+7. **Package.json / lockfile.** Remove `@anthropic-ai/sdk` if nothing else
+   in the app needs it (grep first — do not assume); add the Gemini SDK
+   dependency.
+
+Exit: `npm run build`, `npm run typecheck`, `npm test` green; a real
+`/api/generate` call against the dev DB returns ideas grounded via Gemini
+Search and logs a non-zero, plausible cost to `spend_log`; a real promote
+call (adapt=true) returns adapted copy and logs cost; `.env.example` contains
+no Anthropic var names, only Gemini ones, and a fresh Vercel import of this
+repo shows the correct keys; `pricing.test.ts` passes against real Gemini
+rates; §9 build-log entry recorded (rates used, package name chosen, any
+feature-parity gap found and how it was handled); PR merged green.
+
 ## §6. Sonnet phases
 
 Hard limits per §4.7 apply to both.
@@ -235,16 +315,17 @@ job; PR merged; final closing report to Anton (live URLs, manual-steps list).
 | 1. Confirm the app is actually deployed on Vercel + Neon env vars set, then run `npm run db:migrate && npm run db:seed` | before O1 merge (migration hits Neon) — **still open, O1 could not reach a database** | ☐ |
 | 2. Caption probe verdict from Vercel (`npm run yt:probe-captions` from the deployed env, or ask a session to add a probe route) | S4 gate | ☐ |
 | 3. `CLIP_TOKEN` value set in Vercel env (session generates, Anton stores) | O2 | ☐ |
+| 3b. `GEMINI_API_KEY` from a **billed** Google project (aistudio.google.com/apikey) set in Vercel env — Search grounding and the Batch API are not on the free tier. Replaces the Anthropic key entirely. | O3 (blocks every paid call) | ☐ |
 | 4. iOS Shortcut created on the phone per `docs/CAPTURE.md` | after S3 | ☐ |
 | 5. Hostinger SSH/panel access for the worker slot | S4, only if gated in | ☐ |
 
 ## §8. Open business questions (parked)
 
-- **Move the app's paid model calls from the Anthropic API to Gemini?**
-  Anton's preference, on cost, recorded 2026-08-28. Parked, not decided, and
-  explicitly NOT part of O2/S3/S4 — it is its own phase after the build lands,
-  because it touches money math and every generation path at once. What it
-  actually involves, so the decision is made on facts:
+- ~~Move the app's paid model calls from the Anthropic API to Gemini?~~
+  **Decided 2026-08-29: yes, on cost.** Now §5.O3
+  (`prompts/opus-3-gemini-migration.md`) — its own Opus phase, not folded
+  into O2/S3/S4, because it touches money math and every generation path at
+  once. What it actually involves (kept here for O3 to read):
   - Two paid paths: the YouTube analysis/screening pipeline (Haiku 4.5,
     ~$0.02/video, uses the Batch API's 50% discount) and `/api/generate`
     (Opus 5 + up to 8 paid web searches — the expensive one by an order of
@@ -269,6 +350,94 @@ job; PR merged; final closing report to Anton (live URLs, manual-steps list).
 ## §9. Build log & handoff
 
 *(append-only; every phase adds an entry before merging its PR)*
+
+### 2026-08-29 — O3 Provider migration: Anthropic → Gemini — code complete, UNVERIFIED
+
+- **Exists now:** every paid call in the app runs on Gemini through
+  `@google/genai` **2.19.0** (the current first-party Node SDK — `googleapis/js-genai`;
+  `@google/generative-ai` is the retired one and was not used).
+  `src/lib/anthropic.ts` is now `src/lib/ai.ts`, still the one module every paid
+  call goes through: `generateContentPlan` and `adaptIdeaToBrand` keep their
+  exact signatures, so `/api/generate` and `promote.ts` changed by one import
+  line each. Ideation grounds through Google Search and returns the same
+  `IDEAS_TOOL` schema — ported verbatim, as `responseJsonSchema` rather than a
+  function declaration, which Gemini 3 allows alongside a built-in tool in one
+  request and which removes the old "researched, then answered in prose without
+  calling the tool" failure. The analysis/screening/outline paths and the
+  nightly poller's batch all moved with it; `batch.ts` uses Gemini's inlined
+  Batch API, keyed on request metadata rather than position.
+- **Rates used** (Google's own pricing page, read 2026-08-29, global endpoint;
+  the Developer API bills the same per-token figures): ideation
+  `gemini-3.1-pro-preview` $2/$12 per 1M under 200k input tokens and $4/$18
+  above it (the long-context tier is now honoured by `costUsdAtRates`);
+  analysis default `gemini-3.1-flash-lite` $0.25/$1.50; analysis opt-in
+  `gemini-3.7-flash` priced at its **standard** $1.50/$7.50, not the $0.75/$3.75
+  introductory rate that lapses 2026-12-31 — the same call the old table made
+  about Sonnet 5, and it means nothing starts silently under-reporting on New
+  Year's Day. Search grounding is $14 per 1,000 **queries** (not per request —
+  the unit changed, so `WEB_SEARCH_USD_PER_REQUEST` became
+  `GROUNDING_USD_PER_QUERY`), counted from the response's own
+  `webSearchQueries`. `pricing.test.ts` asserts these numbers directly rather
+  than reading them out of the module.
+- **Feature parity:** the Batch API's flat 50% discount survives the swap
+  intact, so no §4.4 stop was needed. Prompt caching does not: Gemini's is
+  implicit, needs a shared 4,096-token prefix nothing here has, and its
+  discount is only clearly documented for the 2.5 family — cached tokens are
+  therefore billed at the full input rate (over-reports, the safe direction).
+  Grounding lost `max_uses`, so `MAX_GROUNDING_QUERIES = 8` is now a reservation
+  estimate and a prompt line, not a cap. All in KNOWN-ISSUES.md.
+- **Decisions/deviations:** (a) `readUsage` moved into `src/lib/ai.ts` and is
+  re-exported from `analysis/run.ts` — Gemini's counters differ from
+  Anthropic's in three ways that each under-report if missed (`promptTokenCount`
+  includes the cached prefix, `thoughtsTokenCount` is billed as output and sits
+  outside `candidatesTokenCount`, and grounding's `toolUsePromptTokenCount` is
+  not charged at all), so that mapping now exists once and is pinned by a new
+  `src/lib/ai.test.ts`; (b) `Rates` gained an optional `longContext` tier —
+  the only structural change to `pricing.ts`, and it closes a real
+  under-report on the one model that has such a tier; (c) reasoning is
+  MINIMAL across analysis/screening/outline, because Gemini counts reasoning
+  against `maxOutputTokens` and the screening call's 400-token ceiling has no
+  room to think first — the models this replaced were called without extended
+  thinking at all; (d) `UPGRADE_MODEL` was added beside `DEFAULT_MODEL` so no
+  page or script carries a model literal (a literal in a page is how a provider
+  swap gets missed) — this renamed two dictionary keys and the copy they render,
+  which said "Sonnet"; (e) the branch is `claude/code-or-deploy-status-s0hiqx`,
+  not `phase/o3-gemini-migration` — the session harness pins the branch name,
+  as it did for O1.
+- **NOT DONE — the whole verification half.** No `GEMINI_API_KEY` and no
+  `DATABASE_URL` in the build session, so no Gemini request has actually been
+  sent and no cost row written. The two live exit criteria (a grounded
+  `/api/generate` logging a plausible cost, and an adapted promote call) are
+  outstanding. `.env.example` IS done and is the thing Anton was waiting on: it
+  contains zero Anthropic names, so a fresh Vercel import pre-populates
+  `GEMINI_API_KEY`/`GEMINI_MODEL`/`GEMINI_PROMOTE_MODEL`. §7 item 3b is the new
+  human input: the key must be on a **billed** project or grounding and batch
+  both fail.
+- **Next phase (S4, conditional) looks first at:** §1.9's gate — the caption
+  probe still has no recorded verdict (§7 item 2), so S4 cannot start. Whoever
+  runs the first real generation should re-baseline
+  `ESTIMATED_THINKING_TOKENS`/`MAX_GROUNDING_QUERIES` in `src/lib/ai.ts` against
+  the `usageMetadata` that comes back.
+
+### 2026-08-29 — O3 phase spec written (no code changed)
+
+- **Exists now:** `prompts/opus-3-gemini-migration.md`, §5.O3 above, and §8's
+  Gemini question flipped from parked to decided. No app code touched — this
+  is only the phase definition, written from Anton asking (in a Vercel-setup
+  conversation) to move off the Anthropic API onto Gemini, and asking which
+  model should do it (Opus, per the O1 precedent: money math + every
+  generation path at once).
+- **Decisions/deviations:** none — this is plan/prompt authoring only,
+  following the exact §5/prompts pattern O1/O2 already use.
+- **Not done:** the migration itself. `.env.example` still lists
+  `ANTHROPIC_API_KEY`/`ANTHROPIC_MODEL`/`ANTHROPIC_PROMOTE_MODEL` — a fresh
+  Vercel import will show the OLD (Anthropic) var names until O3 lands.
+  `DATABASE_URL` (Neon) was provided by Anton directly in chat for Vercel
+  env setup; not committed to the repo.
+- **Next phase (O3) looks first at:** `src/lib/anthropic.ts` (the one module
+  every paid call goes through — O2 was explicit that a provider swap should
+  stay this module's job) and `src/lib/analysis/pricing.ts` for the rate
+  tables. `.env.example` last, once the new var names are settled.
 
 ### 2026-08-28 — S3 Inbox UI + capture ergonomics (PR #9) — code complete, UNVERIFIED
 

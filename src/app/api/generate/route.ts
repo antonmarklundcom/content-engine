@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db, schema } from "@/db";
-import { generateContentPlan } from "@/lib/anthropic";
+import { generateContentPlan } from "@/lib/ai";
 import { getAnalysisWithVideo, getBrand, listBrands } from "@/lib/bridge";
 import { SpendCapExceededError } from "@/lib/spend";
 

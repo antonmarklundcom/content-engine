@@ -7,7 +7,7 @@ below is for.
 ## The one assumption everything rests on
 
 The YouTube tool's entire cost model assumes caption text is **free**: the
-pipeline downloads a video's existing caption track and pays Claude only to
+pipeline downloads a video's existing caption track and pays the model only to
 analyse it. `src/lib/youtube/captions/` exists to make that assumption hold —
 six strategies, tried in order, each a different way of asking YouTube for the
 same timedtext URL.

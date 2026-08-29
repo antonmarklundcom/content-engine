@@ -42,14 +42,15 @@ Base everything on the transcript. If it is too short, truncated, or garbled to 
 /**
  * Whether the system prompt is long enough to actually cache on this model.
  *
- * Below the model's minimum, `cache_control` is silently ignored — no error,
- * just `cache_creation_input_tokens: 0`. Haiku 4.5's minimum is 4096 tokens,
- * and this prompt is well under that, so PLAN.md §1.4's prompt-caching saving
- * does not currently apply. See docs/PR-06-ANALYSIS.md.
+ * Below the model's minimum, caching simply does not engage — no error, no
+ * cached-token count. The Gemini 3 family's minimum is 4096 tokens and this
+ * prompt is well under it, so PLAN.md §1.4's prompt-caching saving does not
+ * currently apply. (Gemini has no cache breakpoint to set either way: caching
+ * is implicit, on a shared prefix.) See docs/PR-06-ANALYSIS.md.
  */
 export const CACHE_NOTE =
-  "Prompt caching is requested but will not engage on Haiku 4.5 unless the " +
-  "system prompt exceeds 4096 tokens. Verify with cache_creation_input_tokens.";
+  "Prompt caching cannot engage on the Gemini 3 models unless the shared " +
+  "prefix exceeds 4096 tokens. Verify with cachedContentTokenCount.";
 
 /**
  * The instruction appended for a non-English run (PR-22b).

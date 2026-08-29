@@ -2,7 +2,7 @@ import "server-only";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { clips, ideas, FORMATS, type Format, type Idea } from "@/db/schema";
-import { adaptIdeaToBrand } from "@/lib/anthropic";
+import { adaptIdeaToBrand } from "@/lib/ai";
 import { analysisBundleForVideo, getAnalysis, getAnalysisWithVideo, getBrand } from "@/lib/bridge";
 import { isUnitType, type UnitType } from "@/lib/listen/units";
 

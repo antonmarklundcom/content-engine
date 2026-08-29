@@ -1,60 +1,58 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { JobState } from "@google/genai";
 import { batchFailureReason, isStaleBatch, mapProviderStatus, STALE_BATCH_HOURS } from "./batch";
 
 /**
- * The regression these guard: `entry.result.error` is an ErrorResponse envelope
- * whose own `type` is the constant "error". Reading it recorded the literal
- * word "error" for every failure, so a billing failure and a malformed request
- * were indistinguishable in the analyses table.
+ * What these guard, across the Anthropic → Gemini swap (PLAN.md §5.O3): a
+ * failed batch entry has to record something a reader can act on. The original
+ * bug was an error envelope whose own type was the constant "error", so a
+ * billing failure and a malformed request were indistinguishable in the
+ * analyses table. Gemini's JobError carries a status code instead, and the code
+ * is the discriminator — dropping it would reintroduce the same blindness under
+ * a new provider.
  */
 
-function errored(type: string, message: string) {
-  return {
-    type: "errored" as const,
-    error: {
-      type: "error" as const,
-      request_id: "req_123",
-      error: { type, message },
-    },
-  };
+function errored(code: number, message: string) {
+  return { code, message, details: [] };
 }
 
-test("errored: reports the inner error type, not the 'error' envelope", () => {
-  const reason = batchFailureReason(errored("invalid_request_error", "max_tokens too large") as never);
-  assert.equal(reason, "batch error: invalid_request_error: max_tokens too large");
-  assert.ok(!reason.includes("batch error: error"));
+test("errored: reports the status code, not just a generic failure", () => {
+  const reason = batchFailureReason(errored(400, "maxOutputTokens too large"));
+  assert.equal(reason, "batch error: 400: maxOutputTokens too large");
+  assert.ok(!reason.includes("unknown_error"));
 });
 
-test("errored: distinguishes failures that used to collapse into one string", () => {
-  const billing = batchFailureReason(errored("billing_error", "credit balance too low") as never);
-  const rate = batchFailureReason(errored("rate_limit_error", "slow down") as never);
+test("errored: distinguishes failures that would otherwise collapse into one string", () => {
+  const billing = batchFailureReason(errored(403, "billing account is not active"));
+  const rate = batchFailureReason(errored(429, "slow down"));
   assert.notEqual(billing, rate);
-  assert.ok(billing.includes("billing_error"));
-  assert.ok(rate.includes("rate_limit_error"));
+  assert.ok(billing.includes("403"));
+  assert.ok(rate.includes("429"));
 });
 
-test("errored: falls back to the type alone when the message is empty", () => {
-  assert.equal(batchFailureReason(errored("api_error", "   ") as never), "batch error: api_error");
+test("errored: falls back to the code alone when the message is empty", () => {
+  assert.equal(batchFailureReason(errored(500, "   ")), "batch error: 500");
 });
 
-test("errored: survives an error object missing its inner detail", () => {
-  const reason = batchFailureReason({
-    type: "errored",
-    error: { type: "error", request_id: null },
-  } as never);
-  assert.equal(reason, "batch error: unknown_error");
+test("errored: survives an error object missing its detail, and never reads as free", () => {
+  assert.equal(batchFailureReason({}), "batch error: unknown_error");
+  assert.equal(batchFailureReason(undefined), "batch error: unknown_error");
+  assert.equal(batchFailureReason(null), "batch error: unknown_error");
 });
 
-test("non-errored results keep their own outcome word", () => {
-  assert.equal(batchFailureReason({ type: "expired" } as never), "batch expired");
-  assert.equal(batchFailureReason({ type: "canceled" } as never), "batch canceled");
-});
-
-test("only 'ended' is collectable; canceling stays open so paid results are not dropped", () => {
-  assert.equal(mapProviderStatus("ended"), "ended");
-  assert.equal(mapProviderStatus("in_progress"), "in_progress");
-  assert.equal(mapProviderStatus("canceling"), "in_progress");
+test("only a SUCCEEDED job is collectable; anything else stays open", () => {
+  assert.equal(mapProviderStatus(JobState.JOB_STATE_SUCCEEDED), "ended");
+  assert.equal(mapProviderStatus(JobState.JOB_STATE_RUNNING), "in_progress");
+  assert.equal(mapProviderStatus(JobState.JOB_STATE_QUEUED), "in_progress");
+  assert.equal(mapProviderStatus(JobState.JOB_STATE_PENDING), "in_progress");
+  // Mid-cancel can still settle with results that were already paid for, so
+  // calling it terminal here would drop them.
+  assert.equal(mapProviderStatus(JobState.JOB_STATE_CANCELLING), "in_progress");
+  assert.equal(mapProviderStatus(JobState.JOB_STATE_PAUSED), "in_progress");
+  // A state this app has never seen must not read as collectable either.
+  assert.equal(mapProviderStatus(undefined), "in_progress");
+  assert.equal(mapProviderStatus("JOB_STATE_SOMETHING_NEW"), "in_progress");
 });
 
 /**

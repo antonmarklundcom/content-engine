@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { outlines, screenings, transcripts, videoReads, videos } from "@/db/schema";
 import { latestAnalysisForVideo } from "@/lib/analysis/latest";
-import { DEFAULT_MODEL } from "@/lib/analysis/pricing";
+import { DEFAULT_MODEL, UPGRADE_MODEL } from "@/lib/analysis/pricing";
 import { estimateAnalysisCostUsd, formatUsd } from "@/lib/spend";
 import { slugifyTag } from "@/lib/tags";
 import { isCulled, screenMinScore } from "@/lib/screening/policy";
@@ -111,8 +111,8 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
     .limit(1);
   const estimate = canSpend && transcript
     ? {
-        haiku: formatUsd(estimateAnalysisCostUsd(transcript.wordCount, DEFAULT_MODEL)),
-        sonnet: formatUsd(estimateAnalysisCostUsd(transcript.wordCount, "claude-sonnet-5")),
+        standard: formatUsd(estimateAnalysisCostUsd(transcript.wordCount, DEFAULT_MODEL)),
+        upgrade: formatUsd(estimateAnalysisCostUsd(transcript.wordCount, UPGRADE_MODEL)),
       }
     : null;
   // Both statuses (PR-29). PR-16 made a failed generation write a row precisely
@@ -260,7 +260,7 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
             <AnalyzeButton
               videoId={video.id}
               labelKey="video.analyzeNow"
-              estimate={estimate.haiku}
+              estimate={estimate.standard}
               locale={locale}
             />
           )}
@@ -289,16 +289,16 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
               <AnalyzeButton
                 videoId={video.id}
                 labelKey="video.retry"
-                estimate={estimate.haiku}
+                estimate={estimate.standard}
                 locale={locale}
                 force
               />
               <AnalyzeButton
                 videoId={video.id}
-                labelKey="video.retrySonnet"
-                estimate={estimate.sonnet}
+                labelKey="video.retryUpgrade"
+                estimate={estimate.upgrade}
                 locale={locale}
-                model="claude-sonnet-5"
+                model={UPGRADE_MODEL}
                 variant="secondary"
                 force
               />
@@ -316,13 +316,13 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
           <ListenPlayer units={units} videoId={video.id} markedKeys={[...marked]} />
 
           <div className="flex flex-wrap items-start justify-end gap-3">
-            {estimate && analysis.model !== "claude-sonnet-5" && (
+            {estimate && analysis.model !== UPGRADE_MODEL && (
               <AnalyzeButton
                 videoId={video.id}
-                labelKey="video.reanalyseSonnet"
-                estimate={estimate.sonnet}
+                labelKey="video.reanalyseUpgrade"
+                estimate={estimate.upgrade}
                 locale={locale}
-                model="claude-sonnet-5"
+                model={UPGRADE_MODEL}
                 variant="secondary"
                 force
               />
