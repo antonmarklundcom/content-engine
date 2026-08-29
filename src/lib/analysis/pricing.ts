@@ -77,9 +77,13 @@ export const MODEL_RATES: Record<AnalysisModel, Rates> = {
 
 /**
  * Rates for the brand-ideation path (src/lib/ai.ts), which is not limited to
- * the two analysis models — it runs on GEMINI_MODEL, defaulting to Gemini 3.1
- * Pro. Kept in the same file as MODEL_RATES for the reason stated at the top:
+ * the two analysis models — it runs on GEMINI_MODEL, defaulting to Gemini 3.7
+ * Flash. Kept in the same file as MODEL_RATES for the reason stated at the top:
  * one place to be wrong about a price, not two.
+ *
+ * The Pro row is still here even though nothing defaults to it: it is the
+ * ceiling ideationRates() falls back to below, so it has to stay the most
+ * expensive entry in this table.
  */
 export const IDEATION_MODEL_RATES: Record<string, Rates> = {
   // The Pro seat, and the only model here with a long-context tier: above
