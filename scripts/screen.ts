@@ -7,14 +7,14 @@
  *
  * Flags:
  *   --limit N       cap how many videos to screen (default 100)
- *   --model sonnet  screen with Sonnet 5 instead of Haiku 4.5
+ *   --model flash   screen with Gemini 3.7 Flash instead of Flash-Lite
  *
- * tsx does NOT auto-load .env — export ANTHROPIC_API_KEY and DATABASE_URL first.
+ * tsx does NOT auto-load .env — export GEMINI_API_KEY and DATABASE_URL first.
  */
 
 import { closeDb } from "../src/db";
 import { estimateAnalysisCostUsd, formatUsd, SpendCapExceededError, spendStatus } from "../src/lib/spend";
-import type { AnalysisModel } from "../src/lib/analysis/pricing";
+import { DEFAULT_MODEL, UPGRADE_MODEL, type AnalysisModel } from "../src/lib/analysis/pricing";
 import { screenInterests, screenMinScore, screeningEnabled } from "../src/lib/screening/policy";
 import {
   estimateScreeningBatchUsd,
@@ -26,9 +26,9 @@ import {
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
   const model: AnalysisModel =
-    argv.includes("--model") && argv[argv.indexOf("--model") + 1] === "sonnet"
-      ? "claude-sonnet-5"
-      : "claude-haiku-4-5";
+    argv.includes("--model") && argv[argv.indexOf("--model") + 1] === "flash"
+      ? UPGRADE_MODEL
+      : DEFAULT_MODEL;
   const limit = numericFlag(argv, "--limit", 100);
   const all = argv.includes("--all");
   const minScore = screenMinScore();

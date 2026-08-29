@@ -8,7 +8,7 @@
  *
  * Flags:
  *   --limit N      cap how many videos to process (default 100)
- *   --model sonnet use Sonnet 5 instead of Haiku 4.5
+ *   --model flash  use Gemini 3.7 Flash instead of Flash-Lite
  */
 
 import { closeDb } from "../src/db";
@@ -19,7 +19,7 @@ import {
   type BatchOutcome,
 } from "../src/lib/analysis/batch";
 import { analyzeVideo, findPendingVideos } from "../src/lib/analysis/run";
-import type { AnalysisModel } from "../src/lib/analysis/pricing";
+import { DEFAULT_MODEL, UPGRADE_MODEL, type AnalysisModel } from "../src/lib/analysis/pricing";
 import {
   estimateBatchCostUsd,
   formatUsd,
@@ -31,9 +31,9 @@ async function main(): Promise<void> {
   const argv = process.argv.slice(2);
   const modelGiven = argv.includes("--model");
   const model: AnalysisModel =
-    argv[argv.indexOf("--model") + 1] === "sonnet" && modelGiven
-      ? "claude-sonnet-5"
-      : "claude-haiku-4-5";
+    argv[argv.indexOf("--model") + 1] === "flash" && modelGiven
+      ? UPGRADE_MODEL
+      : DEFAULT_MODEL;
 
   const collectIdx = argv.indexOf("--collect");
   if (collectIdx !== -1) {

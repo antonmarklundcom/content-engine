@@ -1,8 +1,8 @@
-import Anthropic from "@anthropic-ai/sdk";
+import type { GenerateContentResponse } from "@google/genai";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { analyses, screenings, transcripts, videos, type Video } from "@/db/schema";
-import { anthropic, readUsage } from "@/lib/analysis/run";
+import { gemini, readUsage, responseText, THINKING_LEVEL } from "@/lib/analysis/run";
 import {
   DEFAULT_MODEL,
   estimateCostUsd,
@@ -90,24 +90,26 @@ export async function screenVideo(video: Video, options: ScreenOptions = {}): Pr
   const model = options.model ?? DEFAULT_MODEL;
   const interests = options.interests ?? screenInterests();
 
-  let response: Anthropic.Message;
+  let response: GenerateContentResponse;
   try {
-    response = await anthropic().messages.create({
+    response = await gemini().models.generateContent({
       model,
-      max_tokens: MAX_SCREENING_OUTPUT_TOKENS,
-      // No cache_control here. The system prompt is ~700 tokens, far under
-      // Haiku 4.5's 4096-token minimum cacheable prefix, so a breakpoint would
-      // be a silent no-op — see PLAN.md §1.4's correction. Asking for caching
-      // that cannot engage is how the analysis path ended up with a saving in
-      // the budget that never arrived.
-      system: SCREENING_SYSTEM_PROMPT,
-      output_config: { format: { type: "json_schema", schema: SCREENING_JSON_SCHEMA } },
-      messages: [
-        {
-          role: "user",
-          content: buildScreeningPrompt(video, interests ? { interests } : {}),
-        },
-      ],
+      contents: buildScreeningPrompt(video, interests ? { interests } : {}),
+      config: {
+        // Nothing here is cacheable. The system prompt is ~700 tokens, far
+        // under the Gemini 3 family's 4096-token minimum cacheable prefix, so
+        // implicit caching cannot engage — see PLAN.md §1.4's correction.
+        // Budgeting for a saving that cannot arrive is how the analysis path
+        // went wrong the first time.
+        systemInstruction: SCREENING_SYSTEM_PROMPT,
+        maxOutputTokens: MAX_SCREENING_OUTPUT_TOKENS,
+        // Load-bearing at this ceiling: reasoning tokens count against
+        // maxOutputTokens, and 400 of them is a score and a sentence with no
+        // room to think first.
+        thinkingConfig: { thinkingLevel: THINKING_LEVEL },
+        responseMimeType: "application/json",
+        responseJsonSchema: SCREENING_JSON_SCHEMA,
+      },
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -131,10 +133,7 @@ export async function screenVideo(video: Video, options: ScreenOptions = {}): Pr
   const inputTokens = usage.inputTokens + usage.cacheReadTokens + usage.cacheWriteTokens;
   const outputTokens = usage.outputTokens;
 
-  const raw = response.content
-    .filter((b): b is Anthropic.TextBlock => b.type === "text")
-    .map((b) => b.text)
-    .join("");
+  const raw = responseText(response);
 
   const parsed = parseScreeningResponse(raw);
   if (!parsed.ok) {
@@ -142,8 +141,8 @@ export async function screenVideo(video: Video, options: ScreenOptions = {}): Pr
     // not malformed JSON — naming it saves reading a parse error that describes
     // the symptom.
     const error =
-      response.stop_reason === "max_tokens"
-        ? `response hit max_tokens (${MAX_SCREENING_OUTPUT_TOKENS}); output truncated`
+      response.candidates?.[0]?.finishReason === "MAX_TOKENS"
+        ? `response hit maxOutputTokens (${MAX_SCREENING_OUTPUT_TOKENS}); output truncated`
         : parsed.error;
     await recordScreening({
       videoId: video.id,

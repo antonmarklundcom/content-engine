@@ -5,7 +5,7 @@ import { screenings, videos } from "@/db/schema";
  * [PR-35] The gallring, as a SQL condition on `videos`.
  *
  * Lives here rather than in lib/analysis/run.ts so that the analysis layer can
- * depend on it without depending on the screening runtime — the Anthropic
+ * depend on it without depending on the screening runtime — the Gemini
  * client, the spend gate, the prompt. It is also the one place the "fails open"
  * rule is written in SQL, and it has to match isCulled() in policy.ts exactly:
  * a row that only exists because a screening failed must not remove a video

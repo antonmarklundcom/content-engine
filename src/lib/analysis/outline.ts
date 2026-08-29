@@ -1,8 +1,8 @@
-import Anthropic from "@anthropic-ai/sdk";
+import type { GenerateContentResponse } from "@google/genai";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { analyses, outlines, videos, type Outline } from "@/db/schema";
-import { anthropic, readUsage, MAX_OUTPUT_TOKENS } from "./run";
+import { gemini, readUsage, responseText, MAX_OUTPUT_TOKENS, THINKING_LEVEL } from "./run";
 import type { OutlinePayload } from "./contract";
 import { buildOutlineUserPrompt, OUTLINE_JSON_SCHEMA, OUTLINE_SYSTEM_PROMPT } from "./outline-prompt";
 import { parseOutlineResponse } from "./outline-parse";
@@ -11,7 +11,7 @@ import { recordSpend, withSpendCap } from "@/lib/spend";
 
 /**
  * PR-13: not yet built, per docs/HANDOFF-SONNET.md §3. Same shape as the
- * analysis pipeline (run.ts) — one Anthropic call, structured outputs,
+ * analysis pipeline (run.ts) — one Gemini call, structured outputs,
  * defensive parse, record cost via recordSpend — but writes to `outlines`,
  * unique on (analysis_id, idea_index): regenerating replaces, not accumulates.
  */
@@ -106,27 +106,26 @@ export async function generateOutline(
   return withSpendCap(estimateOutlineCostUsd(model), runGeneration);
 
   async function runGeneration(): Promise<GenerateOutlineResult> {
-    let response: Anthropic.Message;
+    let response: GenerateContentResponse;
     try {
-      response = await anthropic().messages.create({
+      response = await gemini().models.generateContent({
         model,
-        max_tokens: MAX_OUTPUT_TOKENS,
-        system: OUTLINE_SYSTEM_PROMPT,
-        output_config: { format: { type: "json_schema", schema: OUTLINE_JSON_SCHEMA } },
-        messages: [
-          {
-            role: "user",
-            content: buildOutlineUserPrompt({
-              videoTitle: video.title,
-              // Narrowed by the `if (!idea) return` above, but that narrowing
-              // does not cross into this nested function declaration's scope.
-              ideaTitle: idea!.title,
-              ideaPremise: idea!.premise,
-              ideaWhyNow: idea!.why_now,
-              language: options.language,
-            }),
-          },
-        ],
+        contents: buildOutlineUserPrompt({
+          videoTitle: video.title,
+          // Narrowed by the `if (!idea) return` above, but that narrowing
+          // does not cross into this nested function declaration's scope.
+          ideaTitle: idea!.title,
+          ideaPremise: idea!.premise,
+          ideaWhyNow: idea!.why_now,
+          language: options.language,
+        }),
+        config: {
+          systemInstruction: OUTLINE_SYSTEM_PROMPT,
+          maxOutputTokens: MAX_OUTPUT_TOKENS,
+          thinkingConfig: { thinkingLevel: THINKING_LEVEL },
+          responseMimeType: "application/json",
+          responseJsonSchema: OUTLINE_JSON_SCHEMA,
+        },
       });
     } catch (err) {
       // No usage, so nothing was charged — but the attempt still gets a row, or
@@ -144,10 +143,7 @@ export async function generateOutline(
 
     const usage = readUsage(response);
     const costUsd = estimateCostUsd(model, usage);
-    const raw = response.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("");
+    const raw = responseText(response);
 
     const parsed = parseOutlineResponse(raw);
     if (!parsed.ok) {

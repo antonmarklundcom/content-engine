@@ -9,15 +9,15 @@ No media generation, no scheduling, no posting integration.
 
 - **Next.js** (App Router) — UI + API routes, deployable to Vercel
 - **Neon Postgres** — via `drizzle-orm`
-- **Anthropic API** (`claude-opus-5` by default) — does the actual research
-  (web search tool) and writes the ideas + captions, called server-side from
-  `/api/generate`
+- **Gemini API** (`gemini-3.1-pro-preview` by default) — does the actual
+  research (Grounding with Google Search) and writes the ideas + captions,
+  called server-side from `/api/generate`
 
 ## How it works
 
 1. You open a brand's page and click **Generate ideas**.
-2. `/api/generate` calls Claude with the brand's niche/voice/market and the
-   web-search tool. Claude researches current, real topics and returns 5-10
+2. `/api/generate` calls Gemini with the brand's niche/voice/market and
+   Search grounding. It researches current, real topics and returns 5-10
    ideas, each with a title, an angle, and a **full ready-to-post caption**
    in the brand's language and voice — not a placeholder.
 3. If a research finding is relevant to more than one brand (e.g. Paraguay
@@ -33,7 +33,10 @@ No media generation, no scheduling, no posting integration.
 
 1. **Neon**: create a project at [neon.tech](https://neon.tech), copy its
    connection string into `DATABASE_URL`.
-2. **Anthropic**: get an API key, put it in `ANTHROPIC_API_KEY`.
+2. **Gemini**: create an API key at
+   [aistudio.google.com/apikey](https://aistudio.google.com/apikey) on a
+   billed project, put it in `GEMINI_API_KEY`. Search grounding and the Batch
+   API both need billing enabled.
 3. Copy `.env.example` to `.env` and fill in both.
 4. Install and set up the database:
    ```bash
@@ -50,7 +53,7 @@ No media generation, no scheduling, no posting integration.
 ## Deploying
 
 Deploy to Vercel (`vercel deploy` or via the dashboard, importing this repo).
-Set `DATABASE_URL` and `ANTHROPIC_API_KEY` as Vercel project environment
+Set `DATABASE_URL` and `GEMINI_API_KEY` as Vercel project environment
 variables — same values as your local `.env`. Neon and Vercel are a standard
 pairing; no extra config needed beyond the env vars.
 

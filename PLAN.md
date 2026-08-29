@@ -3,7 +3,7 @@
 One Next.js app on Vercel + Neon, two halves: the brand ideation tool
 (`brands`/`research_notes`/`ideas`, `/api/generate`) and the YouTube research
 tool (`/youtube/*`, `sources`→`videos`→`transcripts`→`analyses`→`topics`/
-`entities`). They share a repo, deploy, login, and Anthropic client — and no
+`entities`). They share a repo, deploy, login, and Gemini client — and no
 data. This plan wires them together and adds the save-clip inbox, as a
 sequence of autonomous phases: one PR each, all Opus phases first, then all
 Sonnet phases.
@@ -315,6 +315,7 @@ job; PR merged; final closing report to Anton (live URLs, manual-steps list).
 | 1. Confirm the app is actually deployed on Vercel + Neon env vars set, then run `npm run db:migrate && npm run db:seed` | before O1 merge (migration hits Neon) — **still open, O1 could not reach a database** | ☐ |
 | 2. Caption probe verdict from Vercel (`npm run yt:probe-captions` from the deployed env, or ask a session to add a probe route) | S4 gate | ☐ |
 | 3. `CLIP_TOKEN` value set in Vercel env (session generates, Anton stores) | O2 | ☐ |
+| 3b. `GEMINI_API_KEY` from a **billed** Google project (aistudio.google.com/apikey) set in Vercel env — Search grounding and the Batch API are not on the free tier. Replaces the Anthropic key entirely. | O3 (blocks every paid call) | ☐ |
 | 4. iOS Shortcut created on the phone per `docs/CAPTURE.md` | after S3 | ☐ |
 | 5. Hostinger SSH/panel access for the worker slot | S4, only if gated in | ☐ |
 
@@ -349,6 +350,74 @@ job; PR merged; final closing report to Anton (live URLs, manual-steps list).
 ## §9. Build log & handoff
 
 *(append-only; every phase adds an entry before merging its PR)*
+
+### 2026-08-29 — O3 Provider migration: Anthropic → Gemini — code complete, UNVERIFIED
+
+- **Exists now:** every paid call in the app runs on Gemini through
+  `@google/genai` **2.19.0** (the current first-party Node SDK — `googleapis/js-genai`;
+  `@google/generative-ai` is the retired one and was not used).
+  `src/lib/anthropic.ts` is now `src/lib/ai.ts`, still the one module every paid
+  call goes through: `generateContentPlan` and `adaptIdeaToBrand` keep their
+  exact signatures, so `/api/generate` and `promote.ts` changed by one import
+  line each. Ideation grounds through Google Search and returns the same
+  `IDEAS_TOOL` schema — ported verbatim, as `responseJsonSchema` rather than a
+  function declaration, which Gemini 3 allows alongside a built-in tool in one
+  request and which removes the old "researched, then answered in prose without
+  calling the tool" failure. The analysis/screening/outline paths and the
+  nightly poller's batch all moved with it; `batch.ts` uses Gemini's inlined
+  Batch API, keyed on request metadata rather than position.
+- **Rates used** (Google's own pricing page, read 2026-08-29, global endpoint;
+  the Developer API bills the same per-token figures): ideation
+  `gemini-3.1-pro-preview` $2/$12 per 1M under 200k input tokens and $4/$18
+  above it (the long-context tier is now honoured by `costUsdAtRates`);
+  analysis default `gemini-3.1-flash-lite` $0.25/$1.50; analysis opt-in
+  `gemini-3.7-flash` priced at its **standard** $1.50/$7.50, not the $0.75/$3.75
+  introductory rate that lapses 2026-12-31 — the same call the old table made
+  about Sonnet 5, and it means nothing starts silently under-reporting on New
+  Year's Day. Search grounding is $14 per 1,000 **queries** (not per request —
+  the unit changed, so `WEB_SEARCH_USD_PER_REQUEST` became
+  `GROUNDING_USD_PER_QUERY`), counted from the response's own
+  `webSearchQueries`. `pricing.test.ts` asserts these numbers directly rather
+  than reading them out of the module.
+- **Feature parity:** the Batch API's flat 50% discount survives the swap
+  intact, so no §4.4 stop was needed. Prompt caching does not: Gemini's is
+  implicit, needs a shared 4,096-token prefix nothing here has, and its
+  discount is only clearly documented for the 2.5 family — cached tokens are
+  therefore billed at the full input rate (over-reports, the safe direction).
+  Grounding lost `max_uses`, so `MAX_GROUNDING_QUERIES = 8` is now a reservation
+  estimate and a prompt line, not a cap. All in KNOWN-ISSUES.md.
+- **Decisions/deviations:** (a) `readUsage` moved into `src/lib/ai.ts` and is
+  re-exported from `analysis/run.ts` — Gemini's counters differ from
+  Anthropic's in three ways that each under-report if missed (`promptTokenCount`
+  includes the cached prefix, `thoughtsTokenCount` is billed as output and sits
+  outside `candidatesTokenCount`, and grounding's `toolUsePromptTokenCount` is
+  not charged at all), so that mapping now exists once and is pinned by a new
+  `src/lib/ai.test.ts`; (b) `Rates` gained an optional `longContext` tier —
+  the only structural change to `pricing.ts`, and it closes a real
+  under-report on the one model that has such a tier; (c) reasoning is
+  MINIMAL across analysis/screening/outline, because Gemini counts reasoning
+  against `maxOutputTokens` and the screening call's 400-token ceiling has no
+  room to think first — the models this replaced were called without extended
+  thinking at all; (d) `UPGRADE_MODEL` was added beside `DEFAULT_MODEL` so no
+  page or script carries a model literal (a literal in a page is how a provider
+  swap gets missed) — this renamed two dictionary keys and the copy they render,
+  which said "Sonnet"; (e) the branch is `claude/code-or-deploy-status-s0hiqx`,
+  not `phase/o3-gemini-migration` — the session harness pins the branch name,
+  as it did for O1.
+- **NOT DONE — the whole verification half.** No `GEMINI_API_KEY` and no
+  `DATABASE_URL` in the build session, so no Gemini request has actually been
+  sent and no cost row written. The two live exit criteria (a grounded
+  `/api/generate` logging a plausible cost, and an adapted promote call) are
+  outstanding. `.env.example` IS done and is the thing Anton was waiting on: it
+  contains zero Anthropic names, so a fresh Vercel import pre-populates
+  `GEMINI_API_KEY`/`GEMINI_MODEL`/`GEMINI_PROMOTE_MODEL`. §7 item 3b is the new
+  human input: the key must be on a **billed** project or grounding and batch
+  both fail.
+- **Next phase (S4, conditional) looks first at:** §1.9's gate — the caption
+  probe still has no recorded verdict (§7 item 2), so S4 cannot start. Whoever
+  runs the first real generation should re-baseline
+  `ESTIMATED_THINKING_TOKENS`/`MAX_GROUNDING_QUERIES` in `src/lib/ai.ts` against
+  the `usageMetadata` that comes back.
 
 ### 2026-08-29 — O3 phase spec written (no code changed)
 

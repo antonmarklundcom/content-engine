@@ -1,4 +1,4 @@
-import type Anthropic from "@anthropic-ai/sdk";
+import { JobState, type BatchJob, type JobError } from "@google/genai";
 import { eq, inArray, notInArray } from "drizzle-orm";
 import { db } from "@/db";
 import { analyses, batches, transcripts, videos, type Batch, type Video } from "@/db/schema";
@@ -6,7 +6,14 @@ import { estimateBatchCostUsd, recordSpend, withSpendCap } from "@/lib/spend";
 import { parseAnalysisResponse } from "./parse";
 import { DEFAULT_MODEL, estimateCostUsd, isAnalysisModel, toCostString, type AnalysisModel } from "./pricing";
 import { ANALYSIS_JSON_SCHEMA, ANALYSIS_SYSTEM_PROMPT, buildUserPrompt } from "./prompt";
-import { anthropic, insertAnalysis, MAX_OUTPUT_TOKENS, readUsage } from "./run";
+import {
+  gemini,
+  insertAnalysis,
+  MAX_OUTPUT_TOKENS,
+  readUsage,
+  responseText,
+  THINKING_LEVEL,
+} from "./run";
 
 /**
  * Batch API path for the nightly poller (PLAN.md §1.2).
@@ -15,9 +22,18 @@ import { anthropic, insertAnalysis, MAX_OUTPUT_TOKENS, readUsage } from "./run";
  * it — so accepting batch latency buys a flat 50% discount. This alone halves
  * the running cost, which is why the poller uses this path and the interactive
  * /api/analyze route does not.
+ *
+ * PLAN.md §5.O3 kept this path across the provider swap rather than losing it:
+ * Gemini's Batch API is the same bargain — a 24-hour target turnaround for
+ * exactly half price on input and output alike, confirmed against Google's
+ * pricing page on 2026-08-29 — so the poller's economics did not change with
+ * the provider.
  */
 
 const CUSTOM_ID_PREFIX = "video-";
+
+/** The request-metadata key carrying our own id — Gemini's `custom_id`. */
+const CUSTOM_ID_KEY = "custom_id";
 
 export type BatchSubmission = {
   batchId: string;
@@ -76,49 +92,54 @@ export async function submitAnalysisBatch(
     // submitting run asked for — making the batch multilingual means storing the
     // language on `batches`, which is a schema change this PR is not approved to
     // make. Whoever adds the language UI adds that column with it.
+    //
+    // Inlined requests rather than a file: the whole batch travels in the create
+    // call, which keeps this one round trip with no bucket to configure. The
+    // tradeoff is a payload ceiling — a poll run assembles at most
+    // findPendingVideos()'s page of transcripts, comfortably inside it, but a
+    // much larger backfill would need the file path instead (KNOWN-ISSUES.md).
     const requests = usable.map((video) => {
       const transcript = byVideoId.get(video.id)!;
       return {
-        custom_id: `${CUSTOM_ID_PREFIX}${video.id}`,
-        params: {
-          model,
-          max_tokens: MAX_OUTPUT_TOKENS,
-          system: [
-            {
-              type: "text" as const,
-              text: ANALYSIS_SYSTEM_PROMPT,
-              cache_control: { type: "ephemeral" as const },
-            },
-          ],
-          output_config: { format: { type: "json_schema" as const, schema: ANALYSIS_JSON_SCHEMA } },
-          messages: [
-            {
-              role: "user" as const,
-              content: buildUserPrompt({
-                title: video.title,
-                channelTitle: video.channelTitle,
-                durationSeconds: video.durationSeconds,
-                transcript: transcript.content,
-              }),
-            },
-          ],
+        model,
+        metadata: { [CUSTOM_ID_KEY]: `${CUSTOM_ID_PREFIX}${video.id}` },
+        contents: buildUserPrompt({
+          title: video.title,
+          channelTitle: video.channelTitle,
+          durationSeconds: video.durationSeconds,
+          transcript: transcript.content,
+        }),
+        config: {
+          systemInstruction: ANALYSIS_SYSTEM_PROMPT,
+          maxOutputTokens: MAX_OUTPUT_TOKENS,
+          thinkingConfig: { thinkingLevel: THINKING_LEVEL },
+          responseMimeType: "application/json",
+          responseJsonSchema: ANALYSIS_JSON_SCHEMA,
         },
       };
     });
 
-    const batch = await anthropic().messages.batches.create({ requests });
+    const batch = await gemini().batches.create({ model, src: requests });
 
     // Record the id BEFORE returning, and never behind a caller's opt-in: the
     // window between "the provider has taken the job" and "this app knows the id"
     // is exactly the window in which a crash strands paid work.
+    const providerBatchId = batch.name;
+    if (!providerBatchId) {
+      // Nothing to record and nothing to collect. Failing loudly here, with the
+      // reservation still held, beats returning a submission whose id is
+      // undefined and losing the batch silently.
+      throw new Error("Gemini accepted the batch but returned no job name to track it by.");
+    }
+
     await recordBatchSubmission({
-      providerBatchId: batch.id,
+      providerBatchId,
       model,
       videoCount: usable.length,
       estimatedUsd,
     });
 
-    return { batchId: batch.id, videoIds: usable.map((v) => v.id), estimatedUsd };
+    return { batchId: providerBatchId, videoIds: usable.map((v) => v.id), estimatedUsd };
   });
 }
 
@@ -165,8 +186,8 @@ export async function openBatches(): Promise<Batch[]> {
 /**
  * How long an unreadable batch stays open before the poller gives up on it.
  *
- * The provider's own ceiling for a batch is 24 hours and results are retained
- * for 29 days; a row this app cannot read for three days is not late, it is
+ * The provider's own target turnaround for a batch is 24 hours; a row this app
+ * cannot read for three days is not late, it is
  * gone — deleted server-side, or submitted against a key that no longer sees
  * it. Before PR-26 a stranded row cost one failed retrieve per run. Now it also
  * holds its estimate against the monthly cap forever, which eventually refuses
@@ -221,41 +242,40 @@ export async function batchModel(providerBatchId: string): Promise<AnalysisModel
 }
 
 /**
- * Map the provider's processing status onto ours.
+ * Map the provider's job state onto ours.
  *
- * `canceling` is treated as still open: its results are readable once it
- * settles, and calling it terminal early would drop rows that were already
- * paid for.
+ * Only a job that reached SUCCEEDED has results to read, so that is the one
+ * state this app calls collectable. Everything else — CANCELLING and PAUSED
+ * included — is treated as still open: a job mid-cancel can still settle with
+ * results, and calling it terminal early would drop rows that were already paid
+ * for. A job that ends FAILED, CANCELLED or EXPIRED also stays open here and is
+ * closed out by the stale-batch path instead, which bills the estimate on the
+ * way (abandonStaleBatch) rather than forgiving a charge the provider very
+ * likely made.
  */
-export function mapProviderStatus(
-  processingStatus: Anthropic.Messages.MessageBatch["processing_status"],
-): Batch["status"] {
-  return processingStatus === "ended" ? "ended" : "in_progress";
+export function mapProviderStatus(state: JobState | string | undefined): Batch["status"] {
+  return state === JobState.JOB_STATE_SUCCEEDED ? "ended" : "in_progress";
 }
 
 /**
  * The human-readable reason a batch entry did not succeed.
  *
- * The nesting here is the whole point. `entry.result.error` is an
- * `ErrorResponse` envelope whose own `type` is the constant string `"error"` —
- * so the previous `entry.result.error.type` recorded the literal word "error"
- * for every single failure, which is indistinguishable from every other
- * failure. The actionable discriminator (`invalid_request_error`,
- * `rate_limit_error`, `billing_error`, …) and the message are one level
- * further in, at `error.error`.
+ * The status code is the point, not decoration: it is the actionable
+ * discriminator (429 rate limit, 400 malformed request, 403 billing or
+ * permission) and it is what tells a reader whether re-running the backfill has
+ * any chance of a different answer. A message on its own reads much the same
+ * for a transient failure and a permanent one — which was exactly the bug the
+ * Anthropic version of this function was written to fix, and the reason it is
+ * still a named function with its own tests rather than an inline template.
  */
-export function batchFailureReason(
-  result: Exclude<Anthropic.Messages.MessageBatchIndividualResponse["result"], { type: "succeeded" }>,
-): string {
-  if (result.type !== "errored") return `batch ${result.type}`;
-  const detail = result.error.error;
-  const message = typeof detail?.message === "string" ? detail.message.trim() : "";
-  const type = detail?.type ?? "unknown_error";
-  return message ? `batch error: ${type}: ${message}` : `batch error: ${type}`;
+export function batchFailureReason(error: JobError | undefined | null): string {
+  const message = typeof error?.message === "string" ? error.message.trim() : "";
+  const code = typeof error?.code === "number" ? String(error.code) : "unknown_error";
+  return message ? `batch error: ${code}: ${message}` : `batch error: ${code}`;
 }
 
-export async function batchStatus(batchId: string): Promise<Anthropic.Messages.MessageBatch> {
-  return anthropic().messages.batches.retrieve(batchId);
+export async function batchStatus(batchId: string): Promise<BatchJob> {
+  return gemini().batches.get({ name: batchId });
 }
 
 /**
@@ -276,8 +296,8 @@ export async function awaitBatch(
 
   for (;;) {
     const batch = await batchStatus(batchId);
-    options.onPoll?.(batch.processing_status);
-    if (batch.processing_status === "ended") return true;
+    options.onPoll?.(batch.state ?? "JOB_STATE_UNSPECIFIED");
+    if (mapProviderStatus(batch.state) === "ended") return true;
     if (Date.now() >= deadline) return false;
     await new Promise((r) => setTimeout(r, pollIntervalMs));
   }
@@ -286,9 +306,11 @@ export async function awaitBatch(
 /**
  * Read a finished batch and write one analyses row per result.
  *
- * Results arrive in arbitrary order, so everything is keyed by custom_id —
- * never by position. Getting this wrong would attach each analysis to the
- * wrong video, which no later check would catch.
+ * Everything is keyed by the id this app put in the request metadata, never by
+ * position. Gemini documents inlined responses as coming back in submission
+ * order, but a silent reordering would attach each analysis to the wrong video
+ * and no later check would catch it — which is not a bet worth taking to save a
+ * map lookup.
  */
 export async function collectBatchResults(
   batchId: string,
@@ -326,8 +348,31 @@ export async function collectBatchResults(
     ).map((row) => row.videoId),
   );
 
-  for await (const entry of await anthropic().messages.batches.results(batchId)) {
-    const videoId = parseCustomId(entry.custom_id);
+  const job = await batchStatus(batchId);
+  const entries = job.dest?.inlinedResponses ?? [];
+
+  // A job that has not succeeded has nothing to read, and marking it collected
+  // would close a row whose results are still coming (or still owed). Throwing
+  // leaves it open for the next poll, which is what the caller's retry loop and
+  // the stale-batch cutoff are both built around.
+  if (entries.length === 0 && mapProviderStatus(job.state) !== "ended") {
+    throw new Error(
+      `Batch ${batchId} is not collectable yet (state: ${job.state ?? "unknown"}).`,
+    );
+  }
+  if (entries.length === 0 && job.dest?.fileName) {
+    throw new Error(
+      `Batch ${batchId} returned its results as file ${job.dest.fileName}; this app only submits inlined requests.`,
+    );
+  }
+
+  // Per-entry expiry is not a thing on Gemini the way it was on the Anthropic
+  // batch API — a job expires as a whole — so the distinction is drawn from the
+  // job's own state rather than from each result.
+  const jobExpired = job.state === JobState.JOB_STATE_EXPIRED;
+
+  for (const entry of entries) {
+    const videoId = parseCustomId(entry.metadata?.[CUSTOM_ID_KEY]);
     if (videoId === null) continue;
 
     if (alreadyWritten.has(videoId)) {
@@ -335,10 +380,10 @@ export async function collectBatchResults(
       continue;
     }
 
-    if (entry.result.type !== "succeeded") {
-      // errored / canceled / expired — record it so the backfill can see why
-      // this video has no analysis instead of silently retrying forever.
-      const reason = batchFailureReason(entry.result);
+    if (entry.error || !entry.response) {
+      // Record it so the backfill can see why this video has no analysis
+      // instead of silently retrying forever.
+      const reason = batchFailureReason(entry.error);
       await insertAnalysis({
         videoId,
         model,
@@ -348,20 +393,17 @@ export async function collectBatchResults(
         costUsd: 0,
         batchId,
       });
-      if (entry.result.type === "expired") outcome.expired += 1;
+      if (jobExpired) outcome.expired += 1;
       else outcome.failed += 1;
       continue;
     }
 
-    const message = entry.result.message;
+    const message = entry.response;
     const usage = readUsage(message);
     const costUsd = estimateCostUsd(model, usage, { batch: true });
     outcome.actualUsd += costUsd;
 
-    const raw = message.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("");
+    const raw = responseText(message);
 
     const parsed = parseAnalysisResponse(raw);
     if (!parsed.ok) {
@@ -401,8 +443,8 @@ export async function collectBatchResults(
   return outcome;
 }
 
-function parseCustomId(customId: string): number | null {
-  if (!customId.startsWith(CUSTOM_ID_PREFIX)) return null;
+function parseCustomId(customId: string | undefined): number | null {
+  if (!customId?.startsWith(CUSTOM_ID_PREFIX)) return null;
   const id = Number(customId.slice(CUSTOM_ID_PREFIX.length));
   return Number.isInteger(id) && id > 0 ? id : null;
 }

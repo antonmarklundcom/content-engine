@@ -1,8 +1,8 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { ThinkingLevel, type GenerateContentResponse, type GoogleGenAI } from "@google/genai";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { analyses, transcripts, videos, type Analysis, type Video } from "@/db/schema";
-import { anthropicClient } from "@/lib/anthropic";
+import { geminiClient, readUsage, responseText } from "@/lib/ai";
 import { analysisPromptVersion, ANALYSIS_PROMPT_VERSION, type AnalysisPayload } from "./contract";
 import { parseAnalysisResponse } from "./parse";
 import {
@@ -19,17 +19,34 @@ import { screenMinScore } from "@/lib/screening/policy";
 import { notCulled } from "@/lib/screening/sql";
 
 /**
- * The analysis pipeline (PLAN.md §5 row 06): transcript -> Haiku 4.5 ->
- * validated JSON -> analyses row, with tokens and cost recorded per row.
+ * The analysis pipeline (PLAN.md §5 row 06): transcript -> Gemini 3.1
+ * Flash-Lite -> validated JSON -> analyses row, with tokens and cost recorded
+ * per row.
  */
 
 /** ~2,500 output tokens expected (PLAN.md §1); the headroom absorbs long videos. */
 export const MAX_OUTPUT_TOKENS = 8_000;
 
-/** Re-exported so the analysis/screening/outline modules share one Anthropic client. */
-export function anthropic(): Anthropic {
-  return anthropicClient();
+/**
+ * Reasoning is off across this pipeline.
+ *
+ * Gemini bills reasoning tokens at the output rate AND counts them against
+ * `maxOutputTokens`, so a model left to think freely can spend the whole
+ * budget before it writes a character of the JSON — the screening path, with
+ * its 400-token ceiling, would truncate every time. The Anthropic models this
+ * replaced were called without extended thinking at all, so MINIMAL is the
+ * faithful port as well as the cheap one. If analyses ever come back thin,
+ * this is the lever (see KNOWN-ISSUES.md).
+ */
+export const THINKING_LEVEL = ThinkingLevel.MINIMAL;
+
+/** Re-exported so the analysis/screening/outline modules share one Gemini client. */
+export function gemini(): GoogleGenAI {
+  return geminiClient();
 }
+
+/** Re-exported from the one module that knows how Gemini shapes a response. */
+export { readUsage, responseText };
 
 export type AnalyzeOptions = {
   model?: AnalysisModel;
@@ -76,37 +93,30 @@ export async function analyzeVideo(
     return { status: "skipped", why: "no-transcript" };
   }
 
-  let response: Anthropic.Message;
+  let response: GenerateContentResponse;
 
   try {
-    response = await anthropic().messages.create({
+    response = await gemini().models.generateContent({
       model,
-      max_tokens: MAX_OUTPUT_TOKENS,
-      // Cache the fixed template (PLAN.md §1.4). Note this silently no-ops on
-      // Haiku 4.5 below a 4096-token prefix — cacheWriteTokens in the stored
-      // row is what tells you whether it engaged.
-      system: [
-        {
-          type: "text",
-          text: ANALYSIS_SYSTEM_PROMPT,
-          cache_control: { type: "ephemeral" },
-        },
-      ],
-      // Structured outputs constrain the model to the §4 shape rather than
-      // merely asking for it. The defensive parser stays as a backstop.
-      output_config: { format: { type: "json_schema", schema: ANALYSIS_JSON_SCHEMA } },
-      messages: [
-        {
-          role: "user",
-          content: buildUserPrompt({
-            title: video.title,
-            channelTitle: video.channelTitle,
-            durationSeconds: video.durationSeconds,
-            transcript: transcript.content,
-            language: options.language,
-          }),
-        },
-      ],
+      contents: buildUserPrompt({
+        title: video.title,
+        channelTitle: video.channelTitle,
+        durationSeconds: video.durationSeconds,
+        transcript: transcript.content,
+        language: options.language,
+      }),
+      config: {
+        // The fixed template. There is no cache breakpoint to set on Gemini —
+        // caching is implicit and needs a shared prefix of at least 4096
+        // tokens, which this prompt does not reach (see CACHE_NOTE).
+        systemInstruction: ANALYSIS_SYSTEM_PROMPT,
+        maxOutputTokens: MAX_OUTPUT_TOKENS,
+        thinkingConfig: { thinkingLevel: THINKING_LEVEL },
+        // Structured outputs constrain the model to the §4 shape rather than
+        // merely asking for it. The defensive parser stays as a backstop.
+        responseMimeType: "application/json",
+        responseJsonSchema: ANALYSIS_JSON_SCHEMA,
+      },
     });
   } catch (err) {
     // An API-level failure produces no usage, so it costs nothing and must not
@@ -127,9 +137,9 @@ export async function analyzeVideo(
 
   const usage = readUsage(response);
   const costUsd = estimateCostUsd(model, usage);
-  const raw = textOf(response);
+  const raw = responseText(response);
 
-  if (response.stop_reason === "max_tokens") {
+  if (response.candidates?.[0]?.finishReason === "MAX_TOKENS") {
     // Truncated JSON parses as garbage; naming the real cause saves a debugging
     // session when it happens on an unusually long transcript.
     const row = await insertAnalysis({
@@ -137,12 +147,12 @@ export async function analyzeVideo(
       model,
       promptVersion,
       status: "failed",
-      error: `response hit max_tokens (${MAX_OUTPUT_TOKENS}); output truncated`,
+      error: `response hit maxOutputTokens (${MAX_OUTPUT_TOKENS}); output truncated`,
       rawResponse: raw,
       usage,
       costUsd,
     });
-    return { status: "failed", analysis: row, error: "max_tokens", costUsd };
+    return { status: "failed", analysis: row, error: "MAX_TOKENS", costUsd };
   }
 
   const parsed = parseAnalysisResponse(raw);
@@ -183,26 +193,7 @@ const EMPTY_USAGE: TokenUsage = {
   cacheWriteTokens: 0,
 };
 
-/**
- * `input_tokens` is the uncached remainder only — the full prompt size is the
- * sum of all three. Recording them separately is what makes the stored cost
- * auditable against the bill.
- */
-export function readUsage(response: Anthropic.Message): TokenUsage {
-  return {
-    inputTokens: response.usage.input_tokens ?? 0,
-    outputTokens: response.usage.output_tokens ?? 0,
-    cacheReadTokens: response.usage.cache_read_input_tokens ?? 0,
-    cacheWriteTokens: response.usage.cache_creation_input_tokens ?? 0,
-  };
-}
 
-function textOf(response: Anthropic.Message): string {
-  return response.content
-    .filter((b): b is Anthropic.TextBlock => b.type === "text")
-    .map((b) => b.text)
-    .join("");
-}
 
 export async function insertAnalysis(input: {
   videoId: number;
