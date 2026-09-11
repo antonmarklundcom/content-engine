@@ -1,5 +1,6 @@
 import { GoogleGenAI, ThinkingLevel, type GenerateContentResponse } from "@google/genai";
 import type { Brand } from "@/db/schema";
+import { fakeGeminiClient, fakeGeminiEnabled } from "@/lib/ai-fake";
 import {
   costUsdAtRates,
   GROUNDING_USD_PER_QUERY,
@@ -22,6 +23,20 @@ import { recordSpend, withSpendCap } from "@/lib/spend";
 let cachedClient: GoogleGenAI | undefined;
 
 export function geminiClient(): GoogleGenAI {
+  // The test-double seam (PLAN.md §1.16, §5.O5.1). This is the ONLY thing in
+  // this module that knows a fake exists — every helper below, and every caller
+  // in src/lib/analysis and src/lib/screening, goes on talking to the SDK's
+  // types and never learns the difference. The cast is unavoidable and is the
+  // reason the seam is one line: `GoogleGenAI` has private fields, so no
+  // structurally-typed stand-in can satisfy it; `FakeGemini` pins its own
+  // methods to the SDK's parameter and return types instead.
+  //
+  // Deliberately ahead of the cache and re-read every call rather than resolved
+  // once: a process that has already built a real client must still switch when
+  // a test sets the flag, and the alternative — a cached fake outliving the flag
+  // — is a live run silently answering from canned data.
+  if (fakeGeminiEnabled()) return fakeGeminiClient() as unknown as GoogleGenAI;
+
   if (!cachedClient) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
