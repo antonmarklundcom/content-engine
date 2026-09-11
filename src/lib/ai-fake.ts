@@ -3,7 +3,9 @@ import {
   GenerateContentResponse,
   JobState,
   type BatchJob,
+  type CreateBatchJobParameters,
   type GenerateContentParameters,
+  type GetBatchJobParameters,
   type GenerateContentResponseUsageMetadata,
   type InlinedRequest,
   type InlinedResponse,
@@ -512,8 +514,17 @@ export class FakeGemini {
   };
 
   readonly batches = {
-    create: async (params: { model: string; src: unknown }): Promise<BatchJob> => {
-      const requests = (Array.isArray(params.src) ? params.src : []) as InlinedRequest[];
+    create: async (params: CreateBatchJobParameters): Promise<BatchJob> => {
+      // This app only ever submits inlined requests (see submitAnalysisBatch's
+      // note on why); a GCS or BigQuery source would be a new code path, not a
+      // new canned response, so it is refused rather than quietly answered.
+      if (!Array.isArray(params.src)) {
+        throw new Error(
+          "ai-fake: batches.create was given a non-inlined source. This app submits " +
+            "inlined requests only — see src/lib/analysis/batch.ts.",
+        );
+      }
+      const requests: InlinedRequest[] = params.src;
       // Validated at submission, not at collection: a batch whose requests carry
       // a schema this fake cannot answer should fail where it was built.
       for (const request of requests) classifySchema(request.config?.responseJsonSchema);
@@ -528,10 +539,15 @@ export class FakeGemini {
         groundingQueries: 0,
       });
 
-      return { name, model: params.model, state: JobState.JOB_STATE_PENDING, createTime: new Date().toISOString() };
+      return {
+        name,
+        model: params.model,
+        state: JobState.JOB_STATE_PENDING,
+        createTime: new Date().toISOString(),
+      };
     },
 
-    get: async (params: { name: string }): Promise<BatchJob> => {
+    get: async (params: GetBatchJobParameters): Promise<BatchJob> => {
       const requests = this.submitted.get(params.name);
       if (!requests) throw new Error(`ai-fake: no such batch job "${params.name}"`);
 
