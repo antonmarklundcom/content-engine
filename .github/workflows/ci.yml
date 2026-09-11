@@ -18,10 +18,15 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 env:
-  # Placeholders, not secrets. `next build` reads SESSION_SECRET at module load
-  # in the auth code, and the value only has to be the right shape — 64 hex
-  # characters — for the build to get past it.
-  SESSION_SECRET: 0000000000000000000000000000000000000000000000000000000000000000
+  # Placeholders, not secrets. The auth code requires ≥ 32 characters, so the
+  # value only has to be the right shape.
+  #
+  # Quoted, and with letters in it, deliberately: an all-digit value here is
+  # read by YAML as a *number*, and 64 zeros as a number is `0` — which reaches
+  # the app as a one-character secret and 500s every authenticated page. The
+  # build still passes (these pages are server-rendered on demand, so a build
+  # never evaluates it), which is exactly what makes the mistake expensive.
+  SESSION_SECRET: "c1a0placeholder0for0ci0only0not0a0real0secret0000000000000000cafe"
   DATABASE_URL: postgres://postgres:postgres@localhost:5432/content_engine_test
 
 jobs:
