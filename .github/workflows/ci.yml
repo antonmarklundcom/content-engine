@@ -1,0 +1,140 @@
+# CI for content-engine (PLAN.md §1.15).
+#
+# The gate every PR passes: typecheck, unit tests, then the same migrations and
+# integration tests against a real postgres:16 — which is the whole point of the
+# O4 phase (§1.12). Actions is CI only; nothing the app needs at runtime may
+# depend on a workflow run (§1.2). S9 adds the lint step to this same file.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A new push supersedes the run in flight for the same branch; main is never
+# cancelled, so the record of what merged stays complete.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  # Placeholders, not secrets. The auth code requires ≥ 32 characters, so the
+  # value only has to be the right shape.
+  #
+  # Quoted, and with letters in it, deliberately: an all-digit value here is
+  # read by YAML as a *number*, and 64 zeros as a number is `0` — which reaches
+  # the app as a one-character secret and 500s every authenticated page. The
+  # build still passes (these pages are server-rendered on demand, so a build
+  # never evaluates it), which is exactly what makes the mistake expensive.
+  SESSION_SECRET: "c1a0placeholder0for0ci0only0not0a0real0secret0000000000000000cafe"
+  DATABASE_URL: postgres://postgres:postgres@localhost:5432/content_engine_test
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: content_engine_test
+        ports:
+          - 5432:5432
+        # Without this the first migration can race the server's own startup.
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      # Explicit rather than left to the harness: a migration that fails should
+      # say so as a migration failure, not as 34 confusing test errors.
+      - name: Migrate
+        run: npm run db:migrate
+
+      - name: Integration tests
+        run: npm run test:db
+
+      - name: Build
+        run: npm run build
+
+  # Scaffold only (§4.13, §5.O4.4). The page list in tests/screenshots.mjs is a
+  # single route until S5 fills it in with the pages of the design system it
+  # builds. Artifact, never committed: docs/screenshots/ is git-ignored.
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: verify
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: content_engine_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # --no-save, not a devDependency: Playwright and its browser are ~400MB
+      # and only this job wants them. Adding it to package.json would put that
+      # on every `npm ci`, including a contributor's first one.
+      - name: Install Playwright Chromium
+        run: |
+          npm i --no-save playwright@1
+          npx playwright install --with-deps chromium
+
+      - name: Migrate and seed
+        run: npm run db:migrate && npm run db:seed
+
+      - name: Build
+        run: npm run build
+
+      - name: Capture
+        run: |
+          npx next start -p 3000 &
+          npx --yes wait-on@7 http://127.0.0.1:3000/youtube/login --timeout 120000
+          node tests/screenshots.mjs
+        env:
+          BASE_URL: http://127.0.0.1:3000
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: docs/screenshots/
+          if-no-files-found: warn

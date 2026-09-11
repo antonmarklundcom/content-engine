@@ -50,6 +50,19 @@ No media generation, no scheduling, no posting integration.
    npm run dev
    ```
 
+**Running against a local Postgres.** `DATABASE_URL` does not have to be Neon.
+The app reads the hostname and picks its driver from it: `*.neon.tech` gets
+Neon's HTTP driver, anything else gets plain `node-postgres` (set `DB_DRIVER`
+to `neon` or `pg` to override). So a local server needs nothing but a
+connection string — `postgres://postgres:postgres@localhost:5432/content_engine_test`
+— and that is what `npm run test:db` expects: the integration tests in `tests/`
+run real SQL against a throwaway database, and refuse to start against a Neon
+URL because they truncate every table between files. `npm run verify` is the
+whole gate in one command (typecheck, unit tests, integration tests, build),
+and it is what CI runs on every PR. On Vercel, `vercel-build` applies migrations
+and re-seeds before `next build`; the seed is insert-only, so a deploy never
+overwrites a brand edited in the app.
+
 ## Deploying
 
 Deploy to Vercel (`vercel deploy` or via the dashboard, importing this repo).
