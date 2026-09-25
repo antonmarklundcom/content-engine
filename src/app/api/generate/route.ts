@@ -1,12 +1,26 @@
+import { sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db, schema } from "@/db";
 import { generateContentPlan } from "@/lib/ai";
+import { isOwner } from "@/lib/auth/roles";
+import { getSession } from "@/lib/auth/session";
 import { getAnalysisWithVideo, getBrand, listBrands } from "@/lib/bridge";
 import { SpendCapExceededError } from "@/lib/spend";
 
 export const maxDuration = 300; // research + generation can take a couple minutes
 
 export async function POST(request: Request) {
+  // Spend is owner-only, everywhere (PLAN.md §1.20): this is the app's most
+  // expensive call. Same statuses and body shape as promote's `adapt` gate.
+  const user = await getSession();
+  if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
+  if (!isOwner(user)) {
+    return NextResponse.json(
+      { error: "Generating ideas spends money, which is the owner's to spend." },
+      { status: 403 },
+    );
+  }
+
   const body = await request.json().catch(() => ({}));
   const brandId = body.brandId as string | undefined;
   if (!brandId) {
@@ -45,12 +59,16 @@ export async function POST(request: Request) {
     };
   }
 
-  // Existing research relevant to this brand — check before asking Claude to
-  // research from scratch.
-  const allNotes = await db.select().from(schema.researchNotes);
-  const existingResearch = allNotes
-    .filter((n) => n.relatedBrandIds.includes(brandId))
-    .map((n) => ({ topic: n.topic, summary: n.summary }));
+  // Existing research relevant to this brand — check before asking the model
+  // to research from scratch. Filtered in SQL with a jsonb containment rather
+  // than loading every note: the table grows with every run of every brand.
+  // (The column is `json`, hence the cast.)
+  const existingResearch = await db
+    .select({ topic: schema.researchNotes.topic, summary: schema.researchNotes.summary })
+    .from(schema.researchNotes)
+    .where(
+      sql`${schema.researchNotes.relatedBrandIds}::jsonb @> ${JSON.stringify([brandId])}::jsonb`,
+    );
 
   let plan;
   try {
@@ -68,8 +86,13 @@ export async function POST(request: Request) {
     throw error;
   }
 
-  // Persist any new shared research notes.
+  // Persist any new shared research notes. An idea links to one only when the
+  // model itself tagged that note with this brand: a note it filed under other
+  // brands is research this run happened to produce, not what the ideas were
+  // spun from, and "the first note of the run" linked ideas to unrelated
+  // research. No such note → null, which is honest.
   const insertedNoteIds: number[] = [];
+  let researchNoteId: number | null = null;
   for (const note of plan.researchNotes) {
     const [inserted] = await db
       .insert(schema.researchNotes)
@@ -82,6 +105,9 @@ export async function POST(request: Request) {
       })
       .returning({ id: schema.researchNotes.id });
     insertedNoteIds.push(inserted.id);
+    if (researchNoteId === null && note.relatedBrandIds.includes(brandId)) {
+      researchNoteId = inserted.id;
+    }
   }
 
   // Persist ideas.
@@ -97,7 +123,7 @@ export async function POST(request: Request) {
         draftCopy: idea.draftCopy,
         visualNotes: idea.visualNotes,
         citations: idea.citations,
-        researchNoteId: insertedNoteIds[0], // best-effort link to this run's research, if any
+        researchNoteId,
         sourceAnalysisId: analysisId,
         status: "proposed" as const,
       })),

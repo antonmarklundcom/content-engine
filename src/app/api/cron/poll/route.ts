@@ -1,4 +1,5 @@
 import { authorizeCronRequest } from "@/lib/cron-auth";
+import { POLL_LEASE, POLL_LEASE_TTL_MS, withLease } from "@/lib/lease";
 import { pollSources, type PollResult } from "@/lib/poll";
 import { SpendCapExceededError } from "@/lib/spend";
 
@@ -26,9 +27,10 @@ const DEFAULT_LIMIT = 10;
  * Hourly cron plus a poll that can outlive an hour is a recipe for two runs
  * ingesting the same source at once. Ingest upserts are idempotent so nothing
  * corrupts, but the second run wastes YouTube quota and can double-submit a
- * batch, so it is refused outright.
+ * batch, so it is refused outright. The guard is the `poll` lease in the
+ * database (PLAN.md §1.19), not a module variable: `npm run yt:poll` takes the
+ * same lease, and a module variable only ever saw its own process.
  */
-let running = false;
 
 async function handle(request: Request): Promise<Response> {
   const auth = authorizeCronRequest(request.headers);
@@ -36,22 +38,23 @@ async function handle(request: Request): Promise<Response> {
     return json({ ok: false, error: auth.error }, auth.status);
   }
 
-  if (running) {
-    return json(
-      { ok: false, error: "A poll is already running; skipping this invocation." },
-      409,
-    );
-  }
-
   const url = new URL(request.url);
   const limit = positiveInt(url.searchParams.get("limit")) ?? DEFAULT_LIMIT;
   const analyze = url.searchParams.get("analyze") !== "false";
   const dryRun = url.searchParams.get("dry-run") === "true";
 
-  running = true;
   const startedAt = Date.now();
   try {
-    const result = await pollSources({ limit, analyze, dryRun });
+    const run = await withLease(POLL_LEASE, POLL_LEASE_TTL_MS, () =>
+      pollSources({ limit, analyze, dryRun }),
+    );
+    if (!run.acquired) {
+      return json(
+        { ok: false, error: "A poll is already running; skipping this invocation." },
+        409,
+      );
+    }
+    const result = run.value;
     return json({ ok: true, ...summarize(result), result }, 200);
   } catch (err) {
     if (err instanceof SpendCapExceededError) {
@@ -67,8 +70,6 @@ async function handle(request: Request): Promise<Response> {
       },
       500,
     );
-  } finally {
-    running = false;
   }
 }
 
@@ -85,6 +86,7 @@ function summarize(result: PollResult): { summary: string } {
     `${result.pendingAnalysis} pending`,
   ];
   if (failed > 0) parts.push(`${failed} source error(s)`);
+  if (result.reapedClips > 0) parts.push(`${result.reapedClips} stuck clip(s) failed`);
   if (result.quotaExhausted) parts.push("youtube quota exhausted");
   for (const c of result.collected) {
     parts.push(

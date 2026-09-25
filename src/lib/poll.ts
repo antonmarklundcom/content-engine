@@ -10,9 +10,9 @@
  * but an exit code.
  */
 
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { sources, type Source } from "@/db/schema";
+import { clips, sources, type Source } from "@/db/schema";
 import {
   abandonStaleBatch,
   awaitBatch,
@@ -60,6 +60,7 @@ export type PollOptions = {
 };
 
 export type PollEvent =
+  | { phase: "reaped"; count: number }
   | { phase: "sources"; count: number }
   | { phase: "source"; result: PollSourceResult }
   | { phase: "quota-exhausted"; message: string }
@@ -100,6 +101,8 @@ export type PollResult = {
   startedAt: string;
   finishedAt: string;
   durationMs: number;
+  /** Clips stuck in `ingesting` that this run failed (PLAN.md §1.21). */
+  reapedClips: number;
   sources: PollSourceResult[];
   quotaExhausted: boolean;
   /** Batches that had already ended and were written to `analyses` this run. */
@@ -140,6 +143,11 @@ export async function pollSources(options: PollOptions = {}): Promise<PollResult
 
   const startedAt = new Date();
   const before = await spendStatus();
+
+  // Before anything else, so a run that dies on its first source has still
+  // done this. Cheap, free, and not part of what a dry run promises to skip.
+  const reapedClips = await reapStuckClips();
+  if (reapedClips > 0) onProgress({ phase: "reaped", count: reapedClips });
 
   const active = await db
     .select()
@@ -201,6 +209,7 @@ export async function pollSources(options: PollOptions = {}): Promise<PollResult
       startedAt: startedAt.toISOString(),
       finishedAt: finishedAt.toISOString(),
       durationMs: finishedAt.getTime() - startedAt.getTime(),
+      reapedClips,
       sources: results,
       quotaExhausted,
       abandoned,
@@ -342,6 +351,34 @@ export async function pollSources(options: PollOptions = {}): Promise<PollResult
     skipped: null,
     waited: { batchId: submission.batchId, finished, outcome },
   });
+}
+
+/** How long a clip may sit in `ingesting` before the poll run calls it dead. */
+export const CLIP_INGEST_TIMEOUT_MINUTES = 15;
+export const CLIP_INGEST_TIMEOUT_ERROR = "Ingest timed out — retry";
+
+/**
+ * Fail clips stuck in `ingesting` (PLAN.md §1.21). A clip gets there when the
+ * save route hands a YouTube link to ingest, and leaves when ingest finishes —
+ * so a process killed in between (a closed laptop lid, a restarted dev server)
+ * strands it for good, with no retry button, since the inbox offers retry only
+ * on `failed`. Failing it with a retryable error puts it back in reach.
+ *
+ * One statement, time compared in SQL, same reason as the lease: the database
+ * clock is the only one every caller shares.
+ */
+export async function reapStuckClips(): Promise<number> {
+  const reaped = await db
+    .update(clips)
+    .set({ status: "failed", error: CLIP_INGEST_TIMEOUT_ERROR })
+    .where(
+      and(
+        eq(clips.status, "ingesting"),
+        sql`${clips.savedAt} < now() - ${CLIP_INGEST_TIMEOUT_MINUTES} * interval '1 minute'`,
+      ),
+    )
+    .returning({ id: clips.id });
+  return reaped.length;
 }
 
 async function pollSource(
