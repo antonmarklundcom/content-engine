@@ -1,14 +1,14 @@
-# Phase O6 — Production hardening + lane-2 prep. OPUS session. Lane 1 (last).
+# Phase O6 — Production hardening (local-first). OPUS 5.5 session (effort medium, §1.37). Lane 1.
 
 Read ONLY: this file, `PLAN.md` §1, §4, §5.O6, the phase table and §9 index,
 `docs/log/o4.md`, `docs/log/o5.md`. Execute under the autonomy protocol §4.
 
 Owns:
-- `vercel.json` (new), `src/app/api/cron/**`, `src/lib/poll.ts`,
+- `scripts/poll-sources.ts`, `src/app/api/cron/**`, `src/lib/poll.ts`,
   `src/lib/lease.ts` (new), `src/app/api/generate/route.ts`,
   `src/app/api/ideas/[id]/route.ts` (posted_at only), `src/db/schema.ts`,
   `drizzle/**` (one new migration), `src/lib/i18n/**` (split only, zero key
-  changes), `tests/integration/**`, `prompts/_watcher.md` (ids only),
+  changes), `tests/integration/**`,
   `.env.example`, `docs/log/o6.md`.
 
 Budget: one session, ≤ 90 min. Open the PR the turn the exit criteria pass.
@@ -21,9 +21,10 @@ Phase rules:
   transactions, no advisory locks (Neon HTTP is single-statement).
   `withLease(name, ttlMs, fn)` releases in `finally`. Poll route: 409 when
   not acquired. Test with two concurrent handler calls.
-- `vercel.json`: `{"crons":[{"path":"/api/cron/poll","schedule":"0 * * * *"}]}`.
-  `export const maxDuration = 300` on the poll route; rewrite its header
-  comment (Vercel Cron, Bearer `CRON_SECRET`).
+- Local first (§1.27): NO `vercel.json` crons. `npm run yt:poll` takes the
+  same lease as the route (409-equivalent: exit 0 with "already running").
+  Write the Windows Task Scheduler entry (hourly, `npm run yt:poll` in the
+  repo dir) into `docs/log/o6.md` for S8. Keep the cron route working as is.
 - `/api/generate`: `getSession()` → 401; `!isOwner` → 403 with the same
   JSON shape promote's `adapt` uses. Test both.
 - Reaper (§1.21): in `pollSources`, before sources, `update clips set
@@ -40,15 +41,13 @@ Phase rules:
   spread in `dictionary.ts`; `TranslationKey` identical (add a test that
   the key set is unchanged vs a snapshot taken before the split). Create
   empty `dict/brands.ts`, `dict/ideas.ts`, `dict/admin.ts` with imports
-  already wired so S5/S6/S7 never touch `dictionary.ts`.
+  already wired so lane 2 never touches `dictionary.ts`.
 - Re-runnable; minor issues → `docs/log/o6.md`; stop only per §4.4.
 
-Exit: CI green; `vercel.json`; lease + 409 test; owner gate tests; reaper
+Exit: CI green; `yt:poll` + route both use the lease, 409 test; owner gate tests; reaper
 test; notes-link test; migration 0004; dict split with unchanged key set;
 PR merged; log + §9 line.
 
 ## After this phase
-Follow `prompts/_handoff.md`: create the watcher Routine (hourly, fresh
-Sonnet session, prompt `Read prompts/_watcher.md in this repo and execute
-it.`), then spawn ALL lane 2 phases on Sonnet: `sonnet-5-design-system.md`,
-`sonnet-6-ideas-workflow.md`, `sonnet-7-probe-route.md`, `sonnet-8-docs.md`.
+Follow `prompts/_handoff.md`. Next: `prompts/opus-7-studio-foundation.md`, model `claude-opus-5-5`.
+No watcher yet — O8 creates it.

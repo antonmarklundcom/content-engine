@@ -1,4 +1,4 @@
-# Phase S5 — One design system. SONNET session. Lane 2, parallel with S6, S7, S8.
+# Phase S5 — One design system. OPUS 5.5 session (effort low, §1.37). Lane 2, parallel with S6, S8, S10, S11, S12.
 
 Read ONLY: this file, `PLAN.md` §1, §4, §6.S5, the phase table and §9 index,
 and `docs/log/o6.md`. Execute under the autonomy protocol §4.

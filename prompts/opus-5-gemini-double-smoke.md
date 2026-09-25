@@ -1,4 +1,4 @@
-# Phase O5 — Gemini test double + live smoke. OPUS session. Lane 1.
+# Phase O5 — Gemini test double + live smoke. OPUS 5.5 session (effort medium, §1.37). Lane 1.
 
 Read ONLY: this file, `PLAN.md` §1, §4, §5.O5, the phase table and §9 index,
 and `docs/log/o4.md`. Execute under the autonomy protocol §4.
@@ -50,4 +50,4 @@ its command handed off; PR merged; log + §9 line.
 
 ## After this phase
 Follow `prompts/_handoff.md`. Next: `prompts/opus-6-prod-hardening.md`,
-model Opus.
+model `claude-opus-5-5`.
