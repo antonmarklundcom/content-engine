@@ -580,7 +580,7 @@ One line per phase; detail in `docs/log/<id>.md`.
 | O1–O3, S3 | #6, #8, #9, #10–#12 | `docs/PLAN-v1-build1.md` §9 | merged, unverified |
 | Plan v2 | this PR | `docs/REVIEW-2026-09-11.md` | — |
 | O4 | #14 | `docs/log/o4.md` | merged |
-| O5 | #15 | `docs/log/o5.md` | open, CI green |
+| O5 | #15 | `docs/log/o5.md` | merged — live smoke handed off |
 | O6 | | `docs/log/o6.md` | not started |
 | S5 | | `docs/log/s5.md` | not started |
 | S6 | | `docs/log/s6.md` | not started |
