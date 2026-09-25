@@ -1,4 +1,11 @@
-# PLAN — content-engine build 2: verify, harden, unify (phased autonomous build)
+# PLAN — content-engine build 2: verify, harden, unify, research studio (phased autonomous build)
+
+> **Amended 2026-09-25 (studio scope, §1.27–§1.36).** The app now runs
+> **locally first** on Anton's PC, and build 2 grows a *research studio*:
+> competitor research, saved lessons, titles and on-camera scripts, and a
+> Higgsfield hand-off. S7 is dropped; O7, O8, S10, S11, S12 are added.
+> Voice, video rendering and clipping live in `antonmarklundcom/videoPY` and
+> are **deferred**. Children's stories are a **separate build**, not here.
 
 Build 1 (O1–O3, S3; 2026-08-28/29) wired the brand-ideation half and the
 YouTube half together and added the clip inbox. Its plan and build log are
@@ -13,20 +20,26 @@ and `withSpendCap`.
 
 ## Phase table
 
-Lane 1 runs first, sequentially, on Opus. When O6 merges, it creates the
-watcher Routine and spawns every lane 2 phase at once. S9 runs after all of
+Lane 1 runs first, sequentially, on Opus (O5 → O6 → O7 → O8). When O8
+merges, it creates the watcher Routine and spawns every lane 2 phase at once
+(S5, S6, S8, S10, S11, S12; ≤ 4 running, the watcher starts the rest). S9 runs after all of
 lane 2 has merged.
 
 | Phase | Lane | Model | Prompt file | Plan § | Owns | Depends on |
 |---|---|---|---|---|---|---|
 | O4 Verification foundation | 1 | Opus | `prompts/opus-4-verify-foundation.md` | §5.O4 | `src/db/index.ts`, `src/db/migrate.ts`, `src/db/seed.ts`, `drizzle.config.ts`, `package.json`, `package-lock.json`, `.github/**`, `tests/**`, `.env.example`, `docs/log/o4.md` | — |
 | O5 Gemini double + live smoke | 1 | Opus | `prompts/opus-5-gemini-double-smoke.md` | §5.O5 | `src/lib/ai.ts` (test-double seam only), `src/lib/ai-fake.ts`, `scripts/smoke.ts`, `tests/integration/**`, `package.json` scripts, `docs/log/o5.md` | O4 |
-| O6 Production hardening + lane-2 prep | 1 | Opus | `prompts/opus-6-prod-hardening.md` | §5.O6 | `vercel.json`, `src/app/api/cron/**`, `src/lib/poll.ts`, `src/lib/lease.ts`, `src/app/api/generate/route.ts`, `src/lib/clips/save.ts` (reaper hook only), `src/db/schema.ts`, `drizzle/**`, `src/lib/i18n/**` (split only), `prompts/_watcher.md` (fill in ids), `docs/log/o6.md` | O5 |
+| O6 Production hardening (local-first) | 1 | Opus | `prompts/opus-6-prod-hardening.md` | §5.O6 | `scripts/poll-sources.ts`, `src/app/api/cron/**`, `src/lib/poll.ts`, `src/lib/lease.ts`, `src/app/api/generate/route.ts`, `src/lib/clips/save.ts` (reaper hook only), `src/db/schema.ts`, `drizzle/**`, `src/lib/i18n/**` (split only), `docs/log/o6.md` | O5 |
+| O7 Studio data foundation | 1 | Opus | `prompts/opus-7-studio-foundation.md` | §5.O7 | `src/db/schema.ts`, `drizzle/**`, `src/lib/research/**` (new), `src/lib/bridge/research.ts` + `lessons.ts` + `scripts.ts` (new), `src/lib/analysis/fallback.ts` (new), `src/lib/ai.ts` (fallback call only), `src/lib/i18n/dict/{research,lessons,scripts}.ts` (empty stubs + import lines), `tests/integration/**`, `docs/log/o7.md` | O6 |
+| O8 Titles + script generation | 1 | Opus | `prompts/opus-8-script-engine.md` | §5.O8 | `src/lib/ai.ts` (new calls), `src/lib/ai-fake.ts`, `src/lib/scripts/**` (new), `src/app/api/scripts/**` (new), `content/style/**` (new), `tests/integration/**`, `prompts/_watcher.md` (ids), `docs/log/o8.md` | O7 |
 | S5 One design system | 2 | Sonnet | `prompts/sonnet-5-design-system.md` | §6.S5 | `src/app/page.tsx`, `src/app/layout.tsx`, `src/app/brand/**`, `src/app/globals.css`, `src/components/TopNav.tsx`, `src/components/Header.tsx`, `src/components/Brand*.tsx` (new), `src/lib/i18n/dict/brands.ts`, `docs/log/s5.md` | O6 |
 | S6 Ideas workflow | 2 | Sonnet | `prompts/sonnet-6-ideas-workflow.md` | §6.S6 | `src/app/api/ideas/**`, `src/lib/bridge/ideas.ts` (new), `src/lib/ideas.actions.ts` (new), `src/components/Idea*.tsx` (new), `src/lib/i18n/dict/ideas.ts`, `tests/integration/ideas.test.ts`, `docs/log/s6.md` | O6 |
-| S7 Caption probe route | 2 | Sonnet | `prompts/sonnet-7-probe-route.md` | §6.S7 | `src/lib/youtube/captions/probe.ts` (new), `scripts/probe-captions.ts`, `src/app/youtube/admin/**` (new), `src/app/api/admin/**` (new), `src/lib/i18n/dict/admin.ts`, `docs/log/s7.md` | O6 |
-| S8 Docs + DX | 2 | Sonnet | `prompts/sonnet-8-docs.md` | §6.S8 | `README.md`, `CONTRIBUTING.md` (new), `docs/CAPTURE.md`, `docs/CAPTION-FETCH-RESILIENCE.md`, `docs/VERIFY.md` (new), `docs/log/s8.md` | O6 |
-| S9 Link pass | — | Sonnet | `prompts/sonnet-9-link-pass.md` | §6.S9 | ESLint/Prettier config + repo-wide autofix, `.github/workflows/ci.yml` (lint step), `KNOWN-ISSUES.md`, `src/components/Header.tsx` nav, `docs/log/s9.md` | S5–S8 |
+| ~~S7 Caption probe route~~ | — | — | dropped §1.28 | — | — | — |
+| S8 Docs + DX | 2 | Sonnet | `prompts/sonnet-8-docs.md` | §6.S8 | `README.md`, `CONTRIBUTING.md` (new), `docs/CAPTURE.md`, `docs/CAPTION-FETCH-RESILIENCE.md`, `docs/VERIFY.md` (new), `docs/LOCAL-SETUP.md` (new), `docs/log/s8.md` | O8 |
+| S10 Competitor research | 2 | Sonnet | `prompts/sonnet-10-competitors.md` | §6.S10 | `src/app/research/**` (new), `src/components/Research*.tsx` (new), `src/lib/research.actions.ts` (new), `src/lib/i18n/dict/research.ts`, `tests/integration/research-ui.test.ts`, `docs/log/s10.md` | O8 |
+| S11 Lessons + no-caption fallback UI | 2 | Sonnet | `prompts/sonnet-11-lessons.md` | §6.S11 | `src/app/lessons/**` (new), `src/components/Lesson*.tsx` (new), `src/components/SaveLessonButton.tsx` (new), `src/components/FallbackAnalyzeButton.tsx` (new), `src/lib/lessons.actions.ts` (new), `src/lib/i18n/dict/lessons.ts`, `tests/integration/lessons-ui.test.ts`, `docs/log/s11.md` | O8 |
+| S12 Script studio UI + Higgsfield hand-off | 2 | Sonnet | `prompts/sonnet-12-script-studio.md` | §6.S12 | `src/app/studio/**` (new), `src/components/Studio*.tsx` (new), `src/lib/studio.actions.ts` (new), `src/lib/i18n/dict/scripts.ts`, `.claude/commands/higgsfield-shots.md` (new), `docs/HIGGSFIELD.md` (new), `tests/integration/studio-ui.test.ts`, `docs/log/s12.md` | O8 |
+| S9 Link pass | — | Sonnet | `prompts/sonnet-9-link-pass.md` | §6.S9 | ESLint/Prettier config + repo-wide autofix, `.github/workflows/ci.yml` (lint step), `KNOWN-ISSUES.md`, `src/components/Header.tsx` nav, the one-line mount of S11's buttons in `src/app/youtube/video/**`, `docs/log/s9.md` | S5, S6, S8, S10–S12 |
 
 Right-sizing: every phase is one session, ≤ 90 minutes. If a phase cannot
 finish in that, it was two phases — split it in this file, not in the session.
@@ -101,6 +114,49 @@ Decided 2026-09-11 (Fable review, `docs/REVIEW-2026-09-11.md`):
     `src/lib/i18n/dict/<feature>.ts`, spread into `dictionary.ts`. A lane 2
     phase owns its own dict file and adds exactly one import line.
 
+27. **Local first (supersedes the Vercel parts of 1, 14, 18).** The app runs
+    on Anton's PC: `npm run dev` (or `build && start`) on `localhost`,
+    `DB_DRIVER=pg` against a Neon free database. `pg` supports transactions,
+    which closes the O4 `db.transaction()` entry in `docs/decisions-needed.md`
+    for the way the app is actually run. Scheduled polling is `npm run
+    yt:poll` from Windows Task Scheduler, not Vercel Cron; no `vercel.json`
+    crons. The code stays deployable to Vercel (nothing Vercel-only is
+    removed), but no phase adds Vercel-specific work.
+28. **S7 is dropped (supersedes 24).** Captions are fetched from Anton's home
+    IP, which YouTube does not block the way it blocks datacenters. The
+    probe CLI (`npm run yt:probe-captions`) stays as it is.
+29. **Competitors are a link table, not a column.** `brand_sources`
+    (`brand_id`, `source_id`, `role` = `competitor` | `inspiration`) — keeps
+    §1.3 (no `brand_id` on sources/videos) intact. One channel can be a
+    competitor for several brands.
+30. **Outlier score is pure math on stored data:** a video's views divided by
+    the median views of the same channel's last 30 stored videos (min 5 to
+    score). No extra API calls. `src/lib/research/outlier.ts`, unit-tested.
+31. **Lessons are their own table** (`lessons`: text, kind =
+    `lesson` | `hook` | `title_pattern` | `fact`, optional `brand_id`,
+    `video_id`, `timestamp_sec`, `source_url`). Saved by hand from a digest,
+    never auto-created. Exported as Markdown per brand/kind.
+32. **Scripts are for Anton on camera first.** `scripts` table with a
+    versioned JSON body (`src/lib/scripts/contract.ts`, the same shape
+    videoPY will read later): 3 title options, 3 thumbnail concepts, hook,
+    sections (spoken lines for a teleprompter, talking points, on-screen
+    text, b-roll shot with a Higgsfield image + video prompt), CTA, sources
+    with URLs. Status `draft` → `ready` → `recorded` → `posted`.
+33. **Language per brand, with style guides as files.** `content/style/`
+    holds `en.md`, `es-PY.md` (castellano paraguayo), `jopara.md`. The script
+    prompt includes the brand's file. Residency and real estate default to
+    English; any script can be switched per run.
+34. **Higgsfield is driven from Claude Code, not from the app.** The app
+    exports a script's shot list (`/api/scripts/[id]/export?format=shots`,
+    Markdown + JSON); `.claude/commands/higgsfield-shots.md` tells a Claude
+    Code session with the Higgsfield MCP how to generate each shot and save
+    the results to `media/<script-id>/`. No Higgsfield API key in the app.
+35. **No-captions fallback is click-only.** A video without captions can be
+    analysed by passing its YouTube URL to Gemini (low media resolution),
+    through `withSpendCap`, only when the owner clicks, never in poll/batch.
+36. **Out of scope for build 2:** voice, video rendering, clipping
+    (videoPY, deferred), children's stories (separate build), auto-posting.
+
 ## §2. Object model
 
 Unchanged from build 1 (see `docs/PLAN-v1-build1.md` §2 and
@@ -110,6 +166,12 @@ Unchanged from build 1 (see `docs/PLAN-v1-build1.md` §2 and
   Owned by `src/lib/lease.ts`. First user: `poll`.
 - **`ideas.posted_at`** (nullable timestamp) and `posted` in
   `IDEA_STATUSES`. `posted` is terminal for the app's purposes.
+- **`brand_sources`** (O7, §1.29) — `brand_id`, `source_id`, `role`,
+  `added_at`; unique (`brand_id`, `source_id`).
+- **`lessons`** (O7, §1.31).
+- **`scripts`** (O7, §1.32) — `id`, `brand_id`, `idea_id` (nullable soft
+  link), `title`, `language`, `status`, `body jsonb` (contract version
+  inside), `created_at`, `updated_at`, `recorded_at`, `posted_at`.
 - Everything else is test/CI scaffolding, not schema.
 
 ## §3. Feature scope, by dependency
@@ -119,10 +181,14 @@ Unchanged from build 1 (see `docs/PLAN-v1-build1.md` §2 and
 - **B. Correct in production** (O6, needs A): cron, lease, `maxDuration`,
   owner-gated generate, clip reaper, research-note linking fix, dict split,
   `posted` status.
-- **C. Unified surfaces** (S5, S6, S7, S8; need B; parallel): design system
-  port; ideas workflow; probe route; docs.
-- **D. Link pass** (S9, needs C): lint adoption, nav, KNOWN-ISSUES prune,
-  closing report.
+- **B2. Studio foundation** (O7 → O8, needs B): competitor links, outlier
+  score, lessons, no-caption fallback, scripts table, title + script
+  generation, style guides, shot-list export.
+- **C. Surfaces** (S5, S6, S8, S10, S11, S12; need B2; parallel): design
+  system port; ideas workflow; docs + local setup; competitor research;
+  lessons; script studio + Higgsfield hand-off.
+- **D. Link pass** (S9, needs C): lint adoption, nav, mounting S11's buttons
+  on the video page, KNOWN-ISSUES prune, closing report.
 
 ## §4. Autonomy protocol
 
@@ -174,6 +240,7 @@ it most needs.
 12. **Orientation read.** A fresh session reads: its prompt file, §1, §4, its
     own §5/§6 section, the phase table, §9's index, and `docs/log/<dep>.md`
     for its Depends on. Not the old plan, not every log.
+    (§4.10 "O6 creates the watcher" now reads "O8 creates the watcher".)
 13. **Polish cap.** ONE screenshot pass (≤ 5 pages × 2 widths, CI artifact,
     never committed — `docs/screenshots/` is git-ignored), PR body written
     once (≤ 25 lines). When exit criteria pass, open the PR that turn.
@@ -251,8 +318,10 @@ run (figures logged) or its command handed off; PR merged.
 
 ### O6 — Production hardening + lane-2 prep
 
-1. **Cron** (§1.18): `vercel.json` `{"crons":[{"path":"/api/cron/poll","schedule":"0 * * * *"}]}`;
-   `export const maxDuration = 300` on the route; fix the route's comment.
+1. **Local scheduler** (§1.27, replaces the Vercel cron): `npm run yt:poll`
+   uses the same lease as the route; document a Windows Task Scheduler
+   entry in `docs/log/o6.md` for S8 to copy. The cron route stays and keeps
+   working if deployed; no `vercel.json` crons.
 2. **Lease** (§1.19): `leases` table + migration; `src/lib/lease.ts`
    `withLease(name, ttlMs, fn)`; the poll route uses it instead of
    `running`. Integration test: two concurrent calls, one 409.
@@ -272,17 +341,61 @@ run (figures logged) or its command handed off; PR merged.
    green. Create empty `dict/brands.ts`, `dict/ideas.ts`, `dict/admin.ts`
    with their import lines already in place, so lane 2 never edits
    `dictionary.ts`.
-8. **Watcher prep**: fill the phase ids into `prompts/_watcher.md`; verify
-   `create_trigger` is available; on handoff create the Routine and spawn
-   S5–S8 (§4.10, `prompts/_handoff.md`).
+8. On handoff spawn O7 (Opus). The watcher moved to O8.
 
-Exit: CI green; `vercel.json` present; lease, owner gate, reaper, notes fix
+Exit: CI green; `yt:poll` takes the lease; lease, owner gate, reaper, notes fix
 each covered by an integration test; migration 0004 generated; dict split
-with zero key changes; PR merged; watcher created; S5–S8 spawned.
+with zero key changes; PR merged; O7 spawned.
+
+### O7 — Studio data foundation
+
+1. Migration 0005: `brand_sources`, `lessons`, `scripts` (§2). Every new
+   table/column commented with why. No FK constraints.
+2. `src/lib/research/outlier.ts` (§1.30) + unit tests (fewer than 5 videos →
+   null; zero-view median; ties).
+3. Bridges (the only data access lane 2 uses): `bridge/research.ts` (link /
+   unlink a channel to a brand; list a brand's competitors with channel stats;
+   top outliers per brand over N days, joined with analysis summary if any),
+   `bridge/lessons.ts` (create, list by brand/kind/video, delete, export
+   Markdown), `bridge/scripts.ts` (create, get, list by brand/status, update
+   body with contract validation, set status with timestamps).
+4. `src/lib/analysis/fallback.ts` (§1.35): `analyzeWithoutCaptions(videoId)`
+   → Gemini with the YouTube URL as `fileData`, low media resolution, same
+   analysis output shape as the caption path, stored the same way; its call
+   lives in `ai.ts` under `withSpendCap` with a reservation estimate from
+   duration. Fake returns a canned analysis. Integration test.
+5. Empty `dict/{research,lessons,scripts}.ts` with import lines wired.
+
+Exit: migration 0005; outlier tests; bridge integration tests for every
+function; fallback test with the fake; `npm run verify` green; PR merged;
+O8 spawned.
+
+### O8 — Titles + script generation
+
+1. `src/lib/scripts/contract.ts`: zod-free TS type + hand-written validator
+   for the §1.32 body, `version: 1`. Unit tests.
+2. `content/style/en.md`, `es-PY.md`, `jopara.md` — short, concrete style
+   guides (voice, words to use/avoid, voseo, when to drop a Guaraní word,
+   on-camera rhythm: short sentences, one idea per line).
+3. `ai.ts`: `generateTitles(brand, topic, lessons)` → 10 titles + angle each;
+   `generateScript(brand, brief)` → contract body. Brief = topic, chosen
+   title, target length (minutes), language, optional competitor video ids
+   (their analyses go in as structure references, never copied), optional
+   lessons (hooks, facts). Search grounding on; sources must carry URLs.
+   Both through `withSpendCap`, both faked in `ai-fake.ts`.
+4. Routes (owner-gated where they spend): `POST /api/scripts/titles`,
+   `POST /api/scripts` (generate + save draft), `GET
+   /api/scripts/[id]/export?format=md|json|shots` (teleprompter Markdown,
+   raw JSON, Higgsfield shot list).
+5. Fill `prompts/_watcher.md` ids (S5, S6, S8, S10, S11, S12, then S9).
+
+Exit: contract tests; generate + export integration tests with the fake;
+one real smoke run recorded in `docs/log/o8.md` if credentials exist (else a
+§7 item); `npm run verify` green; PR merged; watcher created; lane 2 spawned.
 
 ## §6. Lane 2 — Sonnet phases (parallel) and the link pass
 
-Hard limits §4.7 apply to S5–S8.
+Hard limits §4.7 apply to S5, S6, S8, S10–S12.
 
 ### S5 — One design system
 
@@ -320,7 +433,7 @@ green; screenshots in the CI artifact; PR merged.
 Exit: an idea can go proposed → approved → posted and be filtered; delete
 works for rejected; `npm run verify` green; PR merged.
 
-### S7 — Caption probe route
+### S7 — Caption probe route (DROPPED, §1.28 — kept for the record)
 
 1. Move the probe's logic out of `scripts/probe-captions.ts` into
    `src/lib/youtube/captions/probe.ts` (`runProbe(videos) → ProbeReport`,
@@ -337,24 +450,84 @@ works; `npm run verify` green; PR merged.
 
 ### S8 — Docs + DX
 
-1. `README.md` rewritten for the whole app: what it is (both halves +
-   inbox), login, env vars, local run with `pg`, `npm run verify`,
-   `npm run smoke`, deploy (Vercel, cron, `vercel-build`), the plan/prompts
-   workflow in three lines.
+0. `docs/LOCAL-SETUP.md`: Windows, step by step, for a non-developer — install
+   Node LTS + Git (`winget`), clone, `.env` (Neon `DATABASE_URL`,
+   `DB_DRIVER=pg`, `GEMINI_API_KEY`, `YOUTUBE_API_KEY`, `SESSION_SECRET`),
+   `npm install`, migrate, seed, create the owner, `npm run dev`, open
+   `localhost:3000`; Task Scheduler entry for `yt:poll` (from `docs/log/o6.md`);
+   a `start.bat` recipe; how to update (`git pull && npm install && npm run
+   db:migrate`).
+1. `README.md` rewritten for the whole app: what it is (research studio,
+   YouTube digests, inbox), login, env vars, local run with `pg`,
+   `npm run verify`, `npm run smoke`, the plan/prompts workflow in three
+   lines. Vercel deploy is a short "optional" section.
 2. `CONTRIBUTING.md`: the autonomy protocol in 15 lines, file ownership,
    how to add a dict file, how to add an integration test.
 3. `docs/VERIFY.md`: what CI checks, what smoke checks, what neither can.
-4. Refresh `docs/CAPTURE.md` and `docs/CAPTION-FETCH-RESILIENCE.md` where
-   S7's route replaces "run the CLI from the deployed env".
+4. Refresh `docs/CAPTURE.md` (phone capture needs the app reachable — note
+   the options: same Wi-Fi, or a tunnel; keep it short) and
+   `docs/CAPTION-FETCH-RESILIENCE.md` (§1.28: home IP).
 
 Exit: every command in the README runs as written; PR merged.
 
-### S9 — Link pass (sequential, after S5–S8)
+### S10 — Competitor research
+
+1. `/research` page: pick a brand → its competitor channels (add by pasting a
+   channel URL: ingest via the existing source action, then link with
+   `bridge/research.ts`; remove; role toggle competitor/inspiration).
+2. Outlier board: top videos by outlier score over 30/90/365 days, with
+   thumbnail, title, views, score, digest summary if analysed, and buttons:
+   "Analyse" (existing action), "Open digest", "Use as reference" (adds the
+   video id to a new-script brief via query string to `/studio/new`).
+3. "Title patterns" panel: the outliers' titles side by side, copyable.
+4. Copy via `dict/research.ts` (en + sv).
+
+Exit: link/unlink/list covered by an integration test; page renders with
+seeded data; `npm run verify` green; PR merged.
+
+### S11 — Lessons + no-caption fallback UI
+
+1. `SaveLessonButton` (client island): given `videoId`, optional
+   `timestampSec`, text prefilled from a key point; picks kind and brand;
+   calls `lessons.actions.ts`. `FallbackAnalyzeButton`: shown when a video
+   has no transcript; confirms the estimated cost; calls the O7 fallback.
+   Both are **exported components only** — S9 mounts them on the video page.
+2. `/lessons`: filter by brand/kind, search, delete, "Export Markdown".
+3. Copy via `dict/lessons.ts`.
+
+Exit: actions integration test; `/lessons` renders; `npm run verify` green;
+PR merged.
+
+### S12 — Script studio UI + Higgsfield hand-off
+
+1. `/studio` list of scripts by brand and status. `/studio/new`: brief form
+   (brand, topic, language, length, reference videos, lessons picker) →
+   "Suggest titles" → pick → "Write script" → redirect to `/studio/[id]`.
+2. `/studio/[id]`: section editor (spoken lines, talking points, on-screen
+   text, shot + Higgsfield prompts), title/thumbnail options, sources list,
+   status buttons, **teleprompter view** (big text, auto-scroll speed, full
+   screen), copy/download exports (md, json, shots).
+3. `.claude/commands/higgsfield-shots.md`: a Claude Code slash command that
+   takes a script id or a pasted shots export, generates each shot with the
+   Higgsfield MCP (image first, then image-to-video when the shot asks for
+   motion), and saves results to `media/<script-id>/` with a manifest. It
+   states: use the cheapest model that fits, ask before spending more than
+   the credits the shot list estimates. `docs/HIGGSFIELD.md` explains the
+   loop in 10 lines.
+4. Copy via `dict/scripts.ts`.
+
+Exit: create → edit → status → export covered by an integration test;
+teleprompter renders; `npm run verify` green; PR merged.
+
+### S9 — Link pass (sequential, after S5, S6, S8, S10–S12)
 
 1. ESLint (`next/core-web-vitals`, `@typescript-eslint`) + Prettier; `npm run
    lint` in `verify` and in CI; one repo-wide autofix commit, then fix the
    remaining findings by hand (no rule disabled to get green).
-2. Header nav final order; dedupe any component S5 and S6 both shipped.
+2. Header nav final order (Content, Research, Studio, Lessons, YouTube,
+   Inbox); dedupe any component S5 and S6 both shipped; mount
+   `SaveLessonButton` (per key point) and `FallbackAnalyzeButton` on
+   `/youtube/video/[id]`.
 3. Prune `KNOWN-ISSUES.md`: remove every "UNVERIFIED" item that O4–O6 now
    cover with a test; promote only still-open cross-phase items from the
    `docs/log/*.md` files.
@@ -368,12 +541,22 @@ Exit: lint green in CI; KNOWN-ISSUES only holds open items; watcher gone.
 | # | Input | First needed | Status |
 |---|---|---|---|
 | 1 | **Recommended:** add a Neon *dev-branch* `DATABASE_URL` and a `GEMINI_API_KEY` (billed project, own low cap) as environment variables of the Claude Code cloud environment, so O5 can run `npm run smoke` itself. Alternative: after O5 merges, run `npm run smoke -- <brandId>` once locally and paste the printed figures into `docs/decisions-needed.md`. | O5 | ☐ |
-| 2 | Vercel: confirm the project allows 300 s functions (Pro, or Fluid Compute on). `/api/generate`, `/api/clips`, `/api/cron/poll`, `/api/admin/probe` all set `maxDuration = 300`. | O6 | ☐ |
-| 3 | Vercel env: `CRON_SECRET` set (Vercel Cron sends it as a Bearer token). Existing `SESSION_SECRET`, `GEMINI_API_KEY`, `DATABASE_URL`, `CLIP_TOKEN` unchanged. | O6 | ☐ |
-| 4 | After S7: open `/youtube/admin`, run the probe, paste the verdict line into `docs/decisions-needed.md`. That verdict decides whether §10's IG/FB + worker item becomes a phase. | S7 | ☐ |
+| 2 | ~~Vercel 300 s functions~~ — not needed, local first (§1.27). | — | n/a |
+| 3 | ~~Vercel `CRON_SECRET`~~ — not needed (§1.27). | — | n/a |
+| 4 | ~~S7 probe verdict~~ — dropped (§1.28). | — | n/a |
+| 6 | YouTube Data API key (free, Google Cloud console) in `.env` as `YOUTUBE_API_KEY` — needed for channel stats and outliers. | O7 smoke / S10 | ☐ |
+| 7 | On your PC, once lane 2 is merged: follow `docs/LOCAL-SETUP.md` (~20 min). | after S9 | ☐ |
+| 8 | Add 3–5 competitor channels per brand in `/research`. | after S9 | ☐ |
 | 5 | Merge this plan PR before starting O4. | now | ☐ |
 
 ## §8. Open business questions (parked)
+
+- **Children's stories for the Paraguayan market** — a separate build (own
+  plan, likely its own repo): story writing in castellano paraguayo/Jopará,
+  illustrations via Higgsfield, narration once the Paraguayan voice exists.
+  It needs no competitor research, so it shares nothing with this app but
+  the style guides in `content/style/`.
+- Paraguayan voice (Anton, week of 2026-10-05) → then videoPY voice phases.
 
 - IG/FB metadata fetch and the Hostinger worker (old S4) — waits on §7.4.
 - Audio transcription for IG/FB (~20x) — no.
@@ -394,11 +577,21 @@ One line per phase; detail in `docs/log/<id>.md`.
 | O6 | | `docs/log/o6.md` | not started |
 | S5 | | `docs/log/s5.md` | not started |
 | S6 | | `docs/log/s6.md` | not started |
-| S7 | | `docs/log/s7.md` | not started |
+| O7 | | `docs/log/o7.md` | not started |
+| O8 | | `docs/log/o8.md` | not started |
+| S7 | — | — | dropped (§1.28) |
+| S10 | | `docs/log/s10.md` | not started |
+| S11 | | `docs/log/s11.md` | not started |
+| S12 | | `docs/log/s12.md` | not started |
 | S8 | | `docs/log/s8.md` | not started |
 | S9 | | `docs/log/s9.md` | not started |
 
 ## §10. Backlog
+
+- videoPY: voice, captions, render, clipping (see its `PLAN.md`), after the
+  Paraguayan voice is chosen.
+- Question mining from competitor comments (YouTube `commentThreads`).
+- Comparing Anton's own channel stats to competitors.
 
 - IG/FB best-effort oEmbed/OpenGraph metadata; Hostinger relay/worker —
   gated on §7.4.

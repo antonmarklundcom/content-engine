@@ -1,4 +1,4 @@
-# Phase S6 — Ideas workflow. SONNET session. Lane 2, parallel with S5, S7, S8.
+# Phase S6 — Ideas workflow. SONNET session. Lane 2, parallel with S5, S8, S10, S11, S12.
 
 Read ONLY: this file, `PLAN.md` §1, §4, §6.S6, the phase table and §9 index,
 and `docs/log/o6.md`. Execute under the autonomy protocol §4.
