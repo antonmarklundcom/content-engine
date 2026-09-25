@@ -581,7 +581,7 @@ One line per phase; detail in `docs/log/<id>.md`.
 | Plan v2 | this PR | `docs/REVIEW-2026-09-11.md` | — |
 | O4 | #14 | `docs/log/o4.md` | merged |
 | O5 | #15 | `docs/log/o5.md` | merged — live smoke handed off |
-| O6 | this PR | `docs/log/o6.md` | in review |
+| O6 | #18 | `docs/log/o6.md` | merged |
 | S5 | | `docs/log/s5.md` | not started |
 | S6 | | `docs/log/s6.md` | not started |
 | O7 | | `docs/log/o7.md` | not started |

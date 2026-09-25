@@ -33,7 +33,11 @@ import { summariseHealth } from "../src/lib/youtube/captions";
 async function main(): Promise<void> {
   const argv = process.argv.slice(2);
 
-  const run = await withLease(POLL_LEASE, POLL_LEASE_TTL_MS, () =>
+  // --wait blocks on the batch for up to awaitBatch's own 30 minutes on top of
+  // the ingest, so the default TTL could lapse mid-run and let the next hourly
+  // run take the lease over. Two hours covers both with room to spare.
+  const ttlMs = argv.includes("--wait") ? 2 * 60 * 60 * 1000 : POLL_LEASE_TTL_MS;
+  const run = await withLease(POLL_LEASE, ttlMs, () =>
     pollSources({
       limit: numericFlag(argv, "--limit", 10),
       analyze: !argv.includes("--no-analyze"),
