@@ -30,7 +30,11 @@ import type {
 export const FORMATS = ["reel", "carousel", "image_post", "story"] as const;
 export type Format = (typeof FORMATS)[number];
 
-export const IDEA_STATUSES = ["proposed", "approved", "rejected"] as const;
+/**
+ * `posted` (PLAN.md §1.23) is terminal for the app's purposes: the idea went
+ * out, by hand — there is no posting integration and no scheduling.
+ */
+export const IDEA_STATUSES = ["proposed", "approved", "rejected", "posted"] as const;
 export type IdeaStatus = (typeof IDEA_STATUSES)[number];
 
 // One row per business/brand. Drives which content gets researched/written
@@ -97,6 +101,13 @@ export const ideas = pgTable("ideas", {
    */
   citations: json("citations").$type<{ claim: string; sources: string[] }[]>(),
   status: text("status", { enum: IDEA_STATUSES }).notNull().default("proposed"),
+  /**
+   * When the idea moved to `posted` (PLAN.md §1.23), so "what went out this
+   * week" is a query rather than a guess from `createdAt`. Set by
+   * `PATCH /api/ideas/[id]` on the transition in, cleared on the way out — it
+   * always describes the current status, never a past one.
+   */
+  postedAt: timestamp("posted_at"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
@@ -599,6 +610,30 @@ export const spendLog = pgTable(
 export const spendReservation = pgTable("spend_reservation", {
   id: integer("id").primaryKey(),
   reservedUsd: numeric("reserved_usd", { precision: 10, scale: 6 }).notNull().default("0"),
+});
+
+// ---------------------------------------------------------------------------
+// leases
+// ---------------------------------------------------------------------------
+
+/**
+ * Named, expiring locks (PLAN.md §1.19) — one row per job that must never run
+ * twice at once. First user: `poll`, taken by both `/api/cron/poll` and
+ * `npm run yt:poll`, which used to guard only against themselves with a module
+ * variable (two processes each saw their own `false`).
+ *
+ * A row rather than `pg_advisory_lock` because Neon's HTTP driver runs one
+ * statement per request and holds no session to keep an advisory lock on; see
+ * src/lib/lease.ts for the single-statement acquire. `expires_at` is what
+ * makes a crashed holder harmless: its lease lapses on its own, no cleanup job.
+ */
+export const leases = pgTable("leases", {
+  /** The job's name, e.g. "poll". The primary key is the lock. */
+  name: text("name").primaryKey(),
+  /** Who holds it — random per acquire, so only the holder can release it. */
+  holder: text("holder").notNull(),
+  /** After this, anyone may take the lease over. */
+  expiresAt: timestamp("expires_at").notNull(),
 });
 
 // ---------------------------------------------------------------------------

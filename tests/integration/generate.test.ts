@@ -9,7 +9,7 @@ import { estimateContentPlanCostUsd, messageCostUsd, readUsage } from "@/lib/ai"
 import { fakeGeminiClient, PAYLOADS, USAGE, WEB_SEARCH_QUERIES } from "@/lib/ai-fake";
 import { monthToDateUsd } from "@/lib/spend";
 
-import { callRoute, jsonPost } from "./route";
+import { callRoute, jsonPost, signIn } from "./route";
 import { resetTables, teardown } from "./setup";
 
 /**
@@ -50,9 +50,13 @@ async function seedBrand() {
   await db.insert(schema.brands).values(BRAND);
 }
 
+/** Signed in as the owner by default: generate spends money (PLAN.md §1.20). */
+let owner: Record<string, string> = {};
+
 beforeEach(async () => {
   process.env.MONTHLY_SPEND_CAP_USD = CAP;
   await resetTables();
+  owner = { cookie: (await signIn("owner")).cookie };
 });
 
 after(async () => {
@@ -63,7 +67,7 @@ after(async () => {
 test("a grounded run inserts ideas, research notes, and one priced spend row", async () => {
   await seedBrand();
 
-  const response = await callRoute(generate, jsonPost("/api/generate", { brandId: BRAND.id }));
+  const response = await callRoute(generate, jsonPost("/api/generate", { brandId: BRAND.id }, owner));
   assert.equal(response.status, 200);
   const body = (await response.json()) as { ideas: unknown[]; researchNotesAdded: number; costUsd: number };
 
@@ -84,7 +88,9 @@ test("a grounded run inserts ideas, research notes, and one priced spend row", a
   // fall back to the brand that paid for it rather than storing an empty list.
   assert.deepEqual(notes[0].relatedBrandIds, [BRAND.id]);
   assert.equal(notes[0].market, BRAND.market);
-  assert.equal(ideas[0].researchNoteId, notes[0].id, "ideas link to this run's note");
+  // The model tagged that note with no brand, so nothing says the ideas were
+  // spun from it: stored for the brand, but not linked (§5.O6.5).
+  assert.equal(ideas[0].researchNoteId, null, "no link to a note the model did not tag");
 
   // The money. Tokens at the ideation model's rates PLUS three grounding
   // queries at $14/1,000 — the per-query fee is the half a token-only
@@ -111,7 +117,7 @@ test("the request carries Search grounding, the ideas schema and the brand's own
   await seedBrand();
   const fake = fakeGeminiClient();
 
-  await callRoute(generate, jsonPost("/api/generate", { brandId: BRAND.id }));
+  await callRoute(generate, jsonPost("/api/generate", { brandId: BRAND.id }, owner));
 
   const calls = fake.callsOf("generateContentStream");
   assert.equal(calls.length, 1, "one streamed call per generate");
@@ -154,7 +160,7 @@ test("an analysisId seeds the prompt and is recorded on every idea", async () =>
 
   const response = await callRoute(
     generate,
-    jsonPost("/api/generate", { brandId: BRAND.id, analysisId: analysis.id }),
+    jsonPost("/api/generate", { brandId: BRAND.id, analysisId: analysis.id }, owner),
   );
   assert.equal(response.status, 200);
 
@@ -180,7 +186,7 @@ test("an unknown analysisId is 404 and spends nothing", async () => {
 
   const response = await callRoute(
     generate,
-    jsonPost("/api/generate", { brandId: BRAND.id, analysisId: 4321 }),
+    jsonPost("/api/generate", { brandId: BRAND.id, analysisId: 4321 }, owner),
   );
 
   assert.equal(response.status, 404);
@@ -193,7 +199,7 @@ test("a cap of 0 answers 429 before the model is called", async () => {
   await seedBrand();
   const fake = fakeGeminiClient();
 
-  const response = await callRoute(generate, jsonPost("/api/generate", { brandId: BRAND.id }));
+  const response = await callRoute(generate, jsonPost("/api/generate", { brandId: BRAND.id }, owner));
 
   assert.equal(response.status, 429, "the cap is its own status code, not a 500 (§1.10)");
   const body = (await response.json()) as { error: string; spend: { capUsd: number } };
@@ -220,7 +226,7 @@ test("a cap that cannot cover the reservation refuses even when the real cost wo
   process.env.MONTHLY_SPEND_CAP_USD = ((actual + estimate) / 2).toFixed(6);
   await seedBrand();
 
-  const response = await callRoute(generate, jsonPost("/api/generate", { brandId: BRAND.id }));
+  const response = await callRoute(generate, jsonPost("/api/generate", { brandId: BRAND.id }, owner));
   assert.equal(response.status, 429);
   assert.equal(await monthToDateUsd(), 0);
 });
@@ -244,7 +250,7 @@ test("existing research for the brand is offered back to the model", async () =>
     sources: [],
   });
 
-  await callRoute(generate, jsonPost("/api/generate", { brandId: BRAND.id }));
+  await callRoute(generate, jsonPost("/api/generate", { brandId: BRAND.id }, owner));
 
   const params = fake.callsOf("generateContentStream")[0].params as { contents: string };
   assert.match(params.contents, /Apostille backlog/, "reuse what is already paid for");
@@ -254,7 +260,7 @@ test("existing research for the brand is offered back to the model", async () =>
 test("an unknown brandId is 400 and never reaches the model", async () => {
   const fake = fakeGeminiClient();
 
-  const response = await callRoute(generate, jsonPost("/api/generate", { brandId: "no-such-brand" }));
+  const response = await callRoute(generate, jsonPost("/api/generate", { brandId: "no-such-brand" }, owner));
 
   assert.equal(response.status, 400);
   assert.equal(fake.calls.length, 0);
@@ -263,8 +269,8 @@ test("an unknown brandId is 400 and never reaches the model", async () => {
 test("two runs accumulate into one day's spend row", async () => {
   await seedBrand();
 
-  await callRoute(generate, jsonPost("/api/generate", { brandId: BRAND.id }));
-  await callRoute(generate, jsonPost("/api/generate", { brandId: BRAND.id }));
+  await callRoute(generate, jsonPost("/api/generate", { brandId: BRAND.id }, owner));
+  await callRoute(generate, jsonPost("/api/generate", { brandId: BRAND.id }, owner));
 
   const rows = await db.select().from(schema.spendLog);
   assert.equal(rows.length, 1);
@@ -272,4 +278,72 @@ test("two runs accumulate into one day's spend row", async () => {
 
   const ideas = await db.select().from(schema.ideas).where(eq(schema.ideas.brandId, BRAND.id));
   assert.equal(ideas.length, (PAYLOADS.ideas as { ideas: unknown[] }).ideas.length * 2);
+});
+
+test("signed out is 401 and spends nothing (PLAN.md §1.20)", async () => {
+  await seedBrand();
+  const fake = fakeGeminiClient();
+
+  const response = await callRoute(generate, jsonPost("/api/generate", { brandId: BRAND.id }));
+
+  assert.equal(response.status, 401);
+  assert.deepEqual(Object.keys((await response.json()) as object), ["error"]);
+  assert.equal(fake.calls.length, 0);
+  assert.equal((await db.select().from(schema.ideas)).length, 0);
+});
+
+test("an employee is 403 with promote's adapt shape, and spends nothing", async () => {
+  await seedBrand();
+  const fake = fakeGeminiClient();
+  const employee = { cookie: (await signIn("employee")).cookie };
+
+  const response = await callRoute(generate, jsonPost("/api/generate", { brandId: BRAND.id }, employee));
+
+  assert.equal(response.status, 403);
+  const body = (await response.json()) as { error: string };
+  assert.deepEqual(Object.keys(body), ["error"], "same { error } body promote's adapt gate returns");
+  assert.match(body.error, /owner/);
+  assert.equal(fake.calls.length, 0);
+  assert.equal(await monthToDateUsd(), 0);
+});
+
+/** Run generate with the fake's ideas payload swapped for one call. */
+async function generateWithNotes(notes: Array<{ topic: string; relatedBrandIds: string[] }>) {
+  const canned = PAYLOADS.ideas as { researchNotes: unknown[]; ideas: unknown[] };
+  const original = canned.researchNotes;
+  canned.researchNotes = notes.map((n) => ({
+    ...n,
+    summary: `${n.topic} — summary.`,
+    sources: ["https://example.com/note"],
+  }));
+  try {
+    const response = await callRoute(generate, jsonPost("/api/generate", { brandId: BRAND.id }, owner));
+    assert.equal(response.status, 200);
+  } finally {
+    canned.researchNotes = original;
+  }
+}
+
+test("ideas link to the first returned note that lists this brand", async () => {
+  await seedBrand();
+
+  await generateWithNotes([
+    { topic: "Another brand's finding", relatedBrandIds: ["propia"] },
+    { topic: "Shared finding", relatedBrandIds: ["propia", BRAND.id] },
+  ]);
+
+  const notes = await db.select().from(schema.researchNotes);
+  const shared = notes.find((n) => n.topic === "Shared finding")!;
+  const ideas = await db.select().from(schema.ideas);
+  assert.ok(ideas.length > 0);
+  for (const idea of ideas) assert.equal(idea.researchNoteId, shared.id);
+});
+
+test("no returned note lists this brand → no link, even though notes were stored", async () => {
+  await seedBrand();
+
+  await generateWithNotes([{ topic: "Another brand's finding", relatedBrandIds: ["propia"] }]);
+
+  assert.equal((await db.select().from(schema.researchNotes)).length, 1);
+  for (const idea of await db.select().from(schema.ideas)) assert.equal(idea.researchNoteId, null);
 });
