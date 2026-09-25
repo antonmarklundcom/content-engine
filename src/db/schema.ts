@@ -6,6 +6,7 @@ import {
   index,
   integer,
   json,
+  jsonb,
   numeric,
   pgTable,
   primaryKey,
@@ -636,6 +637,137 @@ export const leases = pgTable("leases", {
   expiresAt: timestamp("expires_at").notNull(),
 });
 
+// =============================================================================
+// Research studio (PLAN.md §1.29–§1.32, O7). Competitor links, saved lessons
+// and on-camera scripts. Soft links only, like everything above (§1.4).
+// =============================================================================
+
+// ---------------------------------------------------------------------------
+// brand_sources
+// ---------------------------------------------------------------------------
+
+export const BRAND_SOURCE_ROLES = ["competitor", "inspiration"] as const;
+export type BrandSourceRole = (typeof BRAND_SOURCE_ROLES)[number];
+
+/**
+ * Which tracked channels a brand studies (PLAN.md §1.29). A link table rather
+ * than a `brand_id` on `sources`, because §1.3 keeps the YouTube half free of
+ * brand columns and because one channel can be a competitor for several
+ * brands at once — a column would force a channel to pick one.
+ */
+export const brandSources = pgTable(
+  "brand_sources",
+  {
+    /** Soft link to `brands.id` (a slug). */
+    brandId: text("brand_id").notNull(),
+    /** Soft link to `sources.id`. The source row is shared; only the link is per brand. */
+    sourceId: integer("source_id").notNull(),
+    /**
+     * `competitor` — someone chasing the same audience, studied for what works;
+     * `inspiration` — someone outside the niche whose format is worth borrowing.
+     * The outlier board can show either, so the distinction is kept, not implied.
+     */
+    role: text("role", { enum: BRAND_SOURCE_ROLES }).notNull().default("competitor"),
+    /** When the link was made, so the research page can list newest first. */
+    addedAt: timestamp("added_at").notNull().defaultNow(),
+  },
+  (t) => [
+    // One link per pair (§2): re-linking changes the role, never duplicates.
+    primaryKey({ columns: [t.brandId, t.sourceId] }),
+    // "Which brands study this channel" — the reverse read.
+    index("brand_sources_source_idx").on(t.sourceId),
+  ],
+);
+
+// ---------------------------------------------------------------------------
+// lessons
+// ---------------------------------------------------------------------------
+
+export const LESSON_KINDS = ["lesson", "hook", "title_pattern", "fact"] as const;
+export type LessonKind = (typeof LESSON_KINDS)[number];
+
+/**
+ * Something worth keeping from a digest (PLAN.md §1.31): a lesson, a hook, a
+ * title pattern, a fact. Its own table rather than a flavour of
+ * `video_unit_marks`, because a mark is "this bit was interesting" per user
+ * and per analysis unit, while a lesson is Anton's own words, may belong to a
+ * brand, and outlives any re-analysis. Saved by hand only, never auto-created —
+ * a table the model filled would be a second copy of the analyses.
+ */
+export const lessons = pgTable(
+  "lessons",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    /** The lesson itself, in whatever words it was saved with. */
+    text: text("text").notNull(),
+    /** What kind of thing it is — decides where the script prompt uses it (hooks vs facts). */
+    kind: text("kind", { enum: LESSON_KINDS }).notNull().default("lesson"),
+    /** Soft link to `brands.id`. Null is a portfolio-wide lesson, not a missing value. */
+    brandId: text("brand_id"),
+    /** Soft link to `videos.id` it was learned from, when it came from a video. */
+    videoId: integer("video_id"),
+    /** Where in that video, so the export can link to the exact moment. */
+    timestampSec: integer("timestamp_sec"),
+    /** Provenance outside the corpus (an article, a post). Also the only link when `videoId` is null. */
+    sourceUrl: varchar("source_url", { length: 1024 }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    // The lessons page and the Markdown export both filter by brand, then kind.
+    index("lessons_brand_kind_idx").on(t.brandId, t.kind),
+    // The video page's "lessons from this video".
+    index("lessons_video_idx").on(t.videoId),
+  ],
+);
+
+// ---------------------------------------------------------------------------
+// scripts
+// ---------------------------------------------------------------------------
+
+export const SCRIPT_STATUSES = ["draft", "ready", "recorded", "posted"] as const;
+export type ScriptStatus = (typeof SCRIPT_STATUSES)[number];
+
+/**
+ * An on-camera script (PLAN.md §1.32): what Anton reads from the teleprompter,
+ * plus titles, thumbnails, shots and sources. The content lives in `body`; the
+ * columns are only what lists and filters need without opening it.
+ */
+export const scripts = pgTable(
+  "scripts",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    /** Soft link to `brands.id` — every script is written for one brand's channel. */
+    brandId: text("brand_id").notNull(),
+    /** Soft link to `ideas.id` when the script grew out of an idea; most will not. */
+    ideaId: integer("idea_id"),
+    /** The chosen title, copied out of the body so lists never parse JSON. */
+    title: text("title").notNull(),
+    /** Language the script is written in (§1.33: per brand by default, switchable per run). */
+    language: text("language").notNull(),
+    /** draft → ready → recorded → posted. Nothing enforces the order; the UI offers it. */
+    status: text("status", { enum: SCRIPT_STATUSES }).notNull().default("draft"),
+    /**
+     * The script itself. jsonb, opaque at this layer: the contract (and its
+     * `version`) belongs to src/lib/scripts/contract.ts (O8), which videoPY will
+     * read too. The bridge refuses a write its validator rejects, so a stored
+     * body is always one some contract version accepted.
+     */
+    body: jsonb("body").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    /** Bumped on every body or status write — "recently edited" sorts on it. */
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    /** When it moved to `recorded` (or straight to `posted`). Cleared if it moves back. */
+    recordedAt: timestamp("recorded_at"),
+    /** When it moved to `posted`. Cleared if it moves back — it describes the current status. */
+    postedAt: timestamp("posted_at"),
+  },
+  (t) => [
+    // The studio list: one brand, one status, most recently edited first.
+    index("scripts_brand_status_idx").on(t.brandId, t.status),
+    index("scripts_updated_idx").on(t.updatedAt),
+  ],
+);
+
 // ---------------------------------------------------------------------------
 // relations
 // ---------------------------------------------------------------------------
@@ -709,6 +841,21 @@ export const brandsRelations = relations(brands, ({ many }) => ({
   ideas: many(ideas),
 }));
 
+export const brandSourcesRelations = relations(brandSources, ({ one }) => ({
+  brand: one(brands, { fields: [brandSources.brandId], references: [brands.id] }),
+  source: one(sources, { fields: [brandSources.sourceId], references: [sources.id] }),
+}));
+
+export const lessonsRelations = relations(lessons, ({ one }) => ({
+  brand: one(brands, { fields: [lessons.brandId], references: [brands.id] }),
+  video: one(videos, { fields: [lessons.videoId], references: [videos.id] }),
+}));
+
+export const scriptsRelations = relations(scripts, ({ one }) => ({
+  brand: one(brands, { fields: [scripts.brandId], references: [brands.id] }),
+  idea: one(ideas, { fields: [scripts.ideaId], references: [ideas.id] }),
+}));
+
 export const topicsRelations = relations(topics, ({ many }) => ({
   videoTopics: many(videoTopics),
 }));
@@ -753,6 +900,13 @@ export type NewTopic = typeof topics.$inferInsert;
 export type SpendLogRow = typeof spendLog.$inferSelect;
 export type Batch = typeof batches.$inferSelect;
 export type NewBatch = typeof batches.$inferInsert;
+
+export type BrandSource = typeof brandSources.$inferSelect;
+export type NewBrandSource = typeof brandSources.$inferInsert;
+export type Lesson = typeof lessons.$inferSelect;
+export type NewLesson = typeof lessons.$inferInsert;
+export type Script = typeof scripts.$inferSelect;
+export type NewScript = typeof scripts.$inferInsert;
 
 export type CaptionStatus = Video["captionStatus"];
 export type BatchStatus = Batch["status"];

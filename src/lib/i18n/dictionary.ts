@@ -28,6 +28,9 @@ import * as promote from "./dict/promote";
 import * as brands from "./dict/brands";
 import * as ideas from "./dict/ideas";
 import * as admin from "./dict/admin";
+import * as research from "./dict/research";
+import * as lessons from "./dict/lessons";
+import * as scripts from "./dict/scripts";
 
 export const en = {
   ...app.en,
@@ -40,6 +43,9 @@ export const en = {
   ...brands.en,
   ...ideas.en,
   ...admin.en,
+  ...research.en,
+  ...lessons.en,
+  ...scripts.en,
 } as const;
 
 export type TranslationKey = keyof typeof en;
@@ -55,6 +61,9 @@ export const sv: Record<TranslationKey, string> = {
   ...brands.sv,
   ...ideas.sv,
   ...admin.sv,
+  ...research.sv,
+  ...lessons.sv,
+  ...scripts.sv,
 };
 
 export const DICTIONARIES = { en, sv } as const;

@@ -369,6 +369,48 @@ export const WEB_SEARCH_QUERIES = [
 ] as const;
 
 // ---------------------------------------------------------------------------
+// the no-captions fallback (PLAN.md §1.35, O7)
+// ---------------------------------------------------------------------------
+
+/**
+ * The fallback asks for the same analysis schema as the caption path — that is
+ * the point of it — so the schema alone classifies it as `analysis`. What
+ * tells it apart is the request itself: a `fileData` part carrying the YouTube
+ * URL. It gets its own payload and usage, because a video is billed very
+ * differently from a transcript and the test must see that difference.
+ */
+export const FALLBACK_PAYLOAD = {
+  ...(PAYLOADS.analysis as JsonObject),
+  summary:
+    "Watched without captions: a presenter at a desk walks through the Paraguayan residency paperwork, holding up each document as it is named, with the costs shown on screen at the end.",
+};
+
+/**
+ * ~31 minutes at LOW media resolution (~100 tokens per second of video and
+ * audio). Well under the fallback's reservation for that length, as a real run
+ * must be — a usage above the reservation would mean the estimate is wrong.
+ */
+export const FALLBACK_USAGE: GenerateContentResponseUsageMetadata = {
+  promptTokenCount: 188_700,
+  candidatesTokenCount: 2_600,
+  thoughtsTokenCount: 0,
+  cachedContentTokenCount: 0,
+  totalTokenCount: 191_300,
+};
+
+/** Does this request attach a file by URI — i.e. is it the video-URL fallback? */
+export function isVideoUrlRequest(params: GenerateContentParameters): boolean {
+  const contents = Array.isArray(params.contents) ? params.contents : [params.contents];
+  return contents.some(
+    (content) =>
+      typeof content === "object" &&
+      content !== null &&
+      "parts" in content &&
+      (content.parts ?? []).some((part) => Boolean(part.fileData?.fileUri)),
+  );
+}
+
+// ---------------------------------------------------------------------------
 // building responses
 // ---------------------------------------------------------------------------
 
@@ -472,6 +514,9 @@ export class FakeGemini {
   readonly models = {
     generateContent: async (params: GenerateContentParameters): Promise<GenerateContentResponse> => {
       const kind = this.record(params);
+      if (isVideoUrlRequest(params)) {
+        return sdkResponse({ text: JSON.stringify(FALLBACK_PAYLOAD), usageMetadata: FALLBACK_USAGE });
+      }
       return sdkResponse({
         text: textOf(kind),
         usageMetadata: USAGE[kind],
@@ -616,14 +661,15 @@ export class FakeGemini {
     // The canned answer is checked against the caller's own schema on every
     // call, not once at module load: the schema travels with the request, and
     // this is the only place both halves are in the same scope.
-    validate(PAYLOADS[kind], schema);
+    const videoUrl = isVideoUrlRequest(params);
+    validate(videoUrl ? FALLBACK_PAYLOAD : PAYLOADS[kind], schema);
 
     this.calls.push({
       kind: as,
       responseKind: kind,
       model: params.model,
       params,
-      usageMetadata: USAGE[kind],
+      usageMetadata: videoUrl ? FALLBACK_USAGE : USAGE[kind],
       groundingQueries: isGrounded(params) ? WEB_SEARCH_QUERIES.length : 0,
     });
     return kind;
