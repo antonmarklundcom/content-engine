@@ -1,12 +1,21 @@
-import { GoogleGenAI, ThinkingLevel, type GenerateContentResponse } from "@google/genai";
+import {
+  GoogleGenAI,
+  MediaResolution,
+  ThinkingLevel,
+  type GenerateContentResponse,
+} from "@google/genai";
 import type { Brand } from "@/db/schema";
 import { fakeGeminiClient, fakeGeminiEnabled } from "@/lib/ai-fake";
 import {
   costUsdAtRates,
+  DEFAULT_MODEL,
+  estimateCostUsd,
   GROUNDING_USD_PER_QUERY,
   ideationRates,
+  type AnalysisModel,
   type TokenUsage,
 } from "@/lib/analysis/pricing";
+import { ANALYSIS_JSON_SCHEMA, ANALYSIS_SYSTEM_PROMPT } from "@/lib/analysis/prompt";
 import { recordSpend, withSpendCap } from "@/lib/spend";
 
 /**
@@ -585,5 +594,138 @@ Adapt it into one post for this brand.`;
     }
 
     return { idea, costUsd };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// no-captions fallback — analysing a YouTube video from the video itself
+// ---------------------------------------------------------------------------
+
+/**
+ * Longest video the fallback will send (PLAN.md §1.35). Past this, one click
+ * buys well over half a million input tokens; a video that long wants a
+ * deliberate decision, not a button.
+ */
+export const VIDEO_URL_MAX_SECONDS = 90 * 60;
+
+/**
+ * Input tokens per second of video at LOW media resolution: ~70 per sampled
+ * frame at 1 fps plus 32 for the audio track, rounded up — an estimate that
+ * runs high trips the cap early, the safe direction. Unmeasured until the live
+ * smoke runs this path (§1.17); re-baseline it from that run's usage.
+ */
+const VIDEO_TOKENS_PER_SECOND = 110;
+
+/** Title/channel framing plus the analysis system prompt. */
+const VIDEO_PROMPT_OVERHEAD_TOKENS = 1_500;
+
+/** The analysis pipeline's own output ceiling (src/lib/analysis/run.ts). */
+const VIDEO_MAX_OUTPUT_TOKENS = 8_000;
+
+export class VideoUrlAnalysisRefusedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "VideoUrlAnalysisRefusedError";
+  }
+}
+
+/**
+ * The worst case a video-URL analysis of `durationSeconds` can bill, reserved
+ * against the cap before the call. Throws when the duration is unknown or past
+ * VIDEO_URL_MAX_SECONDS — both are refusals, not estimates.
+ */
+export function estimateVideoUrlAnalysisCostUsd(
+  durationSeconds: number | null | undefined,
+  model: AnalysisModel = DEFAULT_MODEL,
+): number {
+  if (!durationSeconds || durationSeconds <= 0) {
+    throw new VideoUrlAnalysisRefusedError(
+      "This video's duration is unknown, so its cost cannot be estimated. Re-ingest it to fetch its metadata first.",
+    );
+  }
+  if (durationSeconds > VIDEO_URL_MAX_SECONDS) {
+    throw new VideoUrlAnalysisRefusedError(
+      `This video is ${Math.round(durationSeconds / 60)} minutes long; the no-captions analysis stops at ${
+        VIDEO_URL_MAX_SECONDS / 60
+      } minutes.`,
+    );
+  }
+  return estimateCostUsd(model, {
+    inputTokens: Math.ceil(durationSeconds * VIDEO_TOKENS_PER_SECOND) + VIDEO_PROMPT_OVERHEAD_TOKENS,
+    outputTokens: VIDEO_MAX_OUTPUT_TOKENS,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+  });
+}
+
+export type VideoUrlAnalysisInput = {
+  youtubeUrl: string;
+  durationSeconds: number | null;
+  title: string;
+  channelTitle: string | null;
+  model?: AnalysisModel;
+};
+
+/** What the Gemini call produced, handed to the caller's `store` inside the cap. */
+export type VideoUrlAnalysisOutcome =
+  | { ok: true; response: GenerateContentResponse; model: AnalysisModel }
+  | { ok: false; error: string; model: AnalysisModel };
+
+/**
+ * Analyse a YouTube video from its URL, with no transcript (PLAN.md §1.35):
+ * Gemini watches the video (`fileData.fileUri`, LOW media resolution) and
+ * answers in the same schema as the caption path.
+ *
+ * Click-only by design — the one caller is `src/lib/analysis/fallback.ts`, and
+ * nothing in poll or batch may reach it. `store` runs inside `withSpendCap`, so
+ * the analysis row (and the `recordSpend` that `insertAnalysis` does) lands
+ * before the reservation is released — this function records no spend itself,
+ * which is what keeps the call from being billed twice.
+ */
+export async function analyzeVideoUrl<T>(
+  input: VideoUrlAnalysisInput,
+  store: (outcome: VideoUrlAnalysisOutcome) => Promise<T>,
+): Promise<T> {
+  const model = input.model ?? DEFAULT_MODEL;
+  const estimate = estimateVideoUrlAnalysisCostUsd(input.durationSeconds, model);
+  const meta = [
+    `Title: ${input.title}`,
+    input.channelTitle ? `Channel: ${input.channelTitle}` : null,
+    `Duration: ${Math.round((input.durationSeconds ?? 0) / 60)} min`,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return withSpendCap(estimate, async () => {
+    let response: GenerateContentResponse;
+    try {
+      response = await geminiClient().models.generateContent({
+        model,
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { fileData: { fileUri: input.youtubeUrl } },
+              {
+                text: `${meta}\n\nThis video has no captions, so there is no transcript: the video itself is attached. Analyse what is said and shown in it exactly as you would a transcript. Timestamps refer to the video.`,
+              },
+            ],
+          },
+        ],
+        config: {
+          systemInstruction: ANALYSIS_SYSTEM_PROMPT,
+          maxOutputTokens: VIDEO_MAX_OUTPUT_TOKENS,
+          // Low resolution is the whole cost model (§1.35): the analysis is
+          // about what is said and the structure, not fine visual detail.
+          mediaResolution: MediaResolution.MEDIA_RESOLUTION_LOW,
+          thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+          responseMimeType: "application/json",
+          responseJsonSchema: ANALYSIS_JSON_SCHEMA,
+        },
+      });
+    } catch (err) {
+      return store({ ok: false, error: err instanceof Error ? err.message : String(err), model });
+    }
+    return store({ ok: true, response, model });
   });
 }
