@@ -1,4 +1,4 @@
-# Phase O8 — Titles + script generation. OPUS session. Lane 1 (last).
+# Phase O8 — Titles + script generation. OPUS 5.5 session (effort medium, §1.37). Lane 1 (last).
 
 Read ONLY: this file, `PLAN.md` §1 (esp. 32–34), §4, §5.O8, the phase table
 and §9 index, `docs/log/o5.md`, `docs/log/o7.md`. Execute under §4.
@@ -39,6 +39,6 @@ merged; log + §9 line; `_watcher.md` ids filled.
 
 ## After this phase
 Follow `prompts/_handoff.md`: create the watcher Routine, then spawn lane 2
-on Sonnet: `sonnet-5-design-system.md`, `sonnet-6-ideas-workflow.md`,
+on Opus 5.5 (`claude-opus-5-5`): `sonnet-5-design-system.md`, `sonnet-6-ideas-workflow.md`,
 `sonnet-8-docs.md`, `sonnet-10-competitors.md` (≤ 4 at once; the watcher
 starts `sonnet-11-lessons.md` and `sonnet-12-script-studio.md` as slots free).

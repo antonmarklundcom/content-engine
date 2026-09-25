@@ -1,4 +1,4 @@
-# Phase O7 — Studio data foundation. OPUS session. Lane 1.
+# Phase O7 — Studio data foundation. OPUS 5.5 session (effort medium, §1.37). Lane 1.
 
 Read ONLY: this file, `PLAN.md` §1 (esp. 27–36), §2, §4, §5.O7, the phase
 table and §9 index, `docs/log/o5.md`, `docs/log/o6.md`. Execute under the
@@ -37,4 +37,4 @@ integration test per bridge function; fallback test via the fake; `npm run
 verify` green; PR merged; log + §9 line.
 
 ## After this phase
-Follow `prompts/_handoff.md`. Next: `prompts/opus-8-script-engine.md`, model Opus.
+Follow `prompts/_handoff.md`. Next: `prompts/opus-8-script-engine.md`, model `claude-opus-5-5`.

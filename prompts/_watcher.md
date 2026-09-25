@@ -1,6 +1,6 @@
-# Watcher — hourly Sonnet Routine (PLAN.md §4.10). Read-only on code.
+# Watcher — hourly Opus 5.5 (low) Routine (PLAN.md §4.10). Read-only on code.
 
-You are a fresh Sonnet session fired by a Routine. Budget: a few minutes.
+You are a fresh Opus 5.5 session fired by a Routine. Budget: a few minutes.
 You never edit code, never answer a design question, never message a session.
 
 1. Read PLAN.md's phase table and §9, `docs/decisions-needed.md`, and the
@@ -15,7 +15,7 @@ You never edit code, never answer a design question, never message a session.
    - **not started** — no branch.
 3. While fewer than 4 lane 2 phases are running: spawn stalled and
    not-started ones with `create_session` (inherit environment and
-   permission mode, never `plan`, `model` = current Sonnet id, prompt
+   permission mode, never `plan`, `model` = `claude-opus-5-5` (§1.37), prompt
    `Read prompts/<file>.md in this repo and execute it.`). Prompts are
    re-runnable.
 4. When S5, S6, S8, S10, S11, S12 are all merged and S9 has no branch: spawn S9 the same way.

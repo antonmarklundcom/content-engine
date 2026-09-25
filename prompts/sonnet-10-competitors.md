@@ -1,4 +1,4 @@
-# Phase S10 — Competitor research. SONNET session. Lane 2, parallel with S5, S6, S8, S11, S12.
+# Phase S10 — Competitor research. OPUS 5.5 session (effort low, §1.37). Lane 2, parallel with S5, S6, S8, S11, S12.
 
 Read ONLY: this file, `PLAN.md` §1, §4, §6.S10, the phase table and §9
 index, `docs/log/o7.md`, `docs/log/o8.md`. Execute under §4.

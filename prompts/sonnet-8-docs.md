@@ -1,4 +1,4 @@
-# Phase S8 — Docs + local setup. SONNET session. Lane 2, parallel with S5, S6, S10, S11, S12.
+# Phase S8 — Docs + local setup. OPUS 5.5 session (effort low, §1.37). Lane 2, parallel with S5, S6, S10, S11, S12.
 
 Read ONLY: this file, `PLAN.md` (all of it — this phase documents the
 method), `docs/log/o4.md` … `docs/log/o8.md`, and the current `README.md`,

@@ -1,4 +1,4 @@
-# Phase O6 — Production hardening (local-first). OPUS session. Lane 1.
+# Phase O6 — Production hardening (local-first). OPUS 5.5 session (effort medium, §1.37). Lane 1.
 
 Read ONLY: this file, `PLAN.md` §1, §4, §5.O6, the phase table and §9 index,
 `docs/log/o4.md`, `docs/log/o5.md`. Execute under the autonomy protocol §4.
@@ -49,5 +49,5 @@ test; notes-link test; migration 0004; dict split with unchanged key set;
 PR merged; log + §9 line.
 
 ## After this phase
-Follow `prompts/_handoff.md`. Next: `prompts/opus-7-studio-foundation.md`, model Opus.
+Follow `prompts/_handoff.md`. Next: `prompts/opus-7-studio-foundation.md`, model `claude-opus-5-5`.
 No watcher yet — O8 creates it.

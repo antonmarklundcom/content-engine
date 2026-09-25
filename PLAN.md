@@ -20,26 +20,26 @@ and `withSpendCap`.
 
 ## Phase table
 
-Lane 1 runs first, sequentially, on Opus (O5 → O6 → O7 → O8). When O8
+Lane 1 runs first, sequentially, on Opus 5.5 (O5 → O6 → O7 → O8). When O8
 merges, it creates the watcher Routine and spawns every lane 2 phase at once
 (S5, S6, S8, S10, S11, S12; ≤ 4 running, the watcher starts the rest). S9 runs after all of
 lane 2 has merged.
 
 | Phase | Lane | Model | Prompt file | Plan § | Owns | Depends on |
 |---|---|---|---|---|---|---|
-| O4 Verification foundation | 1 | Opus | `prompts/opus-4-verify-foundation.md` | §5.O4 | `src/db/index.ts`, `src/db/migrate.ts`, `src/db/seed.ts`, `drizzle.config.ts`, `package.json`, `package-lock.json`, `.github/**`, `tests/**`, `.env.example`, `docs/log/o4.md` | — |
-| O5 Gemini double + live smoke | 1 | Opus | `prompts/opus-5-gemini-double-smoke.md` | §5.O5 | `src/lib/ai.ts` (test-double seam only), `src/lib/ai-fake.ts`, `scripts/smoke.ts`, `tests/integration/**`, `package.json` scripts, `docs/log/o5.md` | O4 |
-| O6 Production hardening (local-first) | 1 | Opus | `prompts/opus-6-prod-hardening.md` | §5.O6 | `scripts/poll-sources.ts`, `src/app/api/cron/**`, `src/lib/poll.ts`, `src/lib/lease.ts`, `src/app/api/generate/route.ts`, `src/lib/clips/save.ts` (reaper hook only), `src/db/schema.ts`, `drizzle/**`, `src/lib/i18n/**` (split only), `docs/log/o6.md` | O5 |
-| O7 Studio data foundation | 1 | Opus | `prompts/opus-7-studio-foundation.md` | §5.O7 | `src/db/schema.ts`, `drizzle/**`, `src/lib/research/**` (new), `src/lib/bridge/research.ts` + `lessons.ts` + `scripts.ts` (new), `src/lib/analysis/fallback.ts` (new), `src/lib/ai.ts` (fallback call only), `src/lib/i18n/dict/{research,lessons,scripts}.ts` (empty stubs + import lines), `tests/integration/**`, `docs/log/o7.md` | O6 |
-| O8 Titles + script generation | 1 | Opus | `prompts/opus-8-script-engine.md` | §5.O8 | `src/lib/ai.ts` (new calls), `src/lib/ai-fake.ts`, `src/lib/scripts/**` (new), `src/app/api/scripts/**` (new), `content/style/**` (new), `tests/integration/**`, `prompts/_watcher.md` (ids), `docs/log/o8.md` | O7 |
-| S5 One design system | 2 | Sonnet | `prompts/sonnet-5-design-system.md` | §6.S5 | `src/app/page.tsx`, `src/app/layout.tsx`, `src/app/brand/**`, `src/app/globals.css`, `src/components/TopNav.tsx`, `src/components/Header.tsx`, `src/components/Brand*.tsx` (new), `src/lib/i18n/dict/brands.ts`, `docs/log/s5.md` | O6 |
-| S6 Ideas workflow | 2 | Sonnet | `prompts/sonnet-6-ideas-workflow.md` | §6.S6 | `src/app/api/ideas/**`, `src/lib/bridge/ideas.ts` (new), `src/lib/ideas.actions.ts` (new), `src/components/Idea*.tsx` (new), `src/lib/i18n/dict/ideas.ts`, `tests/integration/ideas.test.ts`, `docs/log/s6.md` | O6 |
+| O4 Verification foundation | 1 | Opus 5.5 med | `prompts/opus-4-verify-foundation.md` | §5.O4 | `src/db/index.ts`, `src/db/migrate.ts`, `src/db/seed.ts`, `drizzle.config.ts`, `package.json`, `package-lock.json`, `.github/**`, `tests/**`, `.env.example`, `docs/log/o4.md` | — |
+| O5 Gemini double + live smoke | 1 | Opus 5.5 med | `prompts/opus-5-gemini-double-smoke.md` | §5.O5 | `src/lib/ai.ts` (test-double seam only), `src/lib/ai-fake.ts`, `scripts/smoke.ts`, `tests/integration/**`, `package.json` scripts, `docs/log/o5.md` | O4 |
+| O6 Production hardening (local-first) | 1 | Opus 5.5 med | `prompts/opus-6-prod-hardening.md` | §5.O6 | `scripts/poll-sources.ts`, `src/app/api/cron/**`, `src/lib/poll.ts`, `src/lib/lease.ts`, `src/app/api/generate/route.ts`, `src/lib/clips/save.ts` (reaper hook only), `src/db/schema.ts`, `drizzle/**`, `src/lib/i18n/**` (split only), `docs/log/o6.md` | O5 |
+| O7 Studio data foundation | 1 | Opus 5.5 med | `prompts/opus-7-studio-foundation.md` | §5.O7 | `src/db/schema.ts`, `drizzle/**`, `src/lib/research/**` (new), `src/lib/bridge/research.ts` + `lessons.ts` + `scripts.ts` (new), `src/lib/analysis/fallback.ts` (new), `src/lib/ai.ts` (fallback call only), `src/lib/i18n/dict/{research,lessons,scripts}.ts` (empty stubs + import lines), `tests/integration/**`, `docs/log/o7.md` | O6 |
+| O8 Titles + script generation | 1 | Opus 5.5 med | `prompts/opus-8-script-engine.md` | §5.O8 | `src/lib/ai.ts` (new calls), `src/lib/ai-fake.ts`, `src/lib/scripts/**` (new), `src/app/api/scripts/**` (new), `content/style/**` (new), `tests/integration/**`, `prompts/_watcher.md` (ids), `docs/log/o8.md` | O7 |
+| S5 One design system | 2 | Opus 5.5 low | `prompts/sonnet-5-design-system.md` | §6.S5 | `src/app/page.tsx`, `src/app/layout.tsx`, `src/app/brand/**`, `src/app/globals.css`, `src/components/TopNav.tsx`, `src/components/Header.tsx`, `src/components/Brand*.tsx` (new), `src/lib/i18n/dict/brands.ts`, `docs/log/s5.md` | O6 |
+| S6 Ideas workflow | 2 | Opus 5.5 low | `prompts/sonnet-6-ideas-workflow.md` | §6.S6 | `src/app/api/ideas/**`, `src/lib/bridge/ideas.ts` (new), `src/lib/ideas.actions.ts` (new), `src/components/Idea*.tsx` (new), `src/lib/i18n/dict/ideas.ts`, `tests/integration/ideas.test.ts`, `docs/log/s6.md` | O6 |
 | ~~S7 Caption probe route~~ | — | — | dropped §1.28 | — | — | — |
-| S8 Docs + DX | 2 | Sonnet | `prompts/sonnet-8-docs.md` | §6.S8 | `README.md`, `CONTRIBUTING.md` (new), `docs/CAPTURE.md`, `docs/CAPTION-FETCH-RESILIENCE.md`, `docs/VERIFY.md` (new), `docs/LOCAL-SETUP.md` (new), `docs/log/s8.md` | O8 |
-| S10 Competitor research | 2 | Sonnet | `prompts/sonnet-10-competitors.md` | §6.S10 | `src/app/research/**` (new), `src/components/Research*.tsx` (new), `src/lib/research.actions.ts` (new), `src/lib/i18n/dict/research.ts`, `tests/integration/research-ui.test.ts`, `docs/log/s10.md` | O8 |
-| S11 Lessons + no-caption fallback UI | 2 | Sonnet | `prompts/sonnet-11-lessons.md` | §6.S11 | `src/app/lessons/**` (new), `src/components/Lesson*.tsx` (new), `src/components/SaveLessonButton.tsx` (new), `src/components/FallbackAnalyzeButton.tsx` (new), `src/lib/lessons.actions.ts` (new), `src/lib/i18n/dict/lessons.ts`, `tests/integration/lessons-ui.test.ts`, `docs/log/s11.md` | O8 |
-| S12 Script studio UI + Higgsfield hand-off | 2 | Sonnet | `prompts/sonnet-12-script-studio.md` | §6.S12 | `src/app/studio/**` (new), `src/components/Studio*.tsx` (new), `src/lib/studio.actions.ts` (new), `src/lib/i18n/dict/scripts.ts`, `.claude/commands/higgsfield-shots.md` (new), `docs/HIGGSFIELD.md` (new), `tests/integration/studio-ui.test.ts`, `docs/log/s12.md` | O8 |
-| S9 Link pass | — | Sonnet | `prompts/sonnet-9-link-pass.md` | §6.S9 | ESLint/Prettier config + repo-wide autofix, `.github/workflows/ci.yml` (lint step), `KNOWN-ISSUES.md`, `src/components/Header.tsx` nav, the one-line mount of S11's buttons in `src/app/youtube/video/**`, `docs/log/s9.md` | S5, S6, S8, S10–S12 |
+| S8 Docs + DX | 2 | Opus 5.5 low | `prompts/sonnet-8-docs.md` | §6.S8 | `README.md`, `CONTRIBUTING.md` (new), `docs/CAPTURE.md`, `docs/CAPTION-FETCH-RESILIENCE.md`, `docs/VERIFY.md` (new), `docs/LOCAL-SETUP.md` (new), `docs/log/s8.md` | O8 |
+| S10 Competitor research | 2 | Opus 5.5 low | `prompts/sonnet-10-competitors.md` | §6.S10 | `src/app/research/**` (new), `src/components/Research*.tsx` (new), `src/lib/research.actions.ts` (new), `src/lib/i18n/dict/research.ts`, `tests/integration/research-ui.test.ts`, `docs/log/s10.md` | O8 |
+| S11 Lessons + no-caption fallback UI | 2 | Opus 5.5 low | `prompts/sonnet-11-lessons.md` | §6.S11 | `src/app/lessons/**` (new), `src/components/Lesson*.tsx` (new), `src/components/SaveLessonButton.tsx` (new), `src/components/FallbackAnalyzeButton.tsx` (new), `src/lib/lessons.actions.ts` (new), `src/lib/i18n/dict/lessons.ts`, `tests/integration/lessons-ui.test.ts`, `docs/log/s11.md` | O8 |
+| S12 Script studio UI + Higgsfield hand-off | 2 | Opus 5.5 med | `prompts/sonnet-12-script-studio.md` | §6.S12 | `src/app/studio/**` (new), `src/components/Studio*.tsx` (new), `src/lib/studio.actions.ts` (new), `src/lib/i18n/dict/scripts.ts`, `.claude/commands/higgsfield-shots.md` (new), `docs/HIGGSFIELD.md` (new), `tests/integration/studio-ui.test.ts`, `docs/log/s12.md` | O8 |
+| S9 Link pass | — | Opus 5.5 low | `prompts/sonnet-9-link-pass.md` | §6.S9 | ESLint/Prettier config + repo-wide autofix, `.github/workflows/ci.yml` (lint step), `KNOWN-ISSUES.md`, `src/components/Header.tsx` nav, the one-line mount of S11's buttons in `src/app/youtube/video/**`, `docs/log/s9.md` | S5, S6, S8, S10–S12 |
 
 Right-sizing: every phase is one session, ≤ 90 minutes. If a phase cannot
 finish in that, it was two phases — split it in this file, not in the session.
@@ -154,6 +154,13 @@ Decided 2026-09-11 (Fable review, `docs/REVIEW-2026-09-11.md`):
 35. **No-captions fallback is click-only.** A video without captions can be
     analysed by passing its YouTube URL to Gemini (low media resolution),
     through `withSpendCap`, only when the owner clicks, never in poll/batch.
+37. **All phases run on Opus 5.5 (`claude-opus-5-5`)** — supersedes 11 and
+    every "Sonnet" in the phase table, prompts, handoff and watcher. Effort:
+    **medium** for O5–O8 and S12, **low** for S5, S6, S8, S10, S11, S9 and the
+    watcher. Set the model explicitly on every `create_session` /
+    `create_trigger`; never inherit, never Fable. Where a prompt says
+    "SONNET session", read "Opus 5.5, low effort". If a newer model exists
+    when a phase runs, still use `claude-opus-5-5` unless this line is edited.
 36. **Out of scope for build 2:** voice, video rendering, clipping
     (videoPY, deferred), children's stories (separate build), auto-posting.
 
@@ -250,7 +257,7 @@ it most needs.
     PR: `typecheck && test && test:db && build` (O4 defines it; O5 adds the
     fake-Gemini integration tests to `test:db`).
 
-## §5. Lane 1 — Opus phases
+## §5. Lane 1 — Opus 5.5 phases
 
 ### O4 — Verification foundation
 
@@ -393,7 +400,7 @@ Exit: contract tests; generate + export integration tests with the fake;
 one real smoke run recorded in `docs/log/o8.md` if credentials exist (else a
 §7 item); `npm run verify` green; PR merged; watcher created; lane 2 spawned.
 
-## §6. Lane 2 — Sonnet phases (parallel) and the link pass
+## §6. Lane 2 — Opus 5.5 low-effort phases (parallel) and the link pass
 
 Hard limits §4.7 apply to S5, S6, S8, S10–S12.
 
@@ -588,8 +595,17 @@ One line per phase; detail in `docs/log/<id>.md`.
 
 ## §10. Backlog
 
-- videoPY: voice, captions, render, clipping (see its `PLAN.md`), after the
-  Paraguayan voice is chosen.
+- **Build 3 — videoPY (voice, video rendering, clipping).** Waits until Anton
+  picks the Paraguayan voice (week of 2026-10-05). Lives in
+  `antonmarklundcom/videoPY` (its `PLAN.md` §3, §5, §6 track V), reads the
+  §1.32 script contract O8 defines. Phases, all Opus 5.5:
+  V1 foundation (CLI, project folders, contract loader, `voices.yaml`,
+  `pronounce.yaml`) → V2 voice adapters + side-by-side voice test (Gemini
+  TTS, Azure es-PY, ElevenLabs, Chatterbox, Higgsfield) → ✋ Anton picks the
+  voice → V3 captions (faster-whisper) + render templates (explainer 16:9,
+  short 9:16) → V4 clipping of Anton's own recordings (silence cut,
+  AI-picked highlights, 9:16 reframe, captions) → V5 listing-video template.
+  Plus one content-engine phase: "Send to videoPY" export button.
 - Question mining from competitor comments (YouTube `commentThreads`).
 - Comparing Anton's own channel stats to competitors.
 

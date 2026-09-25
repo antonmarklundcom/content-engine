@@ -1,4 +1,4 @@
-# Phase S12 — Script studio UI + Higgsfield hand-off. SONNET session. Lane 2, parallel with S5, S6, S8, S10, S11.
+# Phase S12 — Script studio UI + Higgsfield hand-off. OPUS 5.5 session (effort medium, §1.37). Lane 2, parallel with S5, S6, S8, S10, S11.
 
 Read ONLY: this file, `PLAN.md` §1 (esp. 32–34), §4, §6.S12, the phase table
 and §9 index, `docs/log/o7.md`, `docs/log/o8.md`. Execute under §4.

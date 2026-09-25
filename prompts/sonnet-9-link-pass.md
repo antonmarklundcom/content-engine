@@ -1,4 +1,4 @@
-# Phase S9 — Link pass. SONNET session. Sequential, ONLY after S5, S6, S8, S10, S11, S12 are all merged.
+# Phase S9 — Link pass. OPUS 5.5 session (effort low, §1.37). Sequential, ONLY after S5, S6, S8, S10, S11, S12 are all merged.
 
 Read ONLY: this file, `PLAN.md` §1, §4, §6.S9, the phase table and §9 index,
 and `docs/log/s5.md`, `s6.md`, `s8.md`, `s10.md`, `s11.md`, `s12.md`. Execute under the autonomy
