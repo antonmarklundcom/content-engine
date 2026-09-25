@@ -42,6 +42,7 @@ Run it once, from anywhere with the two credentials:
 ```
 export DATABASE_URL='postgresql://…neon.tech/…'   # a dev branch, not production
 export GEMINI_API_KEY='…'                          # billed project
+export DB_DRIVER=pg                                # §1.27; neon-http has no db.transaction()
 unset GEMINI_FAKE
 
 npm run smoke -- residency-guide --dry-run         # plan + estimates, spends nothing
