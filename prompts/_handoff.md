@@ -14,18 +14,18 @@ A phase is done only when ALL of these hold:
 
 Then, by lane:
 
-- **Lane 1 (O4, O5):** spawn the next lane 1 phase with the claude-code-remote
+- **Lane 1 (O4–O7):** spawn the next lane 1 phase with the claude-code-remote
   `create_session` tool — inherit environment and permission mode (never
-  `plan`), `model` set explicitly to the Opus model id (look it up in the
-  `claude-api` skill; never inherit, never Fable), `prompt` exactly
+  `plan`), `model` set explicitly to `claude-opus-5-5` (§1.37; never inherit, never Fable), `prompt` exactly
   `Read prompts/<next-file>.md in this repo and execute it.`
-- **O6 (last lane 1 phase):** first create the watcher Routine with
+- **O8 (last lane 1 phase):** first create the watcher Routine with
   `create_trigger`: hourly cron, `create_new_session_on_fire: true`, model
-  the current Sonnet id, prompt exactly
+  `claude-opus-5-5` (§1.37), prompt exactly
   `Read prompts/_watcher.md in this repo and execute it.` Then spawn S5, S6,
-  S7, S8 — up to 4 concurrent sessions, each on Sonnet, same `prompt`
+  S8, S10 — up to 4 concurrent sessions (the watcher starts S11, S12 as
+  slots free), each on Opus 5.5 (`claude-opus-5-5`), same `prompt`
   pattern with its own file.
-- **Lane 2 (S5–S8):** spawn nothing. End with the phase report.
+- **Lane 2 (S5, S6, S8, S10–S12):** spawn nothing. End with the phase report.
 - **S9:** delete the watcher Routine (`delete_trigger`), then STOP with the
   closing report to Anton.
 

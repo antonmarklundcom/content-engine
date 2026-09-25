@@ -1,4 +1,4 @@
-# Phase O4 — Verification foundation. OPUS session. Lane 1.
+# Phase O4 — Verification foundation. OPUS 5.5 session (effort medium, §1.37). Lane 1.
 
 Read ONLY: this file, `PLAN.md` §1, §4, §5.O4, the phase table and §9 index.
 Do not read `docs/PLAN-v1-build1.md` or the archived prompts. Execute under
@@ -47,4 +47,4 @@ written; §9 index line added.
 
 ## After this phase
 Follow `prompts/_handoff.md`. Next: `prompts/opus-5-gemini-double-smoke.md`,
-model Opus.
+model `claude-opus-5-5`.
