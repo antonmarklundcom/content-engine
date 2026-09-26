@@ -1,8 +1,20 @@
 # Caption fetching: what to do if Vercel's IPs are blocked
 
-**Status:** decision doc, written before the first Vercel deployment. Nothing
-here has been verified against a live Vercel function — that is what step 1
-below is for.
+**Status (2026-09-26, PLAN.md §1.27–§1.28): the app runs locally, so captions
+are fetched from Anton's home IP**, which YouTube does not block the way it
+blocks datacenters. None of the options below are needed for that setup. What to do on the PC:
+
+1. Run `npm run yt:probe-captions` once, from the PC. Expect `PASS`.
+2. Paste the `CAPTION_STRATEGIES=…` line it prints into `.env`.
+3. Leave `CAPTION_PROXY_URL` unset.
+
+A video without captions at all can still be analysed: the owner clicks the
+no-captions fallback, which sends the YouTube URL to Gemini (PLAN.md §1.35,
+priced per video from its length, never run by the poller).
+
+The rest of this document applies **only if the app is deployed to Vercel or
+another datacenter host** — it was written before the local-first decision and
+is kept for that case.
 
 ## The one assumption everything rests on
 
@@ -58,7 +70,7 @@ makes a bad outcome cheap, not fine — the options below are still the fix.
 
 From this repo, not from memory:
 
-- Analysis is Haiku 4.5 at $1/M input and $5/M output
+- Analysis is Gemini 3.1 Flash-Lite at $0.25/M input and $1.50/M output
   (`src/lib/analysis/pricing.ts`), halved again by the Batch API.
 - A transcript is estimated at ~5,000 input tokens (`scripts/backfill.ts`).
 - `.env.example` records the working figures the tool was budgeted against:
@@ -120,9 +132,10 @@ explicit human decision, and both `scripts/ingest.ts` and
 `scripts/probe-captions.ts` print a warning against reaching for it. Nothing
 learned since changes that.
 
-> PLAN.md itself is not committed to this repo — the ~20x and §6 references come
-> from the plan the code was built against, and are quoted in the source
-> comments. If it ever lands here, check these figures against it.
+> The ~20x and §6 references come from the build-1 plan
+> (`docs/PLAN-v1-build1.md`); PLAN.md §1.8 still rules out audio transcription.
+> The §1.35 no-captions fallback is a different thing: one owner-clicked Gemini
+> call on the video URL, not an audio pipeline.
 
 ## Option 3 — Move just the caption fetch to a non-datacenter host
 

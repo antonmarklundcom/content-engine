@@ -1,5 +1,21 @@
 # Capturing a clip from your phone
 
+**First: your phone has to reach the app.** The app runs on your PC
+(`docs/LOCAL-SETUP.md`), so `localhost:3000` means nothing to the phone. Two options:
+
+- **Same Wi-Fi.** Start the app with `npm run dev -- -H 0.0.0.0` (or
+  `npm run start -- -H 0.0.0.0`), find the PC's address with `ipconfig`
+  ("IPv4 Address", e.g. `192.168.1.20`), and use `http://192.168.1.20:3000` on
+  the phone. Windows Firewall will ask once — allow private networks. Only works
+  at home, with the PC on. The PWA share sheet (Option A) needs HTTPS, so on
+  plain Wi-Fi only Option B works.
+- **A tunnel** (e.g. Cloudflare Tunnel or Tailscale Funnel) gives the PC an
+  HTTPS address that works from anywhere while the PC is on. Both options below
+  work through it. Set `CLIP_TOKEN` before opening one — the app is then on the
+  internet, behind its login.
+
+Wherever this page says `<your-deployment>`, use that address.
+
 Two ways to save a link into the inbox (`/inbox`) without opening the app and
 typing anything. Both end up calling the same route, `POST /api/clips`, so a
 clip saved either way behaves identically — YouTube links route straight
@@ -34,8 +50,8 @@ session cookie needed.
    ```bash
    node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
    ```
-   and sets it as `CLIP_TOKEN` in the deployment's environment (see
-   `.env.example`). Treat it like a password — anyone holding it can save
+   and sets it as `CLIP_TOKEN` in `.env` (see `.env.example`), then restarts
+   the app. Treat it like a password — anyone holding it can save
    clips, and a saved YouTube link spends money analysing itself.
 
 2. **Build the Shortcut** (Shortcuts app → + → add these actions in order):
@@ -87,4 +103,4 @@ Content-Type: application/json
 `note` is optional. Response is `201` (new clip) or `200` (already saved —
 the note is updated, nothing duplicates) with the clip row as JSON, or a
 `4xx`/`5xx` with `{ "error": "..." }` — most commonly `503` if `CLIP_TOKEN`
-isn't set on this deployment yet.
+isn't set in `.env` yet.
