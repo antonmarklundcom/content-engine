@@ -32,6 +32,7 @@ import * as research from "./dict/research";
 import * as lessons from "./dict/lessons";
 import * as scripts from "./dict/scripts";
 import * as publish from "./dict/publish";
+import * as facts from "./dict/facts";
 
 export const en = {
   ...app.en,
@@ -48,6 +49,7 @@ export const en = {
   ...lessons.en,
   ...scripts.en,
   ...publish.en,
+  ...facts.en,
 } as const;
 
 export type TranslationKey = keyof typeof en;
@@ -67,6 +69,7 @@ export const sv: Record<TranslationKey, string> = {
   ...lessons.sv,
   ...scripts.sv,
   ...publish.sv,
+  ...facts.sv,
 };
 
 export const DICTIONARIES = { en, sv } as const;
