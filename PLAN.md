@@ -161,6 +161,11 @@ Decided 2026-09-11 (Fable review, `docs/REVIEW-2026-09-11.md`):
     `create_trigger`; never inherit, never Fable. Where a prompt says
     "SONNET session", read "Opus 5.5, low effort". If a newer model exists
     when a phase runs, still use `claude-opus-5-5` unless this line is edited.
+38. **Subscription mode.** `AI_PROVIDER=gemini|claude|codex`. Studio writing
+    (titles, scripts, reports, packs) goes through `structuredJson()` in
+    `ai.ts`, which runs the logged-in Claude Code / Codex CLI locally
+    (`src/lib/ai-cli.ts`) at $0 app cost, or Gemini under the spend cap.
+    YouTube digests/screening stay on Gemini. See `docs/SUBSCRIPTION-MODE.md`.
 36. **Out of scope for build 2:** voice, video rendering, clipping
     (videoPY, deferred), children's stories (separate build), auto-posting.
 
@@ -589,10 +594,25 @@ One line per phase; detail in `docs/log/<id>.md`.
 | O8 | #22 | `docs/log/o8.md` | merged |
 | S7 | — | — | dropped (§1.28) |
 | S10 | (open) | `docs/log/s10.md` | in PR |
-| S11 | | `docs/log/s11.md` | not started |
+| S11 | #30 | `docs/log/s11.md` | merged |
 | S12 | #31 | `docs/log/s12.md` | merged |
 | S8 | #24 | `docs/log/s8.md` | merged |
 | S9 | | `docs/log/s9.md` | not started |
+
+## §6b. Build 2b — studio extras (ideas 1–8, 10)
+
+Runs after S9. Schema landed in PR #34 (migration 0006). Four parallel Opus 5.5
+sessions, disjoint Owns, each one PR:
+
+| Phase | Prompt | Ideas |
+|---|---|---|
+| B2b-A | `prompts/b2b-a-competitor-report.md` | 1 weekly competitor report, 2 comment mining |
+| B2b-B | `prompts/b2b-b-facts-channel.md` | 3 fact sheets + out-of-date check, 4 own channel vs competitors |
+| B2b-C | `prompts/b2b-c-filming-publish-repurpose.md` | 5 filming plan, 6 post-recording pack, 7 repurposing |
+| B2b-D | `prompts/b2b-d-listing-thumbnails.md` | 8 Propia listing → script, 10 thumbnails → Higgsfield |
+
+Idea 9 (weekly implement nudge) shipped in aiinsights. Nav links for the new
+pages are added by the parent session after all four merge.
 
 ## §10. Backlog
 

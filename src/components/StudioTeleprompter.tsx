@@ -72,6 +72,10 @@ export function StudioTeleprompter({
       if (e.target instanceof HTMLElement && e.target.closest("input, textarea, select")) return;
       if (e.code === "Space") {
         e.preventDefault(); // not "page down"
+        // A focused control (Play after a mouse click) would also be activated
+        // by Space on keyup and toggle straight back; blurring it now means the
+        // keyup lands on the page instead.
+        if (e.target instanceof HTMLElement && e.target.closest("button, a")) e.target.blur();
         setPlaying((p) => !p);
       } else if (e.key === "ArrowUp") {
         e.preventDefault();

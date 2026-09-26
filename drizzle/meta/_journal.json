@@ -43,6 +43,13 @@
       "when": 1790376844261,
       "tag": "0005_aspiring_shriek",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790388531704,
+      "tag": "0006_studio_extras",
+      "breakpoints": true
     }
   ]
 }
