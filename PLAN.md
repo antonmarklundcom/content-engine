@@ -554,6 +554,7 @@ Exit: lint green in CI; KNOWN-ISSUES only holds open items; watcher gone.
 | 6 | YouTube Data API key (free, Google Cloud console) in `.env` as `YOUTUBE_API_KEY` — needed for channel stats and outliers. | O7 smoke / S10 | ☐ |
 | 7 | On your PC, once lane 2 is merged: follow `docs/LOCAL-SETUP.md` (~20 min). | after S9 | ☐ |
 | 8 | Add 3–5 competitor channels per brand in `/research`. | after S9 | ☐ |
+| 9 | First real titles + script run (O8 had no credentials): with `.env` filled, suggest titles and write one ~5-min script for a brand (S12's `/studio/new`, or `POST /api/scripts/titles` then `POST /api/scripts` signed in as owner); paste `costUsd`, the `spend_log` delta and one section into `docs/log/o8.md`. | after S12 | ☐ |
 | 5 | Merge this plan PR before starting O4. | now | ☐ |
 
 ## §8. Open business questions (parked)
@@ -585,7 +586,7 @@ One line per phase; detail in `docs/log/<id>.md`.
 | S5 | | `docs/log/s5.md` | not started |
 | S6 | | `docs/log/s6.md` | not started |
 | O7 | #20 | `docs/log/o7.md` | merged |
-| O8 | | `docs/log/o8.md` | not started |
+| O8 | (open) | `docs/log/o8.md` | in PR |
 | S7 | — | — | dropped (§1.28) |
 | S10 | | `docs/log/s10.md` | not started |
 | S11 | | `docs/log/s11.md` | not started |

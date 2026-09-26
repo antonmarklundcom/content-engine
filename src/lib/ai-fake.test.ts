@@ -10,7 +10,7 @@ import {
   WEB_SEARCH_QUERIES,
   type FakeResponseKind,
 } from "./ai-fake";
-import { readUsage } from "./ai";
+import { readUsage, SCRIPT_JSON_SCHEMA, TITLES_JSON_SCHEMA } from "./ai";
 import { ANALYSIS_JSON_SCHEMA } from "./analysis/prompt";
 import { OUTLINE_JSON_SCHEMA } from "./analysis/outline-prompt";
 import { SCREENING_JSON_SCHEMA } from "./screening/prompt";
@@ -28,7 +28,7 @@ import { SCREENING_JSON_SCHEMA } from "./screening/prompt";
  * Pure: no database, no client, no environment beyond the one env test below.
  */
 
-const KINDS: FakeResponseKind[] = ["ideas", "adapt", "analysis", "screening", "outline"];
+const KINDS: FakeResponseKind[] = ["ideas", "adapt", "analysis", "screening", "outline", "titles", "script"];
 
 test("every canned payload validates against the schema it answers", () => {
   // The same check the fake runs per call, but against the repo's real schemas
@@ -95,6 +95,8 @@ test("every canned payload validates against the schema it answers", () => {
     analysis: ANALYSIS_JSON_SCHEMA,
     screening: SCREENING_JSON_SCHEMA,
     outline: OUTLINE_JSON_SCHEMA,
+    titles: TITLES_JSON_SCHEMA,
+    script: SCRIPT_JSON_SCHEMA,
   };
 
   for (const kind of KINDS) {
