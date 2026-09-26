@@ -590,7 +590,7 @@ One line per phase; detail in `docs/log/<id>.md`.
 | S7 | — | — | dropped (§1.28) |
 | S10 | | `docs/log/s10.md` | not started |
 | S11 | | `docs/log/s11.md` | not started |
-| S12 | | `docs/log/s12.md` | not started |
+| S12 | (PR) | `docs/log/s12.md` | merged |
 | S8 | #24 | `docs/log/s8.md` | merged |
 | S9 | | `docs/log/s9.md` | not started |
 
