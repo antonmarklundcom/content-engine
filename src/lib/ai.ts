@@ -15,7 +15,19 @@ import {
   type AnalysisModel,
   type TokenUsage,
 } from "@/lib/analysis/pricing";
+import type { AnalysisGap, AnalysisHook, AnalysisTimelineEntry } from "@/lib/analysis/contract";
 import { ANALYSIS_JSON_SCHEMA, ANALYSIS_SYSTEM_PROMPT } from "@/lib/analysis/prompt";
+import {
+  ASPECT_RATIOS,
+  SCRIPT_BODY_VERSION,
+  THUMBNAIL_CONCEPT_COUNT,
+  TITLE_OPTION_COUNT,
+  validateScriptBody,
+  type ScriptBodyV1,
+  type ScriptLanguage,
+  type ScriptSource,
+} from "@/lib/scripts/contract";
+import { needsVerification } from "@/lib/scripts/language";
 import { recordSpend, withSpendCap } from "@/lib/spend";
 
 /**
@@ -728,4 +740,491 @@ export async function analyzeVideoUrl<T>(
     }
     return store({ ok: true, response, model });
   });
+}
+
+// ---------------------------------------------------------------------------
+// titles + on-camera scripts (PLAN.md §1.32–§1.33, §5.O8)
+// ---------------------------------------------------------------------------
+
+/** Ten titles and an angle each: a short answer, no research. */
+const TITLES_MAX_OUTPUT_TOKENS = 3_000;
+const TITLES_THINKING_TOKENS = 2_000;
+/** Brand, topic, style guide and up to a few dozen saved lessons. */
+const TITLES_PROMPT_OVERHEAD_TOKENS = 4_000;
+export const TITLE_SUGGESTION_COUNT = 10;
+
+/**
+ * A 20-minute script is ~3,000 spoken words plus shot prompts and sources —
+ * roughly 8k tokens; the ceiling leaves room for that twice over.
+ */
+const SCRIPT_MAX_OUTPUT_TOKENS = 16_000;
+const SCRIPT_THINKING_TOKENS = 8_000;
+/** Style guide + structure references + lessons. Rounded up (see PROMPT_OVERHEAD_TOKENS). */
+const SCRIPT_PROMPT_OVERHEAD_TOKENS = 8_000;
+const SCRIPT_MAX_GROUNDING_QUERIES = 8;
+
+/** Spoken words per minute on camera — a calm explainer pace. */
+const WORDS_PER_MINUTE = 140;
+
+export function estimateTitlesCostUsd(model: string = MODEL): number {
+  return costUsdAtRates(ideationRates(model), {
+    inputTokens: TITLES_PROMPT_OVERHEAD_TOKENS,
+    outputTokens: TITLES_MAX_OUTPUT_TOKENS + TITLES_THINKING_TOKENS,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+  });
+}
+
+export function estimateScriptCostUsd(model: string = MODEL): number {
+  const tokens = costUsdAtRates(ideationRates(model), {
+    inputTokens: SCRIPT_PROMPT_OVERHEAD_TOKENS,
+    outputTokens: SCRIPT_MAX_OUTPUT_TOKENS + SCRIPT_THINKING_TOKENS,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+  });
+  return tokens + SCRIPT_MAX_GROUNDING_QUERIES * GROUNDING_USD_PER_QUERY;
+}
+
+/** A saved lesson handed to the prompt (§1.31): hooks and title patterns for titles, facts for scripts. */
+export type PromptLesson = {
+  kind: string;
+  text: string;
+  sourceUrl?: string | null;
+};
+
+/**
+ * A competitor video's analysis, passed as a *structure* reference: how it
+ * hooks, how it is paced, what it leaves out. Its wording is never passed on
+ * to be reused — the prompt forbids copying it — which is why the summary and
+ * takeaways are deliberately not in this type.
+ */
+export type StructureReference = {
+  videoTitle: string;
+  channelTitle?: string | null;
+  hook?: AnalysisHook | null;
+  timeline?: AnalysisTimelineEntry[] | null;
+  gaps?: AnalysisGap[] | null;
+};
+
+export type TitleSuggestion = { title: string; angle: string };
+
+export const TITLES_JSON_SCHEMA = {
+  type: "object",
+  properties: {
+    titles: {
+      type: "array",
+      minItems: TITLE_SUGGESTION_COUNT,
+      maxItems: TITLE_SUGGESTION_COUNT,
+      items: {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "A YouTube title, under 70 characters." },
+          angle: {
+            type: "string",
+            description: "Why a viewer clicks: the promise or tension, one sentence.",
+          },
+        },
+        required: ["title", "angle"],
+      },
+    },
+  },
+  required: ["titles"],
+} as const;
+
+function lessonLines(lessons: PromptLesson[]): string {
+  return lessons
+    .map((l) => `- [${l.kind}] ${l.text}${l.sourceUrl ? ` (source: ${l.sourceUrl})` : ""}`)
+    .join("\n");
+}
+
+const LANGUAGE_NAMES: Record<ScriptLanguage, string> = {
+  en: "English",
+  "es-PY": "Paraguayan Spanish (castellano paraguayo, voseo)",
+  jopara: "Jopara (Paraguayan Spanish with common Guaraní words mixed in)",
+};
+
+function styleBlock(language: ScriptLanguage, styleGuide: string): string {
+  return `Language: ${LANGUAGE_NAMES[language]}.${
+    styleGuide.trim() ? `\n\nSTYLE GUIDE — follow it:\n${styleGuide.trim()}` : ""
+  }`;
+}
+
+/**
+ * Ten title options for a video on `topic`, each with its angle (§5.O8.3).
+ * Ungrounded: a title is a promise about a video that does not exist yet, and
+ * the facts it rests on are checked when the script is written.
+ */
+export async function generateTitles(
+  brand: Brand,
+  topic: string,
+  lessons: PromptLesson[],
+  options: { language: ScriptLanguage; styleGuide: string },
+): Promise<{ titles: TitleSuggestion[]; costUsd: number }> {
+  const system = `You write YouTube titles for a creator who films himself explaining things on camera. A good title makes one concrete promise, names the viewer's situation, and is under 70 characters. No clickbait the video cannot pay off, no ALL CAPS, no emoji. Never invent numbers, laws or prices in a title. Write every title in the requested language. Answer with JSON matching the required schema and nothing else.`;
+
+  const userPrompt = `Brand: ${brand.name} (${brand.niche}), market: ${brand.market}
+Voice: ${brand.voice ?? "plain, concrete, no hype"}
+${styleBlock(options.language, options.styleGuide)}
+
+Topic: ${topic}
+${
+  lessons.length
+    ? `\nWhat Anton has saved about hooks and titles that worked — use the PATTERNS, never copy a title word for word:\n${lessonLines(lessons)}\n`
+    : ""
+}
+Propose ${TITLE_SUGGESTION_COUNT} distinct titles, each with its angle. Vary the approach: a number, a mistake to avoid, a question, a before/after, a direct promise.`;
+
+  return withSpendCap(estimateTitlesCostUsd(), async () => {
+    const response = await geminiClient().models.generateContent({
+      model: MODEL,
+      contents: userPrompt,
+      config: {
+        systemInstruction: system,
+        maxOutputTokens: TITLES_MAX_OUTPUT_TOKENS,
+        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+        responseMimeType: "application/json",
+        responseJsonSchema: TITLES_JSON_SCHEMA,
+      },
+    });
+    const costUsd = messageCostUsd(readUsage(response), groundingQueryCount(response));
+    await recordSpend(costUsd);
+
+    let parsed: { titles?: TitleSuggestion[] };
+    try {
+      parsed = JSON.parse(responseText(response)) as typeof parsed;
+    } catch {
+      throw new Error(
+        `Gemini didn't return parseable titles (finish reason: ${
+          response.candidates?.[0]?.finishReason ?? "unknown"
+        }). Try again.`,
+      );
+    }
+    const titles = (parsed.titles ?? []).filter((t) => t?.title?.trim());
+    if (titles.length === 0) throw new Error("Gemini returned no titles. Try again.");
+    return { titles, costUsd };
+  });
+}
+
+const BROLL_JSON_SCHEMA = {
+  type: "object",
+  properties: {
+    spokenLine: {
+      type: "string",
+      description: "The exact spoken line (copied from spokenLines) this shot plays under.",
+    },
+    description: { type: "string", description: "What the shot shows, in a few words, in English." },
+    imagePrompt: {
+      type: "string",
+      description:
+        "An English prompt for an image model: subject, setting, light, camera, style. Photographic, no text in the image, no real people's likenesses.",
+    },
+    videoPrompt: {
+      type: "string",
+      description:
+        "An English image-to-video prompt describing the motion (camera move, what moves), or an empty string if the shot is a still.",
+    },
+    aspectRatio: { type: "string", enum: [...ASPECT_RATIOS] },
+  },
+  required: ["spokenLine", "description", "imagePrompt", "videoPrompt", "aspectRatio"],
+} as const;
+
+const SPOKEN_LINES_SCHEMA = {
+  type: "array",
+  items: { type: "string" },
+  description: "Teleprompter lines: one short sentence, one idea per line.",
+} as const;
+
+export const SCRIPT_JSON_SCHEMA = {
+  type: "object",
+  properties: {
+    titleOptions: {
+      type: "array",
+      minItems: TITLE_OPTION_COUNT,
+      maxItems: TITLE_OPTION_COUNT,
+      description: "The chosen title first, then two alternatives.",
+      items: {
+        type: "object",
+        properties: { title: { type: "string" }, angle: { type: "string" } },
+        required: ["title", "angle"],
+      },
+    },
+    thumbnailConcepts: {
+      type: "array",
+      minItems: THUMBNAIL_CONCEPT_COUNT,
+      maxItems: THUMBNAIL_CONCEPT_COUNT,
+      items: {
+        type: "object",
+        properties: {
+          description: { type: "string" },
+          textOverlay: { type: "string", description: "At most 4 words, or empty." },
+          imagePrompt: { type: "string", description: "English image prompt, no text in the image." },
+        },
+        required: ["description", "textOverlay", "imagePrompt"],
+      },
+    },
+    hook: {
+      type: "object",
+      properties: {
+        spokenLines: SPOKEN_LINES_SCHEMA,
+        onScreenText: { type: "array", items: { type: "string" } },
+        broll: { type: "array", items: BROLL_JSON_SCHEMA },
+      },
+      required: ["spokenLines", "onScreenText", "broll"],
+    },
+    sections: {
+      type: "array",
+      minItems: 1,
+      items: {
+        type: "object",
+        properties: {
+          heading: { type: "string" },
+          spokenLines: SPOKEN_LINES_SCHEMA,
+          talkingPoints: {
+            type: "array",
+            items: { type: "string" },
+            description: "Notes for the presenter, not read aloud.",
+          },
+          onScreenText: { type: "array", items: { type: "string" } },
+          broll: { type: "array", items: BROLL_JSON_SCHEMA },
+          sourceIds: {
+            type: "array",
+            items: { type: "string" },
+            description: "Ids from `sources` for every factual claim made in this section.",
+          },
+        },
+        required: ["heading", "spokenLines", "talkingPoints", "onScreenText", "broll", "sourceIds"],
+      },
+    },
+    cta: {
+      type: "object",
+      properties: {
+        spokenLines: SPOKEN_LINES_SCHEMA,
+        onScreenText: { type: "array", items: { type: "string" } },
+      },
+      required: ["spokenLines", "onScreenText"],
+    },
+    sources: {
+      type: "array",
+      description: "One entry per factual claim in the script. Every entry has a real URL you found by searching.",
+      items: {
+        type: "object",
+        properties: {
+          id: { type: "string", description: "s1, s2, ..." },
+          claim: { type: "string" },
+          url: { type: "string", description: "The full https URL of the page that states this claim." },
+          title: { type: "string", description: "Page or publisher name." },
+          verifyBeforeRecording: {
+            type: "boolean",
+            description:
+              "true for anything legal, residency/migration, tax, price, fee or deadline related — facts that change and that viewers act on.",
+          },
+        },
+        required: ["id", "claim", "url", "title", "verifyBeforeRecording"],
+      },
+    },
+  },
+  required: ["titleOptions", "thumbnailConcepts", "hook", "sections", "cta", "sources"],
+} as const;
+
+export type ScriptBrief = {
+  topic: string;
+  /** The title picked from `generateTitles`, or typed by hand. */
+  title: string;
+  targetMinutes: number;
+  language: ScriptLanguage;
+  /** The whole `content/style/<language>.md` file. */
+  styleGuide: string;
+  references: StructureReference[];
+  lessons: PromptLesson[];
+};
+
+function referenceBlock(refs: StructureReference[]): string {
+  if (!refs.length) return "";
+  const parts = refs.map((r, i) => {
+    const lines = [`Reference ${i + 1}: "${r.videoTitle}"${r.channelTitle ? ` (${r.channelTitle})` : ""}`];
+    if (r.hook) lines.push(`  Hook technique: ${r.hook.technique} — why it works: ${r.hook.why_it_works}`);
+    if (r.timeline?.length) {
+      lines.push(`  Structure: ${r.timeline.map((t) => `${t.ts} ${t.topic}`).join(" → ")}`);
+    }
+    if (r.gaps?.length) lines.push(`  What it leaves out: ${r.gaps.map((g) => g.gap).join("; ")}`);
+    return lines.join("\n");
+  });
+  return `\n\nSTRUCTURE REFERENCES — competitor videos on this topic, already analysed. Learn from HOW they are built (hook technique, order of beats, pacing) and cover what they leave out. Do NOT copy their wording, their titles, their examples or their jokes; every sentence in this script is new.\n${parts.join("\n")}`;
+}
+
+/** What the model returns: the body minus the fields this app fills in itself. */
+type RawScript = Omit<ScriptBodyV1, "version" | "language" | "topic" | "chosenTitle" | "targetMinutes" | "sources" | "hook" | "sections"> & {
+  hook: Omit<ScriptBodyV1["hook"], "broll"> & { broll: RawBroll[] };
+  sections: (Omit<ScriptBodyV1["sections"][number], "broll"> & { broll: RawBroll[] })[];
+  sources: ScriptSource[];
+};
+type RawBroll = Omit<ScriptBodyV1["hook"]["broll"][number], "videoPrompt"> & { videoPrompt: string | null };
+
+function isHttpUrl(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  try {
+    const { protocol } = new URL(value);
+    return protocol === "https:" || protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Turn the model's answer into a contract body. Pure, so it is unit-tested.
+ *
+ * Repairs rather than rejects the two things a model gets wrong that are
+ * cheaper to fix than to pay for again, and never hides either:
+ *  - a source without a usable URL is dropped from `sources`, and every
+ *    section that cited it gets an "UNSOURCED — verify or cut" talking point;
+ *  - a `sourceIds` entry naming no source is dropped.
+ * The verify flag is the model's OR `needsVerification`'s (§5.O8: legal and
+ * residency facts always carry it).
+ */
+export function assembleScriptBody(raw: RawScript, brief: Pick<ScriptBrief, "topic" | "title" | "targetMinutes" | "language">): ScriptBodyV1 {
+  const kept = new Map<string, ScriptSource>();
+  const dropped = new Map<string, string>();
+  for (const s of raw.sources ?? []) {
+    const id = String(s.id ?? "").trim();
+    if (!id || kept.has(id)) continue;
+    if (!isHttpUrl(s.url)) {
+      dropped.set(id, s.claim);
+      continue;
+    }
+    kept.set(id, {
+      id,
+      claim: s.claim,
+      url: s.url,
+      title: s.title ?? "",
+      verifyBeforeRecording: needsVerification(s.claim ?? "", s.verifyBeforeRecording === true),
+    });
+  }
+
+  const broll = (shots: RawBroll[]) =>
+    (shots ?? []).map((b) => ({
+      spokenLine: b.spokenLine,
+      description: b.description,
+      imagePrompt: b.imagePrompt,
+      videoPrompt: b.videoPrompt?.trim() ? b.videoPrompt.trim() : null,
+      aspectRatio: b.aspectRatio,
+    }));
+
+  return {
+    version: SCRIPT_BODY_VERSION,
+    language: brief.language,
+    topic: brief.topic,
+    chosenTitle: brief.title,
+    targetMinutes: brief.targetMinutes,
+    titleOptions: raw.titleOptions,
+    thumbnailConcepts: raw.thumbnailConcepts,
+    hook: { spokenLines: raw.hook.spokenLines, onScreenText: raw.hook.onScreenText, broll: broll(raw.hook.broll) },
+    sections: raw.sections.map((s) => ({
+      heading: s.heading,
+      spokenLines: s.spokenLines,
+      talkingPoints: [
+        ...s.talkingPoints,
+        ...s.sourceIds.filter((id) => dropped.has(id)).map((id) => `UNSOURCED — verify or cut: ${dropped.get(id)}`),
+      ],
+      onScreenText: s.onScreenText,
+      broll: broll(s.broll),
+      sourceIds: [...new Set(s.sourceIds.filter((id) => kept.has(id)))],
+    })),
+    cta: raw.cta,
+    sources: [...kept.values()],
+  };
+}
+
+export class ScriptGenerationError extends Error {
+  constructor(
+    message: string,
+    readonly errors: string[] = [],
+  ) {
+    super(message);
+    this.name = "ScriptGenerationError";
+  }
+}
+
+/**
+ * Write an on-camera script (§1.32, §5.O8.3): Search-grounded, every factual
+ * claim in `sources` with a URL, in the brief's language and style guide,
+ * built on the structure references without copying them. Returns a body the
+ * contract accepts, or throws `ScriptGenerationError` — after billing, since
+ * the tokens were spent either way.
+ */
+export async function generateScript(
+  brand: Brand,
+  brief: ScriptBrief,
+): Promise<{ body: ScriptBodyV1; costUsd: number; groundingQueries: number }> {
+  const words = Math.round(brief.targetMinutes * WORDS_PER_MINUTE);
+
+  const system = `You write on-camera YouTube scripts for Anton, who films himself and reads from a teleprompter. Spoken lines are short: one sentence, one idea per line, words a person actually says out loud. No filler ("in today's video", "without further ado"), no hype, no stage directions inside spoken lines.
+
+Facts: research the topic with Google Search. Every factual claim — a law, a rule, a price, a fee, a deadline, a statistic, a named program — must appear in "sources" with the full URL of a page that states it, and the section that makes the claim lists that source id. If you cannot find a source for a claim, do not make the claim. Mark legal, residency, migration, tax, price and deadline facts verifyBeforeRecording: true. Every search costs money: use at most ${SCRIPT_MAX_GROUNDING_QUERIES} searches.
+
+B-roll: for each section, 1-3 shots that illustrate a specific spoken line. Image and video prompts are always in English, photographic, with no text in the image and no real people's likenesses. Leave videoPrompt empty for a still.
+
+Answer with JSON matching the required schema and nothing else.`;
+
+  const userPrompt = `Brand: ${brand.name} (${brand.niche}), market: ${brand.market}
+Voice: ${brand.voice ?? "plain, concrete, no hype"}
+${styleBlock(brief.language, brief.styleGuide)}
+
+Topic: ${brief.topic}
+Title (fixed — it is titleOptions[0]): ${brief.title}
+Target length: ${brief.targetMinutes} minutes, about ${words} spoken words in total across hook, sections and call to action.${
+    brief.lessons.length
+      ? `\n\nLESSONS Anton saved — use the hooks as patterns and the facts as leads to verify (a saved fact still needs a source URL):\n${lessonLines(brief.lessons)}`
+      : ""
+  }${referenceBlock(brief.references)}
+
+Write the script: a hook that earns the next 30 seconds, sections in a clear order, a call to action, three title options (the fixed title first), three thumbnail concepts, b-roll shots and sources.`;
+
+  const { text, costUsd, groundingQueries, finishReason } = await withSpendCap(
+    estimateScriptCostUsd(),
+    async () => {
+      const response = await geminiClient().models.generateContent({
+        model: MODEL,
+        contents: userPrompt,
+        config: {
+          systemInstruction: system,
+          maxOutputTokens: SCRIPT_MAX_OUTPUT_TOKENS,
+          tools: [{ googleSearch: {} }],
+          responseMimeType: "application/json",
+          responseJsonSchema: SCRIPT_JSON_SCHEMA,
+        },
+      });
+      const queries = groundingQueryCount(response);
+      const cost = messageCostUsd(readUsage(response), queries);
+      await recordSpend(cost);
+      return {
+        text: responseText(response),
+        costUsd: cost,
+        groundingQueries: queries,
+        finishReason: response.candidates?.[0]?.finishReason,
+      };
+    },
+  );
+
+  let raw: RawScript;
+  try {
+    raw = JSON.parse(text) as RawScript;
+  } catch {
+    throw new ScriptGenerationError(
+      `Gemini didn't return a parseable script (finish reason: ${finishReason ?? "unknown"}). Try again.`,
+    );
+  }
+
+  let body: ScriptBodyV1;
+  try {
+    body = assembleScriptBody(raw, brief);
+  } catch (err) {
+    throw new ScriptGenerationError(
+      `Gemini's script was missing whole parts (${err instanceof Error ? err.message : String(err)}). Try again.`,
+    );
+  }
+  const verdict = validateScriptBody(body);
+  if (!verdict.ok) {
+    throw new ScriptGenerationError("Gemini's script does not match the script contract. Try again.", verdict.errors);
+  }
+  return { body, costUsd, groundingQueries };
 }

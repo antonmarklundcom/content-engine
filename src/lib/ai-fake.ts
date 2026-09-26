@@ -57,7 +57,14 @@ import {
  * are module-private to `ai.ts`, and importing the other three would point this
  * module back at half the app for no gain.
  */
-export type FakeResponseKind = "ideas" | "adapt" | "analysis" | "screening" | "outline";
+export type FakeResponseKind =
+  | "ideas"
+  | "adapt"
+  | "analysis"
+  | "screening"
+  | "outline"
+  | "titles"
+  | "script";
 
 type JsonObject = Record<string, unknown>;
 
@@ -72,6 +79,10 @@ export function classifySchema(schema: unknown): FakeResponseKind {
   const has = (...names: string[]) => names.every((n) => keys.has(n));
 
   if (has("ideas", "researchNotes")) return "ideas";
+  // Ahead of `outline`, which also has a hook and a cta: a script is the one
+  // with sections and sources.
+  if (has("hook", "sections", "sources")) return "script";
+  if (has("titles")) return "titles";
   if (has("summary", "takeaways", "content_type")) return "analysis";
   if (has("score", "reason")) return "screening";
   if (has("hook", "rehook", "cta")) return "outline";
@@ -305,6 +316,138 @@ export const PAYLOADS: Record<FakeResponseKind, unknown> = {
     twist: "The fastest applicants are not the ones who rush — they are the ones who file once.",
     cta: "Check the expiry date on your police certificate before you book anything.",
   },
+
+  titles: {
+    titles: [
+      { title: "Paraguay residency in 45 days: the real timeline", angle: "Replaces the 90-day figure everyone still quotes." },
+      { title: "The 4 documents that restart your residency file", angle: "Names the mistake before the viewer makes it." },
+      { title: "Why your apostille must happen before you fly", angle: "The one step that cannot be fixed on arrival." },
+      { title: "I checked the migraciones timeline so you don't have to", angle: "Saves the viewer the research." },
+      { title: "Paraguay residency: what 'complete file' actually means", angle: "The condition hidden behind the headline number." },
+      { title: "Your police certificate expires. Here's when.", angle: "A deadline most applicants discover too late." },
+      { title: "The full cost of Paraguay residency, line by line", angle: "The fee is not the total, and viewers budget wrong." },
+      { title: "90 days or 45? Paraguay residency, 2026", angle: "A direct contradiction the viewer wants settled." },
+      { title: "Moving to Paraguay: do this before you book a flight", angle: "Ordering advice the viewer can act on today." },
+      { title: "Paraguay residency mistakes that cost you months", angle: "Loss aversion, with specifics." },
+    ],
+  },
+
+  // The model's half of a script body — `generateScript` adds version,
+  // language, topic, chosenTitle and targetMinutes. Deliberately imperfect in
+  // the two ways `assembleScriptBody` repairs: source "s3" has no usable URL
+  // (dropped, its section gets an UNSOURCED talking point) and a section cites
+  // "s9", which does not exist. "s2"'s claim carries a fee, so it is flagged
+  // even though the model said false.
+  script: {
+    titleOptions: [
+      { title: "Paraguay residency in 45 days: the real timeline", angle: "Replaces the 90-day figure." },
+      { title: "The 4 documents that restart your residency file", angle: "Names the mistake first." },
+      { title: "90 days or 45? Paraguay residency, 2026", angle: "A contradiction the viewer wants settled." },
+    ],
+    thumbnailConcepts: [
+      {
+        description: "Calendar with 90 crossed out and 45 circled",
+        textOverlay: "45 DAYS",
+        imagePrompt: "Close-up of a paper wall calendar, the number 90 crossed out in red marker, soft daylight, shallow depth of field",
+      },
+      {
+        description: "Four documents fanned out on a wooden desk",
+        textOverlay: "",
+        imagePrompt: "Overhead shot of four official-looking blank documents fanned on a warm wooden desk, natural window light",
+      },
+      {
+        description: "Passport next to a stamped folder",
+        textOverlay: "DO THIS FIRST",
+        imagePrompt: "A closed passport beside a manila folder with a generic stamp, top-down, clean studio light",
+      },
+    ],
+    hook: {
+      spokenLines: [
+        "Everyone still says ninety days.",
+        "That number changed.",
+        "Here is the real timeline, and the one thing that breaks it.",
+      ],
+      onScreenText: ["90 → 45 days"],
+      broll: [
+        {
+          spokenLine: "Everyone still says ninety days.",
+          description: "Calendar pages flipping",
+          imagePrompt: "Paper calendar on a desk, pages mid-flip, warm morning light, photographic",
+          videoPrompt: "Pages flip quickly from left to right, slow push-in",
+          aspectRatio: "16:9",
+        },
+      ],
+    },
+    sections: [
+      {
+        heading: "The real timeline",
+        spokenLines: [
+          "A complete application now takes about forty-five days.",
+          "That comes from the migraciones office itself.",
+          "Complete is the key word.",
+        ],
+        talkingPoints: ["Show the official page on screen.", "Say the date the rule changed."],
+        onScreenText: ["~45 days (complete files)"],
+        broll: [
+          {
+            spokenLine: "A complete application now takes about forty-five days.",
+            description: "Stopwatch on a stack of forms",
+            imagePrompt: "Analog stopwatch resting on a neat stack of blank forms, soft side light, photographic",
+            videoPrompt: "",
+            aspectRatio: "16:9",
+          },
+        ],
+        sourceIds: ["s1", "s9"],
+      },
+      {
+        heading: "What it costs",
+        spokenLines: [
+          "The fee is not the total.",
+          "Translations and apostilles add up.",
+          "Budget for all of it before you start.",
+        ],
+        talkingPoints: ["Walk the cost table line by line."],
+        onScreenText: ["Fee + translations + apostilles"],
+        broll: [
+          {
+            spokenLine: "Translations and apostilles add up.",
+            description: "Receipts spread on a table",
+            imagePrompt: "Several blank paper receipts spread on a table next to a calculator, top-down, natural light",
+            videoPrompt: "Slow pan across the receipts from left to right",
+            aspectRatio: "9:16",
+          },
+        ],
+        sourceIds: ["s2", "s3"],
+      },
+    ],
+    cta: {
+      spokenLines: ["Check your police certificate's expiry date today.", "Then book the flight."],
+      onScreenText: ["Check expiry → then book"],
+    },
+    sources: [
+      {
+        id: "s1",
+        claim: "Complete residency applications are processed in about 45 days.",
+        url: "https://example.gov.py/migraciones/plazos",
+        title: "Dirección General de Migraciones",
+        verifyBeforeRecording: true,
+      },
+      {
+        id: "s2",
+        claim: "The application fee is separate from translation and apostille costs.",
+        url: "https://example.com/py-residency-2026",
+        title: "Residency cost guide",
+        verifyBeforeRecording: false,
+      },
+      {
+        id: "s3",
+        claim: "Sworn translations cost around 150,000 guaraníes per page.",
+        url: "not a url",
+        title: "",
+        verifyBeforeRecording: false,
+      },
+    ],
+  },
 };
 
 /**
@@ -353,6 +496,20 @@ export const USAGE: Record<FakeResponseKind, GenerateContentResponseUsageMetadat
     thoughtsTokenCount: 0,
     cachedContentTokenCount: 0,
     totalTokenCount: 1_150,
+  },
+  titles: {
+    promptTokenCount: 1_100,
+    candidatesTokenCount: 520,
+    thoughtsTokenCount: 700,
+    cachedContentTokenCount: 0,
+    totalTokenCount: 2_320,
+  },
+  script: {
+    promptTokenCount: 3_600,
+    candidatesTokenCount: 4_800,
+    thoughtsTokenCount: 2_400,
+    cachedContentTokenCount: 0,
+    totalTokenCount: 10_800,
   },
 };
 
@@ -418,7 +575,7 @@ function textOf(kind: FakeResponseKind): string {
   return JSON.stringify(PAYLOADS[kind]);
 }
 
-/** Is this request asking for Search grounding? Only `/api/generate` does. */
+/** Is this request asking for Search grounding? `/api/generate` and script generation do. */
 function isGrounded(params: GenerateContentParameters): boolean {
   return (params.config?.tools ?? []).some((tool) => "googleSearch" in tool);
 }
