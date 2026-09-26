@@ -34,7 +34,12 @@ function fromForm(formData: FormData): FactInput {
     const value = formData.get(name);
     return typeof value === "string" ? value : "";
   };
-  return { topic: field("topic"), claim: field("claim"), sourceUrl: field("sourceUrl"), notes: field("notes") };
+  return {
+    topic: field("topic"),
+    claim: field("claim"),
+    sourceUrl: field("sourceUrl"),
+    notes: field("notes"),
+  };
 }
 
 /** Runs `write` for the owner; turns the two expected refusals into results. */
@@ -46,7 +51,8 @@ async function asOwner(write: () => Promise<FactActionResult>): Promise<FactActi
     return result;
   } catch (err) {
     if (err instanceof ForbiddenError) return { ok: false, error: "facts.error.owner" };
-    if (err instanceof InvalidFactError) return { ok: false, error: "facts.error.invalid", detail: err.message };
+    if (err instanceof InvalidFactError)
+      return { ok: false, error: "facts.error.invalid", detail: err.message };
     throw err;
   }
 }
@@ -58,7 +64,8 @@ export async function createFactAction(
   formData: FormData,
 ): Promise<FactActionResult> {
   return asOwner(async () => {
-    if (typeof brandId !== "string" || !(await getBrand(brandId))) return { ok: false, error: "facts.error.brand" };
+    if (typeof brandId !== "string" || !(await getBrand(brandId)))
+      return { ok: false, error: "facts.error.brand" };
     await createFact(brandId, fromForm(formData));
     return { ok: true };
   });
@@ -72,7 +79,9 @@ export async function updateFactAction(
 ): Promise<FactActionResult> {
   return asOwner(async () => {
     if (!isPositiveId(id)) return { ok: false, error: "facts.error.missing" };
-    return (await updateFact(id, fromForm(formData))) ? { ok: true } : { ok: false, error: "facts.error.missing" };
+    return (await updateFact(id, fromForm(formData)))
+      ? { ok: true }
+      : { ok: false, error: "facts.error.missing" };
   });
 }
 

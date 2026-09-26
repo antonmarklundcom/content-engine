@@ -33,7 +33,9 @@ export default async function NewScriptPage({
   if (!brand) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
-        <h1 className="text-2xl font-semibold text-[var(--color-ink)]">{t("studio.brief.title")}</h1>
+        <h1 className="text-2xl font-semibold text-[var(--color-ink)]">
+          {t("studio.brief.title")}
+        </h1>
         <p className="mt-3 text-sm text-[var(--color-ink-muted)]">{t("studio.brief.noBrands")}</p>
       </div>
     );
@@ -45,7 +47,11 @@ export default async function NewScriptPage({
     listLessons({ brandId: null, limit: 200 }),
   ]);
 
-  const videos: BriefVideo[] = analysed.map((v) => ({ id: v.videoId, title: v.title, channel: v.channelTitle }));
+  const videos: BriefVideo[] = analysed.map((v) => ({
+    id: v.videoId,
+    title: v.title,
+    channel: v.channelTitle,
+  }));
   // A ref outside the latest 100 analysed videos is still offered; one with no
   // usable analysis is named, so the person knows why it is not selectable.
   const unusable: { id: number; title: string }[] = [];
@@ -68,10 +74,15 @@ export default async function NewScriptPage({
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
-      <Link href="/studio" className="text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)]">
+      <Link
+        href="/studio"
+        className="text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)]"
+      >
         &larr; {t("studio.back")}
       </Link>
-      <h1 className="mt-2 text-2xl font-semibold text-[var(--color-ink)]">{t("studio.brief.title")}</h1>
+      <h1 className="mt-2 text-2xl font-semibold text-[var(--color-ink)]">
+        {t("studio.brief.title")}
+      </h1>
       {!isOwner(user) && (
         <p className="mt-3 text-sm text-[var(--color-warn)]">{t("studio.brief.ownerOnly")}</p>
       )}

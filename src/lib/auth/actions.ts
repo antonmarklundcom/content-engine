@@ -17,7 +17,9 @@ export type LoginResult = { ok: false; error: string };
  * tells a legitimate user nothing they can act on that "check both" doesn't.
  */
 export async function login(_prev: LoginResult | null, formData: FormData): Promise<LoginResult> {
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
   const password = String(formData.get("password") ?? "");
 
   if (!email || !password) return { ok: false, error: "Enter an email and a password." };

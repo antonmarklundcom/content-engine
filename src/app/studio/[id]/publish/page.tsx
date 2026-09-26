@@ -18,7 +18,10 @@ export default async function PublishPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
-      <Link href={`/studio/${row.id}`} className="text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)]">
+      <Link
+        href={`/studio/${row.id}`}
+        className="text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)]"
+      >
         &larr; {t("publish.back")}
       </Link>
       <h1 className="mt-2 text-2xl font-semibold text-[var(--color-ink)]">
@@ -32,7 +35,11 @@ export default async function PublishPage({ params }: { params: Promise<{ id: st
 
       <div className="mt-6">
         {valid ? (
-          <PublishPackEditor scriptId={row.id} initialPack={stored?.ok ? stored.pack : null} canGenerate={isOwner(user)} />
+          <PublishPackEditor
+            scriptId={row.id}
+            initialPack={stored?.ok ? stored.pack : null}
+            canGenerate={isOwner(user)}
+          />
         ) : (
           <p className="text-sm text-[var(--color-danger)]">{t("studio.editor.unreadable")}</p>
         )}

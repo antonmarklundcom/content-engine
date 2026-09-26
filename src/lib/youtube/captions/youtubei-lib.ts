@@ -30,9 +30,7 @@ export async function listTracksViaLibrary(videoId: string): Promise<CaptionTrac
       languageCode,
       kind: t["kind"] === "asr" || vssId?.startsWith("a.") ? "asr" : "manual",
       name:
-        typeof name === "string"
-          ? name
-          : ((name?.["text"] as string | undefined) ?? languageCode),
+        typeof name === "string" ? name : ((name?.["text"] as string | undefined) ?? languageCode),
     });
   }
 
@@ -68,8 +66,7 @@ export async function fetchTranscriptViaLibrary(
   }
 
   const content = dig(transcript, ["transcript", "content", "body", "initial_segments"]) as
-    | Array<LooseRecord>
-    | undefined;
+    Array<LooseRecord> | undefined;
   if (!content || content.length === 0) {
     throw new CaptionError("transcript contained no segments", "no_captions", "fetch");
   }
@@ -111,9 +108,9 @@ async function getInfo(videoId: string): Promise<unknown> {
   }
 
   const Innertube = (mod["Innertube"] ?? (mod["default"] as LooseRecord)?.["Innertube"]) as
-    | { create: (opts: LooseRecord) => Promise<LooseRecord> }
-    | undefined;
-  if (!Innertube) throw new CaptionError("youtubei.js exported no Innertube", "unavailable", "list");
+    { create: (opts: LooseRecord) => Promise<LooseRecord> } | undefined;
+  if (!Innertube)
+    throw new CaptionError("youtubei.js exported no Innertube", "unavailable", "list");
 
   try {
     // Only override the library's fetch when a proxy is actually configured —

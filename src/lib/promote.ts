@@ -39,8 +39,7 @@ export type PromoteInput = {
 };
 
 export type PromoteResult =
-  | { ok: true; idea: Idea; costUsd: number }
-  | { ok: false; status: 400 | 404; error: string };
+  { ok: true; idea: Idea; costUsd: number } | { ok: false; status: 400 | 404; error: string };
 
 export function isFormat(value: unknown): value is Format {
   return typeof value === "string" && (FORMATS as readonly string[]).includes(value);
@@ -96,7 +95,8 @@ async function resolveMaterial(source: PromoteSource): Promise<Material | { erro
   const found = await getAnalysisWithVideo(source.analysisId);
   if (!found) return { error: `No analysis ${source.analysisId}.` };
   const idea = found.analysis.ideas?.[source.ideaIndex];
-  if (!idea) return { error: `Analysis ${source.analysisId} has no idea at index ${source.ideaIndex}.` };
+  if (!idea)
+    return { error: `Analysis ${source.analysisId} has no idea at index ${source.ideaIndex}.` };
 
   const text = [idea.title, idea.premise, idea.why_now].filter(Boolean).join("\n");
   return {

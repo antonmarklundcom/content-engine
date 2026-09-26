@@ -23,7 +23,14 @@ function rawShort(overrides: Partial<RawShort> = {}): RawShort {
     spokenLines: ["It takes about forty-five days.", "If the file is complete."],
     talkingPoints: ["Point at the calendar"],
     onScreenText: ["~45 days"],
-    broll: [{ spokenLine: "It takes about forty-five days.", description: "Stopwatch", imagePrompt: "Stopwatch", videoPrompt: "" }],
+    broll: [
+      {
+        spokenLine: "It takes about forty-five days.",
+        description: "Stopwatch",
+        imagePrompt: "Stopwatch",
+        videoPrompt: "",
+      },
+    ],
     sourceIds: ["s1", "s9"],
     ctaLines: ["Full video on the channel."],
     ...overrides,

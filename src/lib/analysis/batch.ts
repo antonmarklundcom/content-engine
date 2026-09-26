@@ -4,7 +4,13 @@ import { db } from "@/db";
 import { analyses, batches, transcripts, videos, type Batch, type Video } from "@/db/schema";
 import { estimateBatchCostUsd, recordSpend, withSpendCap } from "@/lib/spend";
 import { parseAnalysisResponse } from "./parse";
-import { DEFAULT_MODEL, estimateCostUsd, isAnalysisModel, toCostString, type AnalysisModel } from "./pricing";
+import {
+  DEFAULT_MODEL,
+  estimateCostUsd,
+  isAnalysisModel,
+  toCostString,
+  type AnalysisModel,
+} from "./pricing";
 import { ANALYSIS_JSON_SCHEMA, ANALYSIS_SYSTEM_PROMPT, buildUserPrompt } from "./prompt";
 import {
   gemini,
@@ -65,9 +71,18 @@ export async function submitAnalysisBatch(
   if (videoList.length === 0) return null;
 
   const rows = await db
-    .select({ videoId: transcripts.videoId, content: transcripts.content, wordCount: transcripts.wordCount })
+    .select({
+      videoId: transcripts.videoId,
+      content: transcripts.content,
+      wordCount: transcripts.wordCount,
+    })
     .from(transcripts)
-    .where(inArray(transcripts.videoId, videoList.map((v) => v.id)));
+    .where(
+      inArray(
+        transcripts.videoId,
+        videoList.map((v) => v.id),
+      ),
+    );
 
   const byVideoId = new Map(rows.map((r) => [r.videoId, r]));
   const usable = videoList.filter((v) => {
@@ -356,9 +371,7 @@ export async function collectBatchResults(
   // leaves it open for the next poll, which is what the caller's retry loop and
   // the stale-batch cutoff are both built around.
   if (entries.length === 0 && mapProviderStatus(job.state) !== "ended") {
-    throw new Error(
-      `Batch ${batchId} is not collectable yet (state: ${job.state ?? "unknown"}).`,
-    );
+    throw new Error(`Batch ${batchId} is not collectable yet (state: ${job.state ?? "unknown"}).`);
   }
   if (entries.length === 0 && job.dest?.fileName) {
     throw new Error(

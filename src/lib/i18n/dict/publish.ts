@@ -5,7 +5,8 @@ export const en = {
   "publish.link.pack": "Publish pack",
   "publish.link.repurpose": "Repurpose",
   "publish.back": "Back to the script",
-  "publish.ownerOnly": "Generating spends money (or your CLI subscription), so only the owner can run it.",
+  "publish.ownerOnly":
+    "Generating spends money (or your CLI subscription), so only the owner can run it.",
   "publish.generating": "Working… a CLI run can take a few minutes.",
   "publish.cost": "Cost: ${cost}",
   "publish.copy": "Copy",
@@ -24,7 +25,8 @@ export const en = {
   "publish.plan.spoken": "{minutes} spoken",
   "publish.plan.retakes": "{minutes} with retakes",
   "publish.plan.total": "Total: {spoken} spoken, {withRetakes} with 50 % for retakes",
-  "publish.plan.method": "Spoken time is words ÷ 150 per minute. Scripts sharing a location or prop in their talking points are filmed together, longest first.",
+  "publish.plan.method":
+    "Spoken time is words ÷ 150 per minute. Scripts sharing a location or prop in their talking points are filmed together, longest first.",
   "publish.plan.onScreen": "On-screen text checklist",
   "publish.plan.onScreenNone": "No on-screen text in these scripts.",
   "publish.plan.broll": "B-roll to have ready",
@@ -46,7 +48,8 @@ export const en = {
   "publish.pack.description": "Description",
   "publish.pack.descriptionCopy": "Copy with chapters",
   "publish.pack.chapters": "Chapters",
-  "publish.pack.chaptersHelp": "One per line: 0:00 Title. Estimated at 150 words a minute — adjust after watching.",
+  "publish.pack.chaptersHelp":
+    "One per line: 0:00 Title. Estimated at 150 words a minute — adjust after watching.",
   "publish.pack.tags": "Tags",
   "publish.pack.tagsHelp": "Comma-separated, 10–15.",
   "publish.pack.pinned": "Pinned comment",
@@ -58,7 +61,8 @@ export const en = {
 
   "publish.repurpose.title": "Repurpose",
   "publish.repurpose.shorts": "Shorts",
-  "publish.repurpose.shortsHelp": "3–5 vertical 60-second scripts cut from this one, each saved as a new draft.",
+  "publish.repurpose.shortsHelp":
+    "3–5 vertical 60-second scripts cut from this one, each saved as a new draft.",
   "publish.repurpose.makeShorts": "Make shorts",
   "publish.repurpose.made": "{count} shorts saved as drafts.",
   "publish.repurpose.rejected": "{count} left out: they did not match the script contract.",
@@ -78,7 +82,8 @@ export const sv: Record<keyof typeof en, string> = {
   "publish.link.pack": "Publiceringspaket",
   "publish.link.repurpose": "Återanvänd",
   "publish.back": "Tillbaka till manuset",
-  "publish.ownerOnly": "Att generera kostar pengar (eller din CLI-prenumeration), så bara ägaren kan köra det.",
+  "publish.ownerOnly":
+    "Att generera kostar pengar (eller din CLI-prenumeration), så bara ägaren kan köra det.",
   "publish.generating": "Arbetar… en CLI-körning kan ta några minuter.",
   "publish.cost": "Kostnad: ${cost}",
   "publish.copy": "Kopiera",
@@ -97,7 +102,8 @@ export const sv: Record<keyof typeof en, string> = {
   "publish.plan.spoken": "{minutes} talat",
   "publish.plan.retakes": "{minutes} med omtagningar",
   "publish.plan.total": "Totalt: {spoken} talat, {withRetakes} med 50 % för omtagningar",
-  "publish.plan.method": "Taltid är ord ÷ 150 per minut. Manus som delar plats eller rekvisita i sina stödpunkter spelas in efter varandra, längst först.",
+  "publish.plan.method":
+    "Taltid är ord ÷ 150 per minut. Manus som delar plats eller rekvisita i sina stödpunkter spelas in efter varandra, längst först.",
   "publish.plan.onScreen": "Checklista för text i bild",
   "publish.plan.onScreenNone": "Ingen text i bild i de här manusen.",
   "publish.plan.broll": "B-roll att ha redo",
@@ -119,7 +125,8 @@ export const sv: Record<keyof typeof en, string> = {
   "publish.pack.description": "Beskrivning",
   "publish.pack.descriptionCopy": "Kopiera med kapitel",
   "publish.pack.chapters": "Kapitel",
-  "publish.pack.chaptersHelp": "Ett per rad: 0:00 Titel. Uppskattat vid 150 ord i minuten — justera när du sett videon.",
+  "publish.pack.chaptersHelp":
+    "Ett per rad: 0:00 Titel. Uppskattat vid 150 ord i minuten — justera när du sett videon.",
   "publish.pack.tags": "Taggar",
   "publish.pack.tagsHelp": "Kommaseparerade, 10–15.",
   "publish.pack.pinned": "Fäst kommentar",
@@ -131,7 +138,8 @@ export const sv: Record<keyof typeof en, string> = {
 
   "publish.repurpose.title": "Återanvänd",
   "publish.repurpose.shorts": "Kortvideor",
-  "publish.repurpose.shortsHelp": "3–5 stående manus på 60 sekunder ur det här, vart och ett sparat som nytt utkast.",
+  "publish.repurpose.shortsHelp":
+    "3–5 stående manus på 60 sekunder ur det här, vart och ett sparat som nytt utkast.",
   "publish.repurpose.makeShorts": "Skapa kortvideor",
   "publish.repurpose.made": "{count} kortvideor sparade som utkast.",
   "publish.repurpose.rejected": "{count} utelämnade: de följde inte manuskontraktet.",

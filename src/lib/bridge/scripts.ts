@@ -32,7 +32,10 @@ export class InvalidScriptError extends Error {
 function checkBody(body: unknown, validate: ScriptBodyValidator): void {
   const verdict = validate(body);
   if (!verdict.ok) {
-    throw new InvalidScriptError(`Script body rejected: ${verdict.errors.join("; ")}`, verdict.errors);
+    throw new InvalidScriptError(
+      `Script body rejected: ${verdict.errors.join("; ")}`,
+      verdict.errors,
+    );
   }
 }
 
@@ -51,7 +54,10 @@ export type NewScriptInput = {
 };
 
 /** Save a new draft script after `validate` accepts its body. */
-export async function createScript(input: NewScriptInput, validate: ScriptBodyValidator): Promise<Script> {
+export async function createScript(
+  input: NewScriptInput,
+  validate: ScriptBodyValidator,
+): Promise<Script> {
   checkBody(input.body, validate);
   const [row] = await db
     .insert(scripts)
@@ -130,7 +136,9 @@ export async function updateScriptBody(
  */
 export async function setScriptStatus(id: number, status: ScriptStatus): Promise<Script | null> {
   if (!(SCRIPT_STATUSES as readonly string[]).includes(status)) {
-    throw new InvalidScriptError(`Unknown status "${status}". Expected one of: ${SCRIPT_STATUSES.join(", ")}.`);
+    throw new InvalidScriptError(
+      `Unknown status "${status}". Expected one of: ${SCRIPT_STATUSES.join(", ")}.`,
+    );
   }
   const recorded = status === "recorded" || status === "posted";
   const posted = status === "posted";
@@ -152,7 +160,10 @@ export async function setScriptStatus(id: number, status: ScriptStatus): Promise
 // none of them touches the script body.
 // ---------------------------------------------------------------------------
 
-async function setColumns(id: number, values: Partial<typeof scripts.$inferInsert>): Promise<Script | null> {
+async function setColumns(
+  id: number,
+  values: Partial<typeof scripts.$inferInsert>,
+): Promise<Script | null> {
   const [row] = await db
     .update(scripts)
     .set({ ...values, updatedAt: sql`now()` })
@@ -175,16 +186,26 @@ export async function setScriptPublishPack(id: number, pack: unknown): Promise<S
 }
 
 /** The chosen thumbnail, a path under `media/<id>/thumbnails/` (idea 10), or null. */
-export async function setScriptThumbnailFile(id: number, file: string | null): Promise<Script | null> {
+export async function setScriptThumbnailFile(
+  id: number,
+  file: string | null,
+): Promise<Script | null> {
   return setColumns(id, { thumbnailFile: file });
 }
 
 /** Link a short to the long script it was cut from (idea 7), or null to unlink. */
-export async function setScriptParent(id: number, parentScriptId: number | null): Promise<Script | null> {
+export async function setScriptParent(
+  id: number,
+  parentScriptId: number | null,
+): Promise<Script | null> {
   return setColumns(id, { parentScriptId });
 }
 
 /** The shorts cut from a script, oldest first. */
 export async function listChildScripts(parentScriptId: number): Promise<Script[]> {
-  return db.select().from(scripts).where(eq(scripts.parentScriptId, parentScriptId)).orderBy(scripts.id);
+  return db
+    .select()
+    .from(scripts)
+    .where(eq(scripts.parentScriptId, parentScriptId))
+    .orderBy(scripts.id);
 }

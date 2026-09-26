@@ -43,7 +43,8 @@ beforeEach(async () => {
     const url = new URL(input instanceof Request ? input.url : String(input));
     if (url.hostname !== "www.googleapis.com") return realFetch(input);
     youtubeCalls += 1;
-    const known = url.searchParams.get("id") === CHANNEL_ID || url.searchParams.get("forHandle") === "@rival";
+    const known =
+      url.searchParams.get("id") === CHANNEL_ID || url.searchParams.get("forHandle") === "@rival";
     const items = known
       ? [
           {
@@ -107,23 +108,35 @@ test("link by URL, toggle role, unlink — the source outlives the link", async 
   const sourceId = linked[0].sourceId;
 
   // Pasting the same channel again (by handle this time) is an upsert on both sides.
-  assert.deepEqual(await add({ url: "https://www.youtube.com/@rival", role: "inspiration" }), { ok: true });
+  assert.deepEqual(await add({ url: "https://www.youtube.com/@rival", role: "inspiration" }), {
+    ok: true,
+  });
   assert.equal((await db.select().from(schema.sources)).length, 1, "no duplicate source");
   linked = await listBrandCompetitors(BRAND);
   assert.equal(linked.length, 1, "no duplicate link");
   assert.equal(linked[0].role, "inspiration");
 
-  assert.deepEqual(await as("employee", () => setCompetitorRole(BRAND, sourceId, "competitor")), { ok: true });
+  assert.deepEqual(await as("employee", () => setCompetitorRole(BRAND, sourceId, "competitor")), {
+    ok: true,
+  });
   assert.equal((await listBrandCompetitors(BRAND))[0].role, "competitor");
   assert.deepEqual(await as("employee", () => setCompetitorRole(BRAND, sourceId, "rival")), {
     ok: false,
     error: "research.error.role",
   });
-  assert.equal((await listBrandCompetitors(BRAND))[0].role, "competitor", "a bad role changes nothing");
+  assert.equal(
+    (await listBrandCompetitors(BRAND))[0].role,
+    "competitor",
+    "a bad role changes nothing",
+  );
 
   await as("employee", () => removeCompetitor(BRAND, sourceId));
   assert.deepEqual(await listBrandCompetitors(BRAND), []);
-  assert.equal((await db.select().from(schema.sources)).length, 1, "unlinking keeps the source tracked");
+  assert.equal(
+    (await db.select().from(schema.sources)).length,
+    1,
+    "unlinking keeps the source tracked",
+  );
 });
 
 test("bad input is refused before YouTube is asked, with a dictionary key", async () => {
@@ -136,10 +149,13 @@ test("bad input is refused before YouTube is asked, with a dictionary key", asyn
     ok: false,
     error: "research.error.brand",
   });
-  assert.deepEqual(await add({ url: `https://www.youtube.com/channel/${CHANNEL_ID}`, role: "rival" }), {
-    ok: false,
-    error: "research.error.role",
-  });
+  assert.deepEqual(
+    await add({ url: `https://www.youtube.com/channel/${CHANNEL_ID}`, role: "rival" }),
+    {
+      ok: false,
+      error: "research.error.role",
+    },
+  );
   assert.equal(youtubeCalls, 0);
 
   assert.deepEqual(await add({ url: "https://www.youtube.com/channel/UCunknown000000000000000" }), {

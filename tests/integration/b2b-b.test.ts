@@ -77,16 +77,29 @@ function form(fields: Record<string, string>): FormData {
   return data;
 }
 
-const factFields = { topic: "Residency", claim: "Applications take about 45 days.", sourceUrl: SOURCE_URL, notes: "" };
+const factFields = {
+  topic: "Residency",
+  claim: "Applications take about 45 days.",
+  sourceUrl: SOURCE_URL,
+  notes: "",
+};
 
 // ---------------------------------------------------------------------------
 // facts
 // ---------------------------------------------------------------------------
 
 test("facts: the owner adds, edits, checks and deletes; an employee is refused every write", async () => {
-  assert.deepEqual(await as("owner", () => createFactAction(BRAND.id, null, form(factFields))), { ok: true });
+  assert.deepEqual(await as("owner", () => createFactAction(BRAND.id, null, form(factFields))), {
+    ok: true,
+  });
   assert.deepEqual(
-    await as("owner", () => createFactAction(BRAND.id, null, form({ ...factFields, topic: "Costs", claim: "The fee is fixed." }))),
+    await as("owner", () =>
+      createFactAction(
+        BRAND.id,
+        null,
+        form({ ...factFields, topic: "Costs", claim: "The fee is fixed." }),
+      ),
+    ),
     { ok: true },
   );
   const groups = await listFactsByTopic(BRAND.id);
@@ -113,19 +126,30 @@ test("facts: the owner adds, edits, checks and deletes; an employee is refused e
   assert.equal((await getFact(fact.id))?.claim, factFields.claim, "the employee changed nothing");
 
   assert.deepEqual(
-    await as("owner", () => updateFactAction(fact.id, null, form({ ...factFields, claim: "About 60 days now." }))),
+    await as("owner", () =>
+      updateFactAction(fact.id, null, form({ ...factFields, claim: "About 60 days now." })),
+    ),
     { ok: true },
   );
   assert.equal((await getFact(fact.id))?.claim, "About 60 days now.");
 
-  await db.update(schema.facts).set({ lastCheckedAt: new Date("2025-01-01T00:00:00Z") }).where(eq(schema.facts.id, fact.id));
+  await db
+    .update(schema.facts)
+    .set({ lastCheckedAt: new Date("2025-01-01T00:00:00Z") })
+    .where(eq(schema.facts.id, fact.id));
   assert.deepEqual(await as("owner", () => markFactCheckedAction(fact.id)), { ok: true });
   const checked = await getFact(fact.id);
-  assert.ok(checked && checked.lastCheckedAt.getTime() > new Date("2026-01-01").getTime(), "checked today");
+  assert.ok(
+    checked && checked.lastCheckedAt.getTime() > new Date("2026-01-01").getTime(),
+    "checked today",
+  );
 
   assert.deepEqual(await as("owner", () => deleteFactAction(fact.id)), { ok: true });
   assert.equal(await getFact(fact.id), null);
-  assert.deepEqual(await as("owner", () => deleteFactAction(fact.id)), { ok: false, error: "facts.error.missing" });
+  assert.deepEqual(await as("owner", () => deleteFactAction(fact.id)), {
+    ok: false,
+    error: "facts.error.missing",
+  });
 });
 
 test("facts: bad input comes back as a key and a reason, never a thrown error", async () => {
@@ -133,10 +157,14 @@ test("facts: bad input comes back as a key and a reason, never a thrown error", 
     ok: false,
     error: "facts.error.brand",
   });
-  const noClaim = await as("owner", () => createFactAction(BRAND.id, null, form({ ...factFields, claim: "  " })));
+  const noClaim = await as("owner", () =>
+    createFactAction(BRAND.id, null, form({ ...factFields, claim: "  " })),
+  );
   assert.equal(noClaim.ok, false);
   assert.equal(!noClaim.ok && noClaim.error, "facts.error.invalid");
-  const badUrl = await as("owner", () => createFactAction(BRAND.id, null, form({ ...factFields, sourceUrl: "javascript:alert(1)" })));
+  const badUrl = await as("owner", () =>
+    createFactAction(BRAND.id, null, form({ ...factFields, sourceUrl: "javascript:alert(1)" })),
+  );
   assert.equal(!badUrl.ok && badUrl.error, "facts.error.invalid");
   assert.deepEqual(await as("owner", () => updateFactAction(999, null, form(factFields))), {
     ok: false,
@@ -155,20 +183,31 @@ test("facts: only a new claim or source bumps updatedAt; topic, notes and checki
   await markFactChecked(fact.id);
   assert.equal((await getFact(fact.id))?.updatedAt.getTime(), long_ago.getTime());
 
-  await updateFact(fact.id, { ...factFields, topic: "Residency permits", sourceUrl: `${SOURCE_URL}/2026` });
+  await updateFact(fact.id, {
+    ...factFields,
+    topic: "Residency permits",
+    sourceUrl: `${SOURCE_URL}/2026`,
+  });
   const moved = await getFact(fact.id);
   assert.ok(moved && moved.updatedAt.getTime() > long_ago.getTime(), "a new source is a change");
 
   await db.update(schema.facts).set({ updatedAt: long_ago }).where(eq(schema.facts.id, fact.id));
   await updateFact(fact.id, { ...factFields, claim: "Something else" });
-  assert.ok((await getFact(fact.id))!.updatedAt.getTime() > long_ago.getTime(), "a new claim is a change");
+  assert.ok(
+    (await getFact(fact.id))!.updatedAt.getTime() > long_ago.getTime(),
+    "a new claim is a change",
+  );
 });
 
 // ---------------------------------------------------------------------------
 // out-of-date check
 // ---------------------------------------------------------------------------
 
-async function postedScript(title: string, postedDaysAgo: number, status: "posted" | "ready" = "posted") {
+async function postedScript(
+  title: string,
+  postedDaysAgo: number,
+  status: "posted" | "ready" = "posted",
+) {
   const [row] = await db
     .insert(schema.scripts)
     .values({
@@ -191,9 +230,22 @@ test("a posted script is flagged once a fact on a source it cites changes after 
     .where(eq(schema.facts.id, fact.id));
   const recent = await postedScript("Posted after the change", 10);
   await postedScript("Not posted yet", 0, "ready");
-  await db.insert(schema.scripts).values({ brandId: "other", title: "Other brand", language: "en", status: "posted", body: sampleScriptBody(), postedAt: sql`now() - make_interval(days => 40)` });
+  await db
+    .insert(schema.scripts)
+    .values({
+      brandId: "other",
+      title: "Other brand",
+      language: "en",
+      status: "posted",
+      body: sampleScriptBody(),
+      postedAt: sql`now() - make_interval(days => 40)`,
+    });
 
-  assert.deepEqual(await brandScriptsNeedingCorrection(BRAND.id), [], "the fact changed before the video went out");
+  assert.deepEqual(
+    await brandScriptsNeedingCorrection(BRAND.id),
+    [],
+    "the fact changed before the video went out",
+  );
 
   const older = await postedScript("Posted before the change", 60);
   let flagged = await brandScriptsNeedingCorrection(BRAND.id);
@@ -243,13 +295,20 @@ test("POST /api/scripts gives the model the brand's facts, to use as-is and cite
 
   const response = await callRoute(
     writeScript,
-    jsonPost("/api/scripts", { brandId: BRAND.id, topic: "Timeline", title: "Residency in 45 days", targetMinutes: 5 }, owner),
+    jsonPost(
+      "/api/scripts",
+      { brandId: BRAND.id, topic: "Timeline", title: "Residency in 45 days", targetMinutes: 5 },
+      owner,
+    ),
   );
   assert.equal(response.status, 201);
 
   const [call] = fake.callsOf("generateContent");
   const contents = (call.params as { contents: string }).contents;
-  assert.match(contents, /FACTS — [\s\S]*use these checked facts as-is[\s\S]*A fact not listed here[\s\S]*still needs its own source/i);
+  assert.match(
+    contents,
+    /FACTS — [\s\S]*use these checked facts as-is[\s\S]*A fact not listed here[\s\S]*still needs its own source/i,
+  );
   assert.ok(
     contents.includes(`- [Residency] Applications take about 45 days. (source: ${SOURCE_URL})`),
     "the fact and its URL, verbatim",
@@ -263,22 +322,39 @@ test("with no facts on the sheet, the prompt has no FACTS block", async () => {
   const fake = fakeGeminiClient();
   const response = await callRoute(
     writeScript,
-    jsonPost("/api/scripts", { brandId: BRAND.id, topic: "Timeline", title: "Residency in 45 days", targetMinutes: 5 }, owner),
+    jsonPost(
+      "/api/scripts",
+      { brandId: BRAND.id, topic: "Timeline", title: "Residency in 45 days", targetMinutes: 5 },
+      owner,
+    ),
   );
   assert.equal(response.status, 201);
-  assert.doesNotMatch((fake.callsOf("generateContent")[0].params as { contents: string }).contents, /FACTS —/);
+  assert.doesNotMatch(
+    (fake.callsOf("generateContent")[0].params as { contents: string }).contents,
+    /FACTS —/,
+  );
 });
 
 // ---------------------------------------------------------------------------
 // own channel vs competitors
 // ---------------------------------------------------------------------------
 
-async function channel(youtubeId: string, title: string, role: "own" | "competitor" | "inspiration" | null) {
+async function channel(
+  youtubeId: string,
+  title: string,
+  role: "own" | "competitor" | "inspiration" | null,
+) {
   const [row] = await db
     .insert(schema.sources)
-    .values({ kind: "channel", youtubeId, title, url: `https://www.youtube.com/channel/${youtubeId}` })
+    .values({
+      kind: "channel",
+      youtubeId,
+      title,
+      url: `https://www.youtube.com/channel/${youtubeId}`,
+    })
     .returning({ id: schema.sources.id });
-  if (role) await db.insert(schema.brandSources).values({ brandId: BRAND.id, sourceId: row.id, role });
+  if (role)
+    await db.insert(schema.brandSources).values({ brandId: BRAND.id, sourceId: row.id, role });
   return row.id;
 }
 
@@ -307,7 +383,8 @@ test("compare: own channel first, median, uploads per month, best five by the re
 
   // Mine: 6 videos, 3 of them in the last 90 days → 1 upload/month.
   const mineViews = [100, 200, 300, 400, 500, 5000];
-  for (const [i, views] of mineViews.entries()) await upload(mine, views, i < 3 ? 10 + i * 20 : 200 + i);
+  for (const [i, views] of mineViews.entries())
+    await upload(mine, views, i < 3 ? 10 + i * 20 : 200 + i);
   // Rival: 8 videos, all recent → 8 × 30 / 90 = 2.7 per month; one hidden count.
   const rivalRows = [];
   for (const [i, views] of [1000, 2000, 3000, 4000, 5000, 6000, 90000, null].entries()) {
@@ -353,11 +430,21 @@ test("compare: own channel first, median, uploads per month, best five by the re
   assert.equal(result.ownTitles.length, 6);
   assert.equal(result.ownTitles[0].sourceId, mine);
   const ownDates = result.ownTitles.map((v) => v.publishedAt!.getTime());
-  assert.deepEqual(ownDates, [...ownDates].sort((x, y) => y - x));
-  assert.ok(result.competitorTitles.every((v) => v.sourceId !== mine), "no own titles on the competitor side");
+  assert.deepEqual(
+    ownDates,
+    [...ownDates].sort((x, y) => y - x),
+  );
+  assert.ok(
+    result.competitorTitles.every((v) => v.sourceId !== mine),
+    "no own titles on the competitor side",
+  );
   assert.equal(result.competitorTitles[0].title, rivalRows[6].title);
 });
 
 test("compare: a brand with no links is empty, not an error", async () => {
-  assert.deepEqual(await compareBrandChannels(BRAND.id), { channels: [], ownTitles: [], competitorTitles: [] });
+  assert.deepEqual(await compareBrandChannels(BRAND.id), {
+    channels: [],
+    ownTitles: [],
+    competitorTitles: [],
+  });
 });

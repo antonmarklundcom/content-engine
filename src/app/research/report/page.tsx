@@ -29,7 +29,12 @@ export default async function ReportPage({
 }: {
   searchParams: Promise<{ brand?: string; id?: string }>;
 }) {
-  const [params, brands, locale, user] = await Promise.all([searchParams, listBrands(), getLocale(), requireUser()]);
+  const [params, brands, locale, user] = await Promise.all([
+    searchParams,
+    listBrands(),
+    getLocale(),
+    requireUser(),
+  ]);
   const t = translator(locale);
   const brand = brands.find((b) => b.id === params.brand) ?? brands[0];
   const reports = brand ? await listCompetitorReports(brand.id, 30) : [];
@@ -39,9 +44,13 @@ export default async function ReportPage({
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
-      <p className="text-xs font-medium tracking-widest text-[var(--color-accent)] uppercase">{t("report.eyebrow")}</p>
+      <p className="text-xs font-medium tracking-widest text-[var(--color-accent)] uppercase">
+        {t("report.eyebrow")}
+      </p>
       <h1 className="mt-1 text-2xl font-semibold text-[var(--color-ink)]">{t("report.title")}</h1>
-      <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">{t("report.intro")}</p>
+      <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+        {t("report.intro")}
+      </p>
 
       {!brand ? (
         <p className="mt-8 text-sm text-[var(--color-ink-muted)]">{t("report.noBrands")}</p>
@@ -62,10 +71,16 @@ export default async function ReportPage({
 
           <div className="mt-6 flex flex-wrap items-start justify-between gap-3">
             <div className="flex flex-wrap gap-3 text-xs">
-              <Link href={`/research?${new URLSearchParams({ brand: brand.id })}`} className="underline text-[var(--color-ink-muted)] hover:text-[var(--color-accent)]">
+              <Link
+                href={`/research?${new URLSearchParams({ brand: brand.id })}`}
+                className="underline text-[var(--color-ink-muted)] hover:text-[var(--color-accent)]"
+              >
                 {t("report.toResearch")}
               </Link>
-              <Link href={`/research/questions?${new URLSearchParams({ brand: brand.id })}`} className="underline text-[var(--color-ink-muted)] hover:text-[var(--color-accent)]">
+              <Link
+                href={`/research/questions?${new URLSearchParams({ brand: brand.id })}`}
+                className="underline text-[var(--color-ink-muted)] hover:text-[var(--color-accent)]"
+              >
                 {t("report.toQuestions")}
               </Link>
             </div>
@@ -99,10 +114,20 @@ export default async function ReportPage({
                   .filter((r) => r.id !== shown?.id)
                   .map((r) => (
                     <li key={r.id}>
-                      <a href={href({ brand: brand.id, id: String(r.id) })} className="underline text-[var(--color-ink)] hover:text-[var(--color-accent)]">
-                        {t("report.createdAt", { date: formatDate(r.createdAt, locale), days: r.periodDays })}
+                      <a
+                        href={href({ brand: brand.id, id: String(r.id) })}
+                        className="underline text-[var(--color-ink)] hover:text-[var(--color-accent)]"
+                      >
+                        {t("report.createdAt", {
+                          date: formatDate(r.createdAt, locale),
+                          days: r.periodDays,
+                        })}
                       </a>
-                      <span className="text-[var(--color-ink-muted)]"> — {r.body.summary.slice(0, 120)}{r.body.summary.length > 120 ? "…" : ""}</span>
+                      <span className="text-[var(--color-ink-muted)]">
+                        {" "}
+                        — {r.body.summary.slice(0, 120)}
+                        {r.body.summary.length > 120 ? "…" : ""}
+                      </span>
                     </li>
                   ))}
               </ul>

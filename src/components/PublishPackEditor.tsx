@@ -46,7 +46,10 @@ function fromDraft(d: Draft): PublishPack {
   return {
     description: d.description,
     chapters,
-    tags: d.tags.split(",").map((s) => s.trim()).filter(Boolean),
+    tags: d.tags
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
     pinnedComment: d.pinnedComment,
     captions: { instagram: d.instagram, facebook: d.facebook, tiktok: d.tiktok },
     generatedAt: d.generatedAt,
@@ -57,7 +60,12 @@ function withChapters(d: Draft): string {
   return [d.description.trim(), d.chapters.trim()].filter(Boolean).join("\n\n");
 }
 
-const FIELDS: { key: Exclude<keyof Draft, "generatedAt">; label: TranslationKey; rows: number; help?: TranslationKey }[] = [
+const FIELDS: {
+  key: Exclude<keyof Draft, "generatedAt">;
+  label: TranslationKey;
+  rows: number;
+  help?: TranslationKey;
+}[] = [
   { key: "description", label: "publish.pack.description", rows: 10 },
   { key: "chapters", label: "publish.pack.chapters", rows: 6, help: "publish.pack.chaptersHelp" },
   { key: "tags", label: "publish.pack.tags", rows: 3, help: "publish.pack.tagsHelp" },
@@ -97,7 +105,10 @@ export function PublishPackEditor({
           router.refresh();
         } else setNote({ ok: false, text: result.error, errors: result.errors });
       } catch (error) {
-        setNote({ ok: false, text: error instanceof Error ? error.message : t("studio.error.generic") });
+        setNote({
+          ok: false,
+          text: error instanceof Error ? error.message : t("studio.error.generic"),
+        });
       } finally {
         setBusy(null);
       }
@@ -133,7 +144,9 @@ export function PublishPackEditor({
         ) : (
           <p className="text-xs text-[var(--color-ink-muted)]">{t("publish.ownerOnly")}</p>
         )}
-        {busy === "generate" && <span className="text-xs text-[var(--color-ink-muted)]">{t("publish.generating")}</span>}
+        {busy === "generate" && (
+          <span className="text-xs text-[var(--color-ink-muted)]">{t("publish.generating")}</span>
+        )}
         {draft?.generatedAt && (
           <span className="text-xs text-[var(--color-ink-muted)]">
             {t("publish.pack.generatedAt", { date: new Date(draft.generatedAt).toLocaleString() })}
@@ -142,7 +155,10 @@ export function PublishPackEditor({
       </div>
 
       {note && (
-        <div role="status" className={`text-sm ${note.ok ? "text-[var(--color-ink-muted)]" : "text-[var(--color-danger)]"}`}>
+        <div
+          role="status"
+          className={`text-sm ${note.ok ? "text-[var(--color-ink-muted)]" : "text-[var(--color-danger)]"}`}
+        >
           {note.text}
           {note.errors && (
             <ul className="mt-1 list-disc pl-5 text-xs">
@@ -166,7 +182,10 @@ export function PublishPackEditor({
                 </label>
                 <div className="flex gap-2">
                   {key === "description" && (
-                    <PublishCopyButton text={withChapters(draft)} label={t("publish.pack.descriptionCopy")} />
+                    <PublishCopyButton
+                      text={withChapters(draft)}
+                      label={t("publish.pack.descriptionCopy")}
+                    />
                   )}
                   <PublishCopyButton text={draft[key]} />
                 </div>
@@ -181,7 +200,12 @@ export function PublishPackEditor({
               {help && <p className="text-xs text-[var(--color-ink-muted)]">{t(help)}</p>}
             </div>
           ))}
-          <button type="button" className={`${STUDIO_BUTTON} self-start`} disabled={pending} onClick={save}>
+          <button
+            type="button"
+            className={`${STUDIO_BUTTON} self-start`}
+            disabled={pending}
+            onClick={save}
+          >
             {busy === "save" ? "…" : t("publish.pack.save")}
           </button>
         </>

@@ -111,12 +111,13 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
     .from(transcripts)
     .where(eq(transcripts.videoId, video.id))
     .limit(1);
-  const estimate = canSpend && transcript
-    ? {
-        standard: formatUsd(estimateAnalysisCostUsd(transcript.wordCount, DEFAULT_MODEL)),
-        upgrade: formatUsd(estimateAnalysisCostUsd(transcript.wordCount, UPGRADE_MODEL)),
-      }
-    : null;
+  const estimate =
+    canSpend && transcript
+      ? {
+          standard: formatUsd(estimateAnalysisCostUsd(transcript.wordCount, DEFAULT_MODEL)),
+          upgrade: formatUsd(estimateAnalysisCostUsd(transcript.wordCount, UPGRADE_MODEL)),
+        }
+      : null;
   // Both statuses (PR-29). PR-16 made a failed generation write a row precisely
   // so a paid failure would survive a reload — filtering them out here is what
   // kept them invisible, which meant the row it preserved was never read.
@@ -228,11 +229,7 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
           panel below says "not analysed", and an explanation that appears after
           the thing it explains is read as an excuse. */}
       {screening && screening.status === "ok" && (
-        <div
-          className={`surface-border surface-card mb-4 px-5 py-4 ${
-            culled ? "" : "opacity-80"
-          }`}
-        >
+        <div className={`surface-border surface-card mb-4 px-5 py-4 ${culled ? "" : "opacity-80"}`}>
           <p className="text-sm font-medium text-[var(--color-ink)]">
             {t(culled ? "screen.culled.title" : "screen.kept.title")}{" "}
             <span className="text-[var(--color-ink-muted)]">
@@ -243,9 +240,7 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
             <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{screening.reason}</p>
           )}
           {culled && (
-            <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
-              {t("screen.culled.body")}
-            </p>
+            <p className="mt-2 text-xs text-[var(--color-ink-muted)]">{t("screen.culled.body")}</p>
           )}
         </div>
       )}
@@ -338,9 +333,7 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
               with everything else carrying it. Placed above the summary because
               the useful move after reading one analysis is usually sideways —
               to the other four videos about the same thing. */}
-          {(!!analysis.topics?.length ||
-            !!analysis.entities?.length ||
-            !!analysis.contentType) && (
+          {(!!analysis.topics?.length || !!analysis.entities?.length || !!analysis.contentType) && (
             <div className="mb-6 flex flex-wrap items-center gap-2">
               {analysis.contentType && (
                 <span className="rounded-full bg-[var(--color-surface-raised)] px-3 py-1 text-xs text-[var(--color-ink-muted)]">

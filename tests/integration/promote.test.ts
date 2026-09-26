@@ -19,7 +19,11 @@ import { resetTables, teardown } from "./setup";
  */
 
 const IDEAS = [
-  { title: "Residency in 90 days", premise: "Walk the timeline end to end.", why_now: "Rule change." },
+  {
+    title: "Residency in 90 days",
+    premise: "Walk the timeline end to end.",
+    why_now: "Rule change.",
+  },
   { title: "The tax myth", premise: "0% is not the whole story.", why_now: "Everyone repeats it." },
 ];
 
@@ -78,7 +82,10 @@ test("promoting an analysis idea writes an idea linked to the analysis", async (
   assert.equal(result.idea.sourceAnalysisId, analysis.id);
   assert.match(result.idea.angle, /How residency actually works/);
   // The body is the analysis's own words, joined — not a rewrite.
-  assert.equal(result.idea.draftCopy, [IDEAS[0].title, IDEAS[0].premise, IDEAS[0].why_now].join("\n"));
+  assert.equal(
+    result.idea.draftCopy,
+    [IDEAS[0].title, IDEAS[0].premise, IDEAS[0].why_now].join("\n"),
+  );
 
   assert.equal((await db.select().from(schema.ideas)).length, 1);
   assert.equal((await analysisForIdea(result.idea))?.id, analysis.id);

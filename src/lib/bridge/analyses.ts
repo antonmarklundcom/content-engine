@@ -71,7 +71,15 @@ export async function analysisBundleForVideo(
  */
 export async function listAnalyzedVideos(
   limit = 100,
-): Promise<{ analysisId: number; videoId: number; title: string; channelTitle: string | null; analyzedAt: Date }[]> {
+): Promise<
+  {
+    analysisId: number;
+    videoId: number;
+    title: string;
+    channelTitle: string | null;
+    analyzedAt: Date;
+  }[]
+> {
   const rows = await db
     .select({
       analysisId: analyses.id,

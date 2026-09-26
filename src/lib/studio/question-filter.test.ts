@@ -42,7 +42,10 @@ test("praise, statements and noise do not", () => {
 
 test("normalizeQuestion folds case, accents and punctuation", () => {
   assert.equal(normalizeQuestion("¿Cuánto   cuesta la Cédula?"), "cuanto cuesta la cedula");
-  assert.equal(normalizeQuestion("Cuanto cuesta la cedula"), normalizeQuestion("¿CUÁNTO cuesta la cédula?!"));
+  assert.equal(
+    normalizeQuestion("Cuanto cuesta la cedula"),
+    normalizeQuestion("¿CUÁNTO cuesta la cédula?!"),
+  );
   assert.equal(normalizeQuestion("?!"), "");
 });
 
@@ -50,8 +53,18 @@ test("clusters are cleaned: blanks dropped, duplicates merged, ids and examples 
   const clusters = validateQuestionClusters(
     {
       questions: [
-        { question: "  How long does it take? ", askCount: 3, examples: ["a", "b", ""], videoIds: [1, 99] },
-        { question: "how long does it take", askCount: 2, examples: ["b", "c", "d", "e", "f", "g"], videoIds: [2] },
+        {
+          question: "  How long does it take? ",
+          askCount: 3,
+          examples: ["a", "b", ""],
+          videoIds: [1, 99],
+        },
+        {
+          question: "how long does it take",
+          askCount: 2,
+          examples: ["b", "c", "d", "e", "f", "g"],
+          videoIds: [2],
+        },
         { question: "", askCount: 9, examples: [], videoIds: [1] },
         { question: "What does it cost?", askCount: 0, examples: [42], videoIds: ["2"] },
       ],

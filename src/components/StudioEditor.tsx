@@ -14,7 +14,13 @@ import {
   type ScriptLanguage,
 } from "@/lib/scripts/contract";
 import { saveScript } from "@/lib/studio.actions";
-import { STUDIO_BUTTON, STUDIO_INPUT, STUDIO_LABEL, STUDIO_PRIMARY, STUDIO_VERIFY_BADGE } from "./StudioStyles";
+import {
+  STUDIO_BUTTON,
+  STUDIO_INPUT,
+  STUDIO_LABEL,
+  STUDIO_PRIMARY,
+  STUDIO_VERIFY_BADGE,
+} from "./StudioStyles";
 
 const CARD = "surface-border surface-card flex flex-col gap-4 px-5 py-5";
 const REMOVE = "text-xs text-[var(--color-danger)] hover:underline";
@@ -45,7 +51,12 @@ function Text({
     <label className="block">
       <span className={STUDIO_LABEL}>{label}</span>
       {multiline ? (
-        <textarea rows={2} className={STUDIO_INPUT} value={value} onChange={(e) => onChange(e.target.value)} />
+        <textarea
+          rows={2}
+          className={STUDIO_INPUT}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
       ) : (
         <input className={STUDIO_INPUT} value={value} onChange={(e) => onChange(e.target.value)} />
       )}
@@ -97,20 +108,35 @@ function Shots({
   prefix: string;
 }) {
   const t = useTranslator();
-  const set = (i: number, patch: Partial<BrollShot>) => onChange(shots.map((s, j) => (j === i ? { ...s, ...patch } : s)));
+  const set = (i: number, patch: Partial<BrollShot>) =>
+    onChange(shots.map((s, j) => (j === i ? { ...s, ...patch } : s)));
   return (
     <div className="flex flex-col gap-3">
       <span className={STUDIO_LABEL}>{t("studio.editor.shots", { n: shots.length })}</span>
       {shots.map((shot, i) => (
         <div key={i} className="surface-border flex flex-col gap-3 rounded-[var(--radius-sm)] p-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-[var(--color-ink-muted)]">{t("studio.editor.shot", { n: i + 1 })}</span>
-            <button type="button" className={REMOVE} onClick={() => onChange(shots.filter((_, j) => j !== i))}>
+            <span className="text-xs font-medium text-[var(--color-ink-muted)]">
+              {t("studio.editor.shot", { n: i + 1 })}
+            </span>
+            <button
+              type="button"
+              className={REMOVE}
+              onClick={() => onChange(shots.filter((_, j) => j !== i))}
+            >
               {t("studio.editor.remove")}
             </button>
           </div>
-          <Text label={t("studio.editor.shotLine")} value={shot.spokenLine} onChange={(v) => set(i, { spokenLine: v })} />
-          <Text label={t("studio.editor.shotDescription")} value={shot.description} onChange={(v) => set(i, { description: v })} />
+          <Text
+            label={t("studio.editor.shotLine")}
+            value={shot.spokenLine}
+            onChange={(v) => set(i, { spokenLine: v })}
+          />
+          <Text
+            label={t("studio.editor.shotDescription")}
+            value={shot.description}
+            onChange={(v) => set(i, { description: v })}
+          />
           <Text
             multiline
             label={t("studio.editor.imagePrompt")}
@@ -131,14 +157,20 @@ function Shots({
               onChange={(e) => set(i, { aspectRatio: e.target.value as AspectRatio })}
             >
               {ASPECT_RATIOS.map((a) => (
-                <option key={a} value={a}>{a}</option>
+                <option key={a} value={a}>
+                  {a}
+                </option>
               ))}
             </select>
           </label>
           <Errors errors={errorsUnder(errors, `${prefix}[${i}]`)} />
         </div>
       ))}
-      <button type="button" className={`${STUDIO_BUTTON} self-start`} onClick={() => onChange([...shots, newShot()])}>
+      <button
+        type="button"
+        className={`${STUDIO_BUTTON} self-start`}
+        onClick={() => onChange([...shots, newShot()])}
+      >
         {t("studio.editor.addShot")}
       </button>
     </div>
@@ -151,7 +183,13 @@ function Shots({
  * feedback, and the server action runs it again before the bridge write. An
  * invalid body is never saved — each error is shown beside the part it names.
  */
-export function StudioEditor({ scriptId, initialBody }: { scriptId: number; initialBody: ScriptBodyV1 }) {
+export function StudioEditor({
+  scriptId,
+  initialBody,
+}: {
+  scriptId: number;
+  initialBody: ScriptBodyV1;
+}) {
   const t = useTranslator();
   const router = useRouter();
   const [body, setBody] = useState<ScriptBodyV1>(initialBody);
@@ -238,7 +276,9 @@ export function StudioEditor({ scriptId, initialBody }: { scriptId: number; init
       )}
 
       <section className={CARD}>
-        <h2 className="text-lg font-semibold text-[var(--color-ink)]">{t("studio.editor.basics")}</h2>
+        <h2 className="text-lg font-semibold text-[var(--color-ink)]">
+          {t("studio.editor.basics")}
+        </h2>
         <div className="grid gap-4 sm:grid-cols-[1fr_10rem_8rem]">
           <label className="block">
             <span className={STUDIO_LABEL}>{t("studio.editor.chosenTitle")}</span>
@@ -262,7 +302,9 @@ export function StudioEditor({ scriptId, initialBody }: { scriptId: number; init
               onChange={(e) => update((d) => void (d.language = e.target.value as ScriptLanguage))}
             >
               {SCRIPT_LANGUAGES.map((l) => (
-                <option key={l} value={l}>{l}</option>
+                <option key={l} value={l}>
+                  {l}
+                </option>
               ))}
             </select>
           </label>
@@ -278,32 +320,68 @@ export function StudioEditor({ scriptId, initialBody }: { scriptId: number; init
             />
           </label>
         </div>
-        <Text label={t("studio.editor.topic")} value={body.topic} onChange={(v) => update((d) => void (d.topic = v))} />
+        <Text
+          label={t("studio.editor.topic")}
+          value={body.topic}
+          onChange={(v) => update((d) => void (d.topic = v))}
+        />
         <Errors
-          errors={["body.chosenTitle", "body.topic", "body.language", "body.targetMinutes", "body.version"].flatMap((p) =>
-            errorsUnder(errors, p),
-          )}
+          errors={[
+            "body.chosenTitle",
+            "body.topic",
+            "body.language",
+            "body.targetMinutes",
+            "body.version",
+          ].flatMap((p) => errorsUnder(errors, p))}
         />
       </section>
 
       <section className={CARD}>
-        <h2 className="text-lg font-semibold text-[var(--color-ink)]">{t("studio.editor.titleOptions")}</h2>
+        <h2 className="text-lg font-semibold text-[var(--color-ink)]">
+          {t("studio.editor.titleOptions")}
+        </h2>
         {body.titleOptions.map((o, i) => (
           <div key={i} className="grid gap-3 sm:grid-cols-2">
-            <Text label={`${t("studio.editor.title")} ${i + 1}`} value={o.title} onChange={(v) => update((d) => void (d.titleOptions[i]!.title = v))} />
-            <Text label={t("studio.editor.angle")} value={o.angle} onChange={(v) => update((d) => void (d.titleOptions[i]!.angle = v))} />
+            <Text
+              label={`${t("studio.editor.title")} ${i + 1}`}
+              value={o.title}
+              onChange={(v) => update((d) => void (d.titleOptions[i]!.title = v))}
+            />
+            <Text
+              label={t("studio.editor.angle")}
+              value={o.angle}
+              onChange={(v) => update((d) => void (d.titleOptions[i]!.angle = v))}
+            />
           </div>
         ))}
         <Errors errors={errorsUnder(errors, "body.titleOptions")} />
       </section>
 
       <section className={CARD}>
-        <h2 className="text-lg font-semibold text-[var(--color-ink)]">{t("studio.editor.thumbnails")}</h2>
+        <h2 className="text-lg font-semibold text-[var(--color-ink)]">
+          {t("studio.editor.thumbnails")}
+        </h2>
         {body.thumbnailConcepts.map((c, i) => (
-          <div key={i} className="flex flex-col gap-3 border-b border-[var(--color-border-subtle)] pb-4 last:border-0 last:pb-0">
-            <Text label={`${t("studio.editor.thumbnail")} ${i + 1}`} value={c.description} onChange={(v) => update((d) => void (d.thumbnailConcepts[i]!.description = v))} />
-            <Text label={t("studio.editor.textOverlay")} value={c.textOverlay} onChange={(v) => update((d) => void (d.thumbnailConcepts[i]!.textOverlay = v))} />
-            <Text multiline label={t("studio.editor.imagePrompt")} value={c.imagePrompt} onChange={(v) => update((d) => void (d.thumbnailConcepts[i]!.imagePrompt = v))} />
+          <div
+            key={i}
+            className="flex flex-col gap-3 border-b border-[var(--color-border-subtle)] pb-4 last:border-0 last:pb-0"
+          >
+            <Text
+              label={`${t("studio.editor.thumbnail")} ${i + 1}`}
+              value={c.description}
+              onChange={(v) => update((d) => void (d.thumbnailConcepts[i]!.description = v))}
+            />
+            <Text
+              label={t("studio.editor.textOverlay")}
+              value={c.textOverlay}
+              onChange={(v) => update((d) => void (d.thumbnailConcepts[i]!.textOverlay = v))}
+            />
+            <Text
+              multiline
+              label={t("studio.editor.imagePrompt")}
+              value={c.imagePrompt}
+              onChange={(v) => update((d) => void (d.thumbnailConcepts[i]!.imagePrompt = v))}
+            />
           </div>
         ))}
         <Errors errors={errorsUnder(errors, "body.thumbnailConcepts")} />
@@ -311,10 +389,29 @@ export function StudioEditor({ scriptId, initialBody }: { scriptId: number; init
 
       <section className={CARD}>
         <h2 className="text-lg font-semibold text-[var(--color-ink)]">{t("studio.editor.hook")}</h2>
-        <Lines large label={t("studio.editor.spokenLines")} help={t("studio.editor.spokenHelp")} value={body.hook.spokenLines} onChange={(v) => update((d) => void (d.hook.spokenLines = v))} />
-        <Lines label={t("studio.editor.onScreen")} value={body.hook.onScreenText} onChange={(v) => update((d) => void (d.hook.onScreenText = v))} />
-        <Shots prefix="body.hook.broll" errors={errors} shots={body.hook.broll} onChange={(v) => update((d) => void (d.hook.broll = v))} />
-        <Errors errors={["body.hook.spokenLines", "body.hook.onScreenText"].flatMap((p) => errorsUnder(errors, p)).concat(errors.filter((e) => e.startsWith("body.hook ")))} />
+        <Lines
+          large
+          label={t("studio.editor.spokenLines")}
+          help={t("studio.editor.spokenHelp")}
+          value={body.hook.spokenLines}
+          onChange={(v) => update((d) => void (d.hook.spokenLines = v))}
+        />
+        <Lines
+          label={t("studio.editor.onScreen")}
+          value={body.hook.onScreenText}
+          onChange={(v) => update((d) => void (d.hook.onScreenText = v))}
+        />
+        <Shots
+          prefix="body.hook.broll"
+          errors={errors}
+          shots={body.hook.broll}
+          onChange={(v) => update((d) => void (d.hook.broll = v))}
+        />
+        <Errors
+          errors={["body.hook.spokenLines", "body.hook.onScreenText"]
+            .flatMap((p) => errorsUnder(errors, p))
+            .concat(errors.filter((e) => e.startsWith("body.hook ")))}
+        />
       </section>
 
       {body.sections.map((section, i) => {
@@ -336,7 +433,9 @@ export function StudioEditor({ scriptId, initialBody }: { scriptId: number; init
                   type="button"
                   className={STUDIO_BUTTON}
                   disabled={i === 0}
-                  onClick={() => update((d) => void d.sections.splice(i - 1, 0, ...d.sections.splice(i, 1)))}
+                  onClick={() =>
+                    update((d) => void d.sections.splice(i - 1, 0, ...d.sections.splice(i, 1)))
+                  }
                 >
                   ↑
                 </button>
@@ -344,32 +443,61 @@ export function StudioEditor({ scriptId, initialBody }: { scriptId: number; init
                   type="button"
                   className={STUDIO_BUTTON}
                   disabled={i === body.sections.length - 1}
-                  onClick={() => update((d) => void d.sections.splice(i + 1, 0, ...d.sections.splice(i, 1)))}
+                  onClick={() =>
+                    update((d) => void d.sections.splice(i + 1, 0, ...d.sections.splice(i, 1)))
+                  }
                 >
                   ↓
                 </button>
-                <button type="button" className={REMOVE} onClick={() => update((d) => void d.sections.splice(i, 1))}>
+                <button
+                  type="button"
+                  className={REMOVE}
+                  onClick={() => update((d) => void d.sections.splice(i, 1))}
+                >
                   {t("studio.editor.remove")}
                 </button>
               </div>
             </div>
-            <Text label={t("studio.editor.heading")} value={section.heading} onChange={(v) => update((d) => void (d.sections[i]!.heading = v))} />
-            <Lines large label={t("studio.editor.spokenLines")} help={t("studio.editor.spokenHelp")} value={section.spokenLines} onChange={(v) => update((d) => void (d.sections[i]!.spokenLines = v))} />
-            <Lines label={t("studio.editor.talkingPoints")} value={section.talkingPoints} onChange={(v) => update((d) => void (d.sections[i]!.talkingPoints = v))} />
-            <Lines label={t("studio.editor.onScreen")} value={section.onScreenText} onChange={(v) => update((d) => void (d.sections[i]!.onScreenText = v))} />
+            <Text
+              label={t("studio.editor.heading")}
+              value={section.heading}
+              onChange={(v) => update((d) => void (d.sections[i]!.heading = v))}
+            />
+            <Lines
+              large
+              label={t("studio.editor.spokenLines")}
+              help={t("studio.editor.spokenHelp")}
+              value={section.spokenLines}
+              onChange={(v) => update((d) => void (d.sections[i]!.spokenLines = v))}
+            />
+            <Lines
+              label={t("studio.editor.talkingPoints")}
+              value={section.talkingPoints}
+              onChange={(v) => update((d) => void (d.sections[i]!.talkingPoints = v))}
+            />
+            <Lines
+              label={t("studio.editor.onScreen")}
+              value={section.onScreenText}
+              onChange={(v) => update((d) => void (d.sections[i]!.onScreenText = v))}
+            />
             {sourceIds.length > 0 && (
               <fieldset>
                 <legend className={STUDIO_LABEL}>{t("studio.editor.sectionSources")}</legend>
                 <div className="flex flex-wrap gap-3">
                   {sourceIds.map((id) => (
-                    <label key={id} className="flex items-center gap-1 text-sm text-[var(--color-ink)]">
+                    <label
+                      key={id}
+                      className="flex items-center gap-1 text-sm text-[var(--color-ink)]"
+                    >
                       <input
                         type="checkbox"
                         checked={section.sourceIds.includes(id)}
                         onChange={() =>
                           update((d) => {
                             const s = d.sections[i]!;
-                            s.sourceIds = s.sourceIds.includes(id) ? s.sourceIds.filter((x) => x !== id) : [...s.sourceIds, id];
+                            s.sourceIds = s.sourceIds.includes(id)
+                              ? s.sourceIds.filter((x) => x !== id)
+                              : [...s.sourceIds, id];
                           })
                         }
                       />
@@ -380,7 +508,12 @@ export function StudioEditor({ scriptId, initialBody }: { scriptId: number; init
                 </div>
               </fieldset>
             )}
-            <Shots prefix={`${prefix}.broll`} errors={errors} shots={section.broll} onChange={(v) => update((d) => void (d.sections[i]!.broll = v))} />
+            <Shots
+              prefix={`${prefix}.broll`}
+              errors={errors}
+              shots={section.broll}
+              onChange={(v) => update((d) => void (d.sections[i]!.broll = v))}
+            />
             <Errors
               errors={errorsUnder(errors, prefix).filter((e) => !e.startsWith(`${prefix}.broll[`))}
             />
@@ -391,8 +524,16 @@ export function StudioEditor({ scriptId, initialBody }: { scriptId: number; init
         type="button"
         className={`${STUDIO_BUTTON} self-start`}
         onClick={() =>
-          update((d) =>
-            void d.sections.push({ heading: "", spokenLines: [""], talkingPoints: [], onScreenText: [], broll: [], sourceIds: [] }),
+          update(
+            (d) =>
+              void d.sections.push({
+                heading: "",
+                spokenLines: [""],
+                talkingPoints: [],
+                onScreenText: [],
+                broll: [],
+                sourceIds: [],
+              }),
           )
         }
       >
@@ -402,21 +543,42 @@ export function StudioEditor({ scriptId, initialBody }: { scriptId: number; init
 
       <section className={CARD}>
         <h2 className="text-lg font-semibold text-[var(--color-ink)]">{t("studio.editor.cta")}</h2>
-        <Lines large label={t("studio.editor.spokenLines")} value={body.cta.spokenLines} onChange={(v) => update((d) => void (d.cta.spokenLines = v))} />
-        <Lines label={t("studio.editor.onScreen")} value={body.cta.onScreenText} onChange={(v) => update((d) => void (d.cta.onScreenText = v))} />
+        <Lines
+          large
+          label={t("studio.editor.spokenLines")}
+          value={body.cta.spokenLines}
+          onChange={(v) => update((d) => void (d.cta.spokenLines = v))}
+        />
+        <Lines
+          label={t("studio.editor.onScreen")}
+          value={body.cta.onScreenText}
+          onChange={(v) => update((d) => void (d.cta.onScreenText = v))}
+        />
         <Errors errors={errorsUnder(errors, "body.cta")} />
       </section>
 
       <section className={CARD}>
-        <h2 className="text-lg font-semibold text-[var(--color-ink)]">{t("studio.editor.sources", { n: body.sources.length })}</h2>
-        {body.sources.length === 0 && <p className="text-sm text-[var(--color-ink-muted)]">{t("studio.editor.noSources")}</p>}
+        <h2 className="text-lg font-semibold text-[var(--color-ink)]">
+          {t("studio.editor.sources", { n: body.sources.length })}
+        </h2>
+        {body.sources.length === 0 && (
+          <p className="text-sm text-[var(--color-ink-muted)]">{t("studio.editor.noSources")}</p>
+        )}
         {body.sources.map((s, i) => (
-          <div key={i} className="flex flex-col gap-3 border-b border-[var(--color-border-subtle)] pb-4 last:border-0 last:pb-0">
+          <div
+            key={i}
+            className="flex flex-col gap-3 border-b border-[var(--color-border-subtle)] pb-4 last:border-0 last:pb-0"
+          >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="text-sm font-medium text-[var(--color-ink)]">
                 {s.id}
                 {s.url && (
-                  <a href={s.url} target="_blank" rel="noreferrer" className="ml-2 text-xs text-[var(--color-accent)] hover:underline">
+                  <a
+                    href={s.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="ml-2 text-xs text-[var(--color-accent)] hover:underline"
+                  >
                     {t("studio.editor.openSource")} ↗
                   </a>
                 )}
@@ -426,19 +588,38 @@ export function StudioEditor({ scriptId, initialBody }: { scriptId: number; init
                   <input
                     type="checkbox"
                     checked={s.verifyBeforeRecording}
-                    onChange={(e) => update((d) => void (d.sources[i]!.verifyBeforeRecording = e.target.checked))}
+                    onChange={(e) =>
+                      update((d) => void (d.sources[i]!.verifyBeforeRecording = e.target.checked))
+                    }
                   />
                   {t("studio.verifyBadge")}
                 </label>
-                <button type="button" className={REMOVE} onClick={() => update((d) => void d.sources.splice(i, 1))}>
+                <button
+                  type="button"
+                  className={REMOVE}
+                  onClick={() => update((d) => void d.sources.splice(i, 1))}
+                >
                   {t("studio.editor.remove")}
                 </button>
               </div>
             </div>
-            <Text multiline label={t("studio.editor.claim")} value={s.claim} onChange={(v) => update((d) => void (d.sources[i]!.claim = v))} />
+            <Text
+              multiline
+              label={t("studio.editor.claim")}
+              value={s.claim}
+              onChange={(v) => update((d) => void (d.sources[i]!.claim = v))}
+            />
             <div className="grid gap-3 sm:grid-cols-2">
-              <Text label="URL" value={s.url} onChange={(v) => update((d) => void (d.sources[i]!.url = v))} />
-              <Text label={t("studio.editor.sourceTitle")} value={s.title} onChange={(v) => update((d) => void (d.sources[i]!.title = v))} />
+              <Text
+                label="URL"
+                value={s.url}
+                onChange={(v) => update((d) => void (d.sources[i]!.url = v))}
+              />
+              <Text
+                label={t("studio.editor.sourceTitle")}
+                value={s.title}
+                onChange={(v) => update((d) => void (d.sources[i]!.title = v))}
+              />
             </div>
             <Errors errors={errorsUnder(errors, `body.sources[${i}]`)} />
           </div>
@@ -450,7 +631,13 @@ export function StudioEditor({ scriptId, initialBody }: { scriptId: number; init
             update((d) => {
               let n = d.sources.length + 1;
               while (d.sources.some((s) => s.id === `s${n}`)) n++;
-              d.sources.push({ id: `s${n}`, claim: "", url: "", title: "", verifyBeforeRecording: true });
+              d.sources.push({
+                id: `s${n}`,
+                claim: "",
+                url: "",
+                title: "",
+                verifyBeforeRecording: true,
+              });
             })
           }
         >

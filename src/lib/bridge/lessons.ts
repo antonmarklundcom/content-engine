@@ -34,7 +34,9 @@ export async function createLesson(input: NewLessonInput): Promise<Lesson> {
   if (!text) throw new InvalidLessonError("A lesson needs some text.");
   const kind = input.kind ?? "lesson";
   if (!(LESSON_KINDS as readonly string[]).includes(kind)) {
-    throw new InvalidLessonError(`Unknown kind "${kind}". Expected one of: ${LESSON_KINDS.join(", ")}.`);
+    throw new InvalidLessonError(
+      `Unknown kind "${kind}". Expected one of: ${LESSON_KINDS.join(", ")}.`,
+    );
   }
   const timestampSec =
     input.timestampSec === null || input.timestampSec === undefined
@@ -104,7 +106,11 @@ export async function listLessons(query: LessonsQuery = {}): Promise<LessonWithV
     .where(lessonFilters(query))
     .orderBy(desc(lessons.createdAt), desc(lessons.id))
     .limit(limit);
-  return rows.map((r) => ({ ...r.lesson, videoYoutubeId: r.videoYoutubeId, videoTitle: r.videoTitle }));
+  return rows.map((r) => ({
+    ...r.lesson,
+    videoYoutubeId: r.videoYoutubeId,
+    videoTitle: r.videoTitle,
+  }));
 }
 
 /** Delete one lesson; true if it existed. */
@@ -154,7 +160,11 @@ export async function exportLessonsMarkdown(
   const rows = await listLessons({ ...query, limit: 1000 });
   const title =
     options.title ??
-    (query.brandId ? `Lessons — ${query.brandId}` : query.brandId === null ? "Lessons — all brands" : "Lessons");
+    (query.brandId
+      ? `Lessons — ${query.brandId}`
+      : query.brandId === null
+        ? "Lessons — all brands"
+        : "Lessons");
   const out: string[] = [`# ${title}`, ""];
   if (rows.length === 0) {
     out.push("_No lessons saved yet._", "");

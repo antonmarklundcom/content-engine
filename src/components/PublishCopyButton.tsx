@@ -28,7 +28,15 @@ export function PublishCopyButton({ text, label }: { text: string; label?: strin
 }
 
 /** Download text as a Markdown file, built in the browser. */
-export function PublishDownloadButton({ text, filename, label }: { text: string; filename: string; label: string }) {
+export function PublishDownloadButton({
+  text,
+  filename,
+  label,
+}: {
+  text: string;
+  filename: string;
+  label: string;
+}) {
   return (
     <button
       type="button"

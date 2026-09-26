@@ -36,7 +36,8 @@ export const en = {
   "inbox.retry": "Retry",
   "inbox.retrying": "Retrying…",
   "inbox.dismiss": "Dismiss",
-  "inbox.dismissConfirm": "Remove this clip from the inbox? This does not delete an ingested video.",
+  "inbox.dismissConfirm":
+    "Remove this clip from the inbox? This does not delete an ingested video.",
   "inbox.captureSetup.title": "Set up phone capture",
   "inbox.captureSetup.body": "See docs/CAPTURE.md in the repo for the exact iOS Shortcut steps.",
 } as const;

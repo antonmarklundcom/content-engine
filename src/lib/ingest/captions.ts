@@ -46,7 +46,10 @@ export function configuredStrategies(): StrategyName[] | undefined {
 export function configuredLanguages(): string[] {
   const raw = process.env.CAPTION_LANGUAGES;
   if (!raw) return ["en"];
-  const list = raw.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+  const list = raw
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
   return list.length > 0 ? list : ["en"];
 }
 
@@ -132,10 +135,7 @@ export async function fetchAndStoreCaptions(
   return { status: "failed", error: `${result.reason}: ${detail}` };
 }
 
-async function setStatus(
-  videoId: number,
-  status: "available" | "none" | "failed",
-): Promise<void> {
+async function setStatus(videoId: number, status: "available" | "none" | "failed"): Promise<void> {
   await db
     .update(videos)
     .set({ captionStatus: status, captionCheckedAt: new Date() })

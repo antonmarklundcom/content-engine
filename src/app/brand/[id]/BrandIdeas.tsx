@@ -48,7 +48,9 @@ export default async function BrandIdeas({
         locale={locale}
         ideas={result.ideas}
         canDelete={isOwner(user)}
-        tabs={<IdeaStatusTabs counts={counts} active={status} basePath={basePath} locale={locale} />}
+        tabs={
+          <IdeaStatusTabs counts={counts} active={status} basePath={basePath} locale={locale} />
+        }
       />
       <Pagination
         page={result.page}

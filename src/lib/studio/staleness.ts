@@ -20,7 +20,11 @@ export const STALE_AFTER_DAYS = 90;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** True when `lastCheckedAt` is more than `days` before `now`. */
-export function isFactStale(lastCheckedAt: Date, now: Date, days: number = STALE_AFTER_DAYS): boolean {
+export function isFactStale(
+  lastCheckedAt: Date,
+  now: Date,
+  days: number = STALE_AFTER_DAYS,
+): boolean {
   return now.getTime() - lastCheckedAt.getTime() > days * DAY_MS;
 }
 
@@ -102,8 +106,15 @@ export function scriptsNeedingCorrection(
       postedAt,
       facts: [...changed.values()]
         .sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime() || a.id - b.id)
-        .map((f) => ({ id: f.id, claim: f.claim, sourceUrl: f.sourceUrl as string, updatedAt: f.updatedAt })),
+        .map((f) => ({
+          id: f.id,
+          claim: f.claim,
+          sourceUrl: f.sourceUrl as string,
+          updatedAt: f.updatedAt,
+        })),
     });
   }
-  return flagged.sort((a, b) => b.postedAt.getTime() - a.postedAt.getTime() || b.scriptId - a.scriptId);
+  return flagged.sort(
+    (a, b) => b.postedAt.getTime() - a.postedAt.getTime() || b.scriptId - a.scriptId,
+  );
 }

@@ -93,7 +93,13 @@ export function FactForm({
       </label>
       <label className="flex flex-col gap-1" htmlFor={id("notes")}>
         <span className={LABEL}>{t("facts.field.notes")}</span>
-        <textarea id={id("notes")} name="notes" rows={1} defaultValue={initial?.notes} className={FIELD} />
+        <textarea
+          id={id("notes")}
+          name="notes"
+          rows={1}
+          defaultValue={initial?.notes}
+          className={FIELD}
+        />
       </label>
       <div className="flex flex-wrap items-center gap-2">
         <button

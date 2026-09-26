@@ -54,10 +54,8 @@ export async function upsertVideoFromMetadata(
         // "unknown this time", not "zero" or "cleared" — falling back to what's
         // already stored keeps a real prior count instead of a transient miss
         // erasing it.
-        viewCount:
-          values.viewCount === null ? sql`${videos.viewCount}` : values.viewCount,
-        likeCount:
-          values.likeCount === null ? sql`${videos.likeCount}` : values.likeCount,
+        viewCount: values.viewCount === null ? sql`${videos.viewCount}` : values.viewCount,
+        likeCount: values.likeCount === null ? sql`${videos.likeCount}` : values.likeCount,
         commentCount:
           values.commentCount === null ? sql`${videos.commentCount}` : values.commentCount,
         thumbnailUrl: values.thumbnailUrl,

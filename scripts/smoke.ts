@@ -70,7 +70,8 @@ function parseArgs(argv: string[]): Args {
     if (arg === "--dry-run") dryRun = true;
     else if (arg === "--clip") clipUrl = rest.shift() ?? null;
     else if (arg.startsWith("--clip=")) clipUrl = arg.slice("--clip=".length);
-    else if (arg.startsWith("--")) throw new Error(`Unknown option ${arg}. See the header of scripts/smoke.ts.`);
+    else if (arg.startsWith("--"))
+      throw new Error(`Unknown option ${arg}. See the header of scripts/smoke.ts.`);
     else positional.push(arg);
   }
 
@@ -105,7 +106,9 @@ function observeClient(): void {
   const client = geminiClient();
   const models = client.models as unknown as {
     generateContent: (p: GenerateContentParameters) => Promise<GenerateContentResponse>;
-    generateContentStream: (p: GenerateContentParameters) => Promise<AsyncGenerator<GenerateContentResponse>>;
+    generateContentStream: (
+      p: GenerateContentParameters,
+    ) => Promise<AsyncGenerator<GenerateContentResponse>>;
   };
 
   const realGenerate = models.generateContent.bind(models);
@@ -136,7 +139,8 @@ function observeClient(): void {
     return (async function* () {
       for await (const chunk of stream) {
         if (chunk.usageMetadata) entry.usage = chunk.usageMetadata;
-        for (const q of chunk.candidates?.[0]?.groundingMetadata?.webSearchQueries ?? []) seen.add(q);
+        for (const q of chunk.candidates?.[0]?.groundingMetadata?.webSearchQueries ?? [])
+          seen.add(q);
         entry.queries = Math.max(entry.queries, seen.size);
         yield chunk;
       }
@@ -185,7 +189,9 @@ function reportCalls(): void {
 
     console.log(`${call.step}  [${call.model}]`);
     if (!usage) {
-      console.log("  usageMetadata: ABSENT — the call billed its reservation instead. Investigate.");
+      console.log(
+        "  usageMetadata: ABSENT — the call billed its reservation instead. Investigate.",
+      );
     } else {
       console.log(
         `  usageMetadata: prompt=${usage.promptTokenCount ?? 0}` +
@@ -268,28 +274,38 @@ async function main(): Promise<void> {
   }
 
   console.log("=== content-engine smoke ===\n");
-  console.log(`  mode:        ${args.dryRun ? "DRY RUN — nothing is sent, nothing is spent" : "LIVE — this spends real money"}`);
+  console.log(
+    `  mode:        ${args.dryRun ? "DRY RUN — nothing is sent, nothing is spent" : "LIVE — this spends real money"}`,
+  );
   console.log(`  database:    ${host}`);
   console.log(`  gemini key:  ${hasKey ? "present" : "ABSENT"}`);
-  console.log(`  model:       ${process.env.GEMINI_MODEL ?? "gemini-3.7-flash"} (ideation), ${DEFAULT_MODEL} (analysis)`);
+  console.log(
+    `  model:       ${process.env.GEMINI_MODEL ?? "gemini-3.7-flash"} (ideation), ${DEFAULT_MODEL} (analysis)`,
+  );
   console.log(`  monthly cap: ${formatUsd(monthlyCapUsd())}`);
 
   const brand = await resolveBrand(args.brandId);
   const clipVideo = args.clipUrl ? null : await mostRecentTranscribedVideo();
 
   const before = await spendStatus();
-  console.log(`\n  spend before: month-to-date ${formatUsd(before.monthToDateUsd)}, ` +
-    `committed ${formatUsd(before.committedUsd)}, remaining ${formatUsd(before.remainingUsd)}`);
+  console.log(
+    `\n  spend before: month-to-date ${formatUsd(before.monthToDateUsd)}, ` +
+      `committed ${formatUsd(before.committedUsd)}, remaining ${formatUsd(before.remainingUsd)}`,
+  );
 
   // The plan, with the reservation each step will hold. Printed either way:
   // a dry run is this list and nothing else.
   const analysisWords = clipVideo ? await wordCountFor(clipVideo.id) : 5_000;
   console.log("\n=== Plan ===\n");
-  console.log(`  1. generate        brand "${brand?.id ?? "<none>"}" — grounded ideation, reserves ${usd(estimateContentPlanCostUsd())}`);
+  console.log(
+    `  1. generate        brand "${brand?.id ?? "<none>"}" — grounded ideation, reserves ${usd(estimateContentPlanCostUsd())}`,
+  );
   console.log(
     `  2. clip save       ${args.clipUrl ?? (clipVideo ? `(no --clip; skipped, ${clipVideo.title} already ingested)` : "(no --clip and no ingested video; skipped)")}`,
   );
-  console.log(`  3. analysis        one interactive re-analysis, reserves ~${usd(estimateAnalysisCostUsd(analysisWords, DEFAULT_MODEL))} at ${analysisWords} words`);
+  console.log(
+    `  3. analysis        one interactive re-analysis, reserves ~${usd(estimateAnalysisCostUsd(analysisWords, DEFAULT_MODEL))} at ${analysisWords} words`,
+  );
   console.log(`  4. promote-adapt   one cheap rewrite, reserves ${usd(estimateAdaptCostUsd())}`);
 
   if (args.dryRun) {
@@ -308,7 +324,9 @@ async function main(): Promise<void> {
     reserve("1. generate", estimateContentPlanCostUsd());
     const allBrands = await db.select().from(brands);
     const result = await generateContentPlan(brand, allBrands, []);
-    console.log(`   ${result.ideas.length} ideas, ${result.researchNotes.length} research notes, ${usd(result.costUsd)}`);
+    console.log(
+      `   ${result.ideas.length} ideas, ${result.researchNotes.length} research notes, ${usd(result.costUsd)}`,
+    );
     return result;
   });
 
@@ -323,20 +341,27 @@ async function main(): Promise<void> {
         return null;
       }
       const processed = await processYouTubeClip(saved.clip);
-      console.log(`   clip ${processed.id}: ${processed.status}${processed.error ? ` — ${processed.error}` : ""}`);
+      console.log(
+        `   clip ${processed.id}: ${processed.status}${processed.error ? ` — ${processed.error}` : ""}`,
+      );
       if (!processed.videoId) return null;
       const [row] = await db.select().from(videos).where(eq(videos.id, processed.videoId));
       return row ?? null;
     });
   } else {
-    console.log("\n── 2. clip save  (skipped — pass --clip <youtubeUrl> to exercise the capture path)");
+    console.log(
+      "\n── 2. clip save  (skipped — pass --clip <youtubeUrl> to exercise the capture path)",
+    );
   }
 
   // 3. One interactive analysis, forced so it is a measured call rather than a
   // no-op on a video the clip step just analysed.
   const analysis = video
     ? await step("3. analysis", async () => {
-        reserve("3. analysis", estimateAnalysisCostUsd(await wordCountFor(video!.id), DEFAULT_MODEL));
+        reserve(
+          "3. analysis",
+          estimateAnalysisCostUsd(await wordCountFor(video!.id), DEFAULT_MODEL),
+        );
         const result = await analyzeVideo(video!, { force: true });
         console.log(`   ${result.status}${"costUsd" in result ? ` — ${usd(result.costUsd)}` : ""}`);
         return result.status === "ok" ? result.analysis : null;
@@ -356,19 +381,31 @@ async function main(): Promise<void> {
         platform: brand.platforms[0] ?? "instagram",
         adapt: true,
       });
-      console.log(result.ok ? `   idea ${result.idea.id}, ${usd(result.costUsd)}` : `   failed: ${result.error}`);
+      console.log(
+        result.ok
+          ? `   idea ${result.idea.id}, ${usd(result.costUsd)}`
+          : `   failed: ${result.error}`,
+      );
     });
   } else {
-    console.log("\n── 4. promote-adapt  (skipped — no successful analysis with ideas to promote from)");
+    console.log(
+      "\n── 4. promote-adapt  (skipped — no successful analysis with ideas to promote from)",
+    );
   }
 
   const after = await spendStatus();
   console.log("\n=== Spend ===\n");
   console.log(`  month-to-date before: ${formatUsd(before.monthToDateUsd)}`);
   console.log(`  month-to-date after:  ${formatUsd(after.monthToDateUsd)}`);
-  console.log(`  this run:             ${formatUsd((await monthToDateUsd()) - before.monthToDateUsd)}`);
-  console.log(`  reservation held now: ${usd(after.projectedUsd - after.monthToDateUsd - after.committedUsd)} (0 means every reservation was released)`);
-  console.log(`  cap:                  ${formatUsd(after.capUsd)}, remaining ${formatUsd(after.remainingUsd)}`);
+  console.log(
+    `  this run:             ${formatUsd((await monthToDateUsd()) - before.monthToDateUsd)}`,
+  );
+  console.log(
+    `  reservation held now: ${usd(after.projectedUsd - after.monthToDateUsd - after.committedUsd)} (0 means every reservation was released)`,
+  );
+  console.log(
+    `  cap:                  ${formatUsd(after.capUsd)}, remaining ${formatUsd(after.remainingUsd)}`,
+  );
 
   reportCalls();
   reportBaseline();

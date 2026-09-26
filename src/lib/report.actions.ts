@@ -14,7 +14,11 @@
 
 import { revalidatePath } from "next/cache";
 import { requireOwner, requireUser } from "@/lib/auth/session";
-import { getAudienceQuestion, isAudienceQuestionStatus, setAudienceQuestionStatus } from "@/lib/bridge/questions";
+import {
+  getAudienceQuestion,
+  isAudienceQuestionStatus,
+  setAudienceQuestionStatus,
+} from "@/lib/bridge/questions";
 import { writeScriptHref } from "@/lib/studio/report-contract";
 import { mineQuestions } from "@/lib/studio/questions";
 import { buildCompetitorReport } from "@/lib/studio/report";
@@ -46,7 +50,9 @@ export async function generateReportAction(
 /** "Mine comments": cluster the top outliers' comment questions. Owner only. */
 export async function mineQuestionsAction(
   brandId: string,
-): Promise<ReportActionResult<{ inserted: number; updated: number; comments: number; videos: number }>> {
+): Promise<
+  ReportActionResult<{ inserted: number; updated: number; comments: number; videos: number }>
+> {
   try {
     await requireOwner("mine competitor comments");
     if (typeof brandId !== "string" || !brandId) return { ok: false, error: "Pick a brand first." };
@@ -66,10 +72,14 @@ export async function mineQuestionsAction(
 }
 
 /** Mark a question new / used / dismissed. */
-export async function setQuestionStatusAction(id: number, status: string): Promise<ReportActionResult> {
+export async function setQuestionStatusAction(
+  id: number,
+  status: string,
+): Promise<ReportActionResult> {
   await requireUser();
   if (!Number.isInteger(id) || id <= 0) return { ok: false, error: "That is not a question id." };
-  if (!isAudienceQuestionStatus(status)) return { ok: false, error: `Unknown status "${String(status)}".` };
+  if (!isAudienceQuestionStatus(status))
+    return { ok: false, error: `Unknown status "${String(status)}".` };
   const row = await setAudienceQuestionStatus(id, status);
   if (!row) return { ok: false, error: "That question no longer exists." };
   revalidatePath("/research/questions");
@@ -81,7 +91,9 @@ export async function setQuestionStatusAction(id: number, status: string): Promi
  * with the question as the topic. No refs: the videos a question was asked
  * under are rarely analysed, and the brief only takes analysed references.
  */
-export async function writeScriptFromQuestionAction(id: number): Promise<ReportActionResult<{ href: string }>> {
+export async function writeScriptFromQuestionAction(
+  id: number,
+): Promise<ReportActionResult<{ href: string }>> {
   await requireUser();
   if (!Number.isInteger(id) || id <= 0) return { ok: false, error: "That is not a question id." };
   const question = await getAudienceQuestion(id);

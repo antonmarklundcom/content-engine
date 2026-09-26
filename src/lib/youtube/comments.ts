@@ -70,7 +70,9 @@ export class YouTubeCommentsClient {
     }
     this.apiKey = apiKey;
     const envBudget = Number(process.env.YOUTUBE_QUOTA_BUDGET);
-    this.budget = options.quotaBudget ?? (Number.isFinite(envBudget) && envBudget > 0 ? envBudget : DEFAULT_DAILY_QUOTA);
+    this.budget =
+      options.quotaBudget ??
+      (Number.isFinite(envBudget) && envBudget > 0 ? envBudget : DEFAULT_DAILY_QUOTA);
     this.maxRetries = options.maxRetries ?? 3;
     this.timeoutMs = options.timeoutMs ?? 20_000;
     this.fetchImpl = options.fetch ?? ((...args) => fetch(...args));
@@ -99,7 +101,10 @@ export class YouTubeCommentsClient {
     url.searchParams.set("part", "snippet");
     url.searchParams.set("videoId", youtubeId);
     url.searchParams.set("order", "relevance");
-    url.searchParams.set("maxResults", String(Math.min(COMMENT_PAGE_SIZE, Math.max(1, maxResults))));
+    url.searchParams.set(
+      "maxResults",
+      String(Math.min(COMMENT_PAGE_SIZE, Math.max(1, maxResults))),
+    );
     url.searchParams.set("textFormat", "plainText");
     url.searchParams.set("key", this.apiKey);
 
@@ -132,9 +137,14 @@ export class YouTubeCommentsClient {
           `YouTube Data API daily quota exhausted (${reason}). Resets at midnight America/Los_Angeles.`,
         );
       }
-      if ((res.status === 403 || res.status === 404) && reason && NO_COMMENTS_REASONS.has(reason)) return [];
+      if ((res.status === 403 || res.status === 404) && reason && NO_COMMENTS_REASONS.has(reason))
+        return [];
 
-      const retryable = res.status === 500 || res.status === 503 || res.status === 429 || reason === "rateLimitExceeded";
+      const retryable =
+        res.status === 500 ||
+        res.status === 503 ||
+        res.status === 429 ||
+        reason === "rateLimitExceeded";
       lastError = new YouTubeCommentsError(
         `commentThreads failed: HTTP ${res.status}${reason ? ` (${reason})` : ""} — ${body.slice(0, 300)}`,
         res.status,
@@ -147,7 +157,9 @@ export class YouTubeCommentsClient {
 }
 
 function asRecord(v: unknown): Record<string, unknown> {
-  return typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+  return typeof v === "object" && v !== null && !Array.isArray(v)
+    ? (v as Record<string, unknown>)
+    : {};
 }
 
 export function parseCommentThreads(data: unknown): VideoComment[] {
@@ -158,9 +170,11 @@ export function parseCommentThreads(data: unknown): VideoComment[] {
     const threadSnippet = asRecord(thread["snippet"]);
     const top = asRecord(threadSnippet["topLevelComment"]);
     const snippet = asRecord(top["snippet"]);
-    const text = typeof snippet["textDisplay"] === "string" ? snippet["textDisplay"] : snippet["textOriginal"];
+    const text =
+      typeof snippet["textDisplay"] === "string" ? snippet["textDisplay"] : snippet["textOriginal"];
     if (typeof text !== "string" || !text.trim()) continue;
-    const published = typeof snippet["publishedAt"] === "string" ? new Date(snippet["publishedAt"]) : null;
+    const published =
+      typeof snippet["publishedAt"] === "string" ? new Date(snippet["publishedAt"]) : null;
     out.push({
       commentId: String(top["id"] ?? thread["id"] ?? ""),
       text: text.trim(),

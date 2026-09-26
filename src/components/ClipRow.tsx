@@ -104,7 +104,12 @@ export function ClipRow({
             />
           )}
           {canManage && clip.platform === "youtube" && clip.status === "failed" && (
-            <RetryClipButton clipId={clip.id} action={retryClipAction} label={t("inbox.retry")} retryingLabel={t("inbox.retrying")} />
+            <RetryClipButton
+              clipId={clip.id}
+              action={retryClipAction}
+              label={t("inbox.retry")}
+              retryingLabel={t("inbox.retrying")}
+            />
           )}
           {canManage && (
             <form action={dismissClipAction.bind(null, clip.id)}>

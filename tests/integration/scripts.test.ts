@@ -33,7 +33,11 @@ const acceptVersion1: ScriptBodyValidator = (body) => {
     : { ok: false, errors: ["version must be 1"] };
 };
 
-const BODY = { version: 1, hook: "Everyone still says 90 days.", sections: [{ spoken: ["Line one."] }] };
+const BODY = {
+  version: 1,
+  hook: "Everyone still says 90 days.",
+  sections: [{ spoken: ["Line one."] }],
+};
 
 async function draft(brandId = "residency", title = "The 45-day timeline") {
   return createScript({ brandId, title, language: "en", body: BODY }, acceptVersion1);
@@ -48,12 +52,17 @@ test("createScript validates the body and stores it as jsonb, untouched", async 
   assert.equal(script.recordedAt, null);
 
   const [{ type }] = (
-    await db.execute<{ type: string }>(sql`select jsonb_typeof(body) as type from scripts where id = ${script.id}`)
+    await db.execute<{ type: string }>(
+      sql`select jsonb_typeof(body) as type from scripts where id = ${script.id}`,
+    )
   ).rows;
   assert.equal(type, "object", "stored as a jsonb object, not a JSON string");
 
   await assert.rejects(
-    createScript({ brandId: "x", title: "t", language: "en", body: { version: 2 } }, acceptVersion1),
+    createScript(
+      { brandId: "x", title: "t", language: "en", body: { version: 2 } },
+      acceptVersion1,
+    ),
     (err: unknown) => err instanceof InvalidScriptError && err.errors[0] === "version must be 1",
   );
   await assert.rejects(
@@ -72,25 +81,46 @@ test("getScript and listScripts by brand and status, most recently edited first"
   assert.equal((await getScript(a.id))?.title, "A");
   assert.equal(await getScript(9999), null);
 
-  assert.deepEqual((await listScripts()).map((s) => s.title), ["B", "C", "A"]);
-  assert.deepEqual((await listScripts({ brandId: "residency" })).map((s) => s.id), [b.id, a.id]);
-  assert.deepEqual((await listScripts({ status: "draft" })).map((s) => s.id), [c.id, a.id]);
-  assert.deepEqual((await listScripts({ brandId: "residency", status: "ready" })).map((s) => s.id), [b.id]);
+  assert.deepEqual(
+    (await listScripts()).map((s) => s.title),
+    ["B", "C", "A"],
+  );
+  assert.deepEqual(
+    (await listScripts({ brandId: "residency" })).map((s) => s.id),
+    [b.id, a.id],
+  );
+  assert.deepEqual(
+    (await listScripts({ status: "draft" })).map((s) => s.id),
+    [c.id, a.id],
+  );
+  assert.deepEqual(
+    (await listScripts({ brandId: "residency", status: "ready" })).map((s) => s.id),
+    [b.id],
+  );
 });
 
 test("updateScriptBody validates, patches title/language, bumps updated_at", async () => {
   const script = await draft();
-  await db.update(schema.scripts).set({ updatedAt: sql`now() - interval '1 hour'` }).where(eq(schema.scripts.id, script.id));
+  await db
+    .update(schema.scripts)
+    .set({ updatedAt: sql`now() - interval '1 hour'` })
+    .where(eq(schema.scripts.id, script.id));
 
   const next = { ...BODY, hook: "New hook" };
-  const updated = await updateScriptBody(script.id, next, acceptVersion1, { title: " Retitled ", language: "es-PY" });
+  const updated = await updateScriptBody(script.id, next, acceptVersion1, {
+    title: " Retitled ",
+    language: "es-PY",
+  });
   assert.ok(updated);
   assert.deepEqual(updated.body, next);
   assert.equal(updated.title, "Retitled");
   assert.equal(updated.language, "es-PY");
   assert.ok(Date.now() - updated.updatedAt.getTime() < 60_000, "updated_at moved to now");
 
-  await assert.rejects(updateScriptBody(script.id, { version: 0 }, acceptVersion1), InvalidScriptError);
+  await assert.rejects(
+    updateScriptBody(script.id, { version: 0 }, acceptVersion1),
+    InvalidScriptError,
+  );
   assert.deepEqual((await getScript(script.id))?.body, next, "a rejected body changes nothing");
   assert.equal(await updateScriptBody(9999, BODY, acceptVersion1), null);
 });

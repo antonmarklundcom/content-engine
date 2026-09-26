@@ -37,7 +37,10 @@ test("existing terminal punctuation is not doubled", () => {
 test("sections the analysis does not have produce no units", () => {
   // A version-1 row (contract.ts) is missing three fields outright, and every
   // JSON column on `analyses` is nullable.
-  assert.deepEqual(analysisUnits({ summary: "Only this." }).map((u) => u.key), ["summary:0"]);
+  assert.deepEqual(
+    analysisUnits({ summary: "Only this." }).map((u) => u.key),
+    ["summary:0"],
+  );
   assert.deepEqual(analysisUnits(null), []);
   assert.deepEqual(analysisUnits({}), []);
 });
@@ -79,7 +82,10 @@ test("an analyses row's hook_breakdown is read as the contract's hook", () => {
     gaps: null,
     ideas: null,
   });
-  assert.deepEqual(units.map((u) => u.key), ["hook:0"]);
+  assert.deepEqual(
+    units.map((u) => u.key),
+    ["hook:0"],
+  );
 });
 
 test("a row whose JSON columns are all null reads as nothing to listen to", () => {

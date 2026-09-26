@@ -15,9 +15,7 @@ import type {
  * a malformed response must mark one row failed, not abort the run.
  */
 
-export type ParseResult =
-  | { ok: true; payload: AnalysisPayload }
-  | { ok: false; error: string };
+export type ParseResult = { ok: true; payload: AnalysisPayload } | { ok: false; error: string };
 
 export function parseAnalysisResponse(raw: string): ParseResult {
   const text = stripFences(raw).trim();

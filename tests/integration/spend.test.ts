@@ -170,7 +170,10 @@ test("a second reservation sees the first one's hold, not a stale total", async 
   });
   await firstHasReserved;
 
-  await assert.rejects(withSpendCap(6, async () => "second"), SpendCapExceededError);
+  await assert.rejects(
+    withSpendCap(6, async () => "second"),
+    SpendCapExceededError,
+  );
 
   release();
   assert.equal(await first, "first", "the one that got there first still completes");

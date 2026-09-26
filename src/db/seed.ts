@@ -148,20 +148,21 @@ export async function seedBrands(options: { overwrite?: boolean } = {}): Promise
 
   for (const brand of BRAND_SEEDS) {
     const query = db.insert(schema.brands).values(brand);
-    const rows = await (options.overwrite
-      ? query.onConflictDoUpdate({
-          target: schema.brands.id,
-          set: {
-            name: sql`excluded.name`,
-            domain: sql`excluded.domain`,
-            niche: sql`excluded.niche`,
-            market: sql`excluded.market`,
-            language: sql`excluded.language`,
-            voice: sql`excluded.voice`,
-            platforms: sql`excluded.platforms`,
-          },
-        })
-      : query.onConflictDoNothing({ target: schema.brands.id })
+    const rows = await (
+      options.overwrite
+        ? query.onConflictDoUpdate({
+            target: schema.brands.id,
+            set: {
+              name: sql`excluded.name`,
+              domain: sql`excluded.domain`,
+              niche: sql`excluded.niche`,
+              market: sql`excluded.market`,
+              language: sql`excluded.language`,
+              voice: sql`excluded.voice`,
+              platforms: sql`excluded.platforms`,
+            },
+          })
+        : query.onConflictDoNothing({ target: schema.brands.id })
     ).returning({ id: schema.brands.id });
     written += rows.length;
   }

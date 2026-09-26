@@ -26,7 +26,10 @@ export function ResearchAnalyzeButton({ videoId, locale }: { videoId: number; lo
           startTransition(async () => {
             setResult(null);
             const res = await analyzeVideoAction(videoId);
-            setResult({ tone: res.ok ? "success" : "error", text: res.ok ? res.message : res.error });
+            setResult({
+              tone: res.ok ? "success" : "error",
+              text: res.ok ? res.message : res.error,
+            });
             if (res.ok) router.refresh();
           })
         }

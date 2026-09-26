@@ -60,7 +60,10 @@ export function QuestionRow({ q }: { q: QuestionRowData }) {
           <summary className="cursor-pointer text-xs">{t("questions.examples")}</summary>
           <ul className="mt-2 flex flex-col gap-1">
             {q.examples.map((e, i) => (
-              <li key={i} className="border-l-2 border-[var(--color-border-subtle)] pl-3 leading-relaxed">
+              <li
+                key={i}
+                className="border-l-2 border-[var(--color-border-subtle)] pl-3 leading-relaxed"
+              >
                 {e}
               </li>
             ))}
@@ -72,11 +75,21 @@ export function QuestionRow({ q }: { q: QuestionRowData }) {
           {t("questions.writeScript")}
         </button>
         {q.status === "dismissed" ? (
-          <button type="button" className={STUDIO_BUTTON} disabled={pending} onClick={() => setStatus("new")}>
+          <button
+            type="button"
+            className={STUDIO_BUTTON}
+            disabled={pending}
+            onClick={() => setStatus("new")}
+          >
             {t("questions.restore")}
           </button>
         ) : (
-          <button type="button" className={STUDIO_BUTTON} disabled={pending} onClick={() => setStatus("dismissed")}>
+          <button
+            type="button"
+            className={STUDIO_BUTTON}
+            disabled={pending}
+            onClick={() => setStatus("dismissed")}
+          >
             {t("questions.dismiss")}
           </button>
         )}

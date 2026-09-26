@@ -1,4 +1,10 @@
-import type { AspectRatio, BrollShot, ScriptBodyV1, ScriptLanguage, ScriptSource } from "@/lib/scripts/contract";
+import type {
+  AspectRatio,
+  BrollShot,
+  ScriptBodyV1,
+  ScriptLanguage,
+  ScriptSource,
+} from "@/lib/scripts/contract";
 
 /**
  * A property listing → an on-camera script (build 2b, idea 8).
@@ -54,12 +60,22 @@ export const MAX_LISTING_IMAGES = 12;
 // parsing
 // ---------------------------------------------------------------------------
 
-const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
+const ENTITIES: Record<string, string> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: " ",
+};
 
 export function decodeEntities(text: string): string {
   return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, code: string) => {
     if (code[0] === "#") {
-      const n = code[1] === "x" || code[1] === "X" ? parseInt(code.slice(2), 16) : parseInt(code.slice(1), 10);
+      const n =
+        code[1] === "x" || code[1] === "X"
+          ? parseInt(code.slice(2), 16)
+          : parseInt(code.slice(1), 10);
       return Number.isFinite(n) && n > 0 && n < 0x110000 ? String.fromCodePoint(n) : whole;
     }
     return ENTITIES[code.toLowerCase()] ?? whole;
@@ -74,7 +90,9 @@ function clean(text: unknown): string {
 /** `name="value"` pairs of one tag, attribute names lowercased. */
 function attributes(tag: string): Record<string, string> {
   const out: Record<string, string> = {};
-  for (const m of tag.matchAll(/([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>]+))/g)) {
+  for (const m of tag.matchAll(
+    /([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>]+))/g,
+  )) {
     out[m[1].toLowerCase()] = m[3] ?? m[4] ?? m[5] ?? "";
   }
   return out;
@@ -95,7 +113,9 @@ function metaTags(html: string): Map<string, string[]> {
 /** Parsed JSON-LD blocks; a block that is not valid JSON is skipped, not fatal. */
 function jsonLdBlocks(html: string): unknown[] {
   const blocks: unknown[] = [];
-  for (const m of html.matchAll(/<script\b[^>]*type\s*=\s*["']?application\/ld\+json["']?[^>]*>([\s\S]*?)<\/script>/gi)) {
+  for (const m of html.matchAll(
+    /<script\b[^>]*type\s*=\s*["']?application\/ld\+json["']?[^>]*>([\s\S]*?)<\/script>/gi,
+  )) {
     const raw = m[1].trim().replace(/^<!\[CDATA\[|\]\]>$/g, "");
     try {
       blocks.push(JSON.parse(raw));
@@ -204,7 +224,13 @@ function quantity(value: unknown): string | undefined {
   return undefined;
 }
 
-const AREA_UNITS: Record<string, string> = { MTK: "m²", FTK: "ft²", MTR: "m", HAR: "ha", ACR: "acres" };
+const AREA_UNITS: Record<string, string> = {
+  MTK: "m²",
+  FTK: "ft²",
+  MTR: "m",
+  HAR: "ha",
+  ACR: "acres",
+};
 
 function area(value: unknown): string | undefined {
   if (!isNode(value)) return quantity(value);
@@ -247,7 +273,9 @@ export function absoluteUrl(raw: string, base: string): string | null {
 }
 
 function price(nodes: Node[]): { price?: string; currency?: string } {
-  const node = nodes.find((n) => n.price !== undefined || n.lowPrice !== undefined || isNode(n.priceSpecification));
+  const node = nodes.find(
+    (n) => n.price !== undefined || n.lowPrice !== undefined || isNode(n.priceSpecification),
+  );
   if (!node) return {};
   const spec = isNode(node.priceSpecification) ? node.priceSpecification : undefined;
   const amount = quantity(node.price ?? node.lowPrice ?? spec?.price);
@@ -293,14 +321,16 @@ export function parseListingHtml(html: string, pageUrl: string): ListingFields {
   return {
     url: pageUrl,
     title: clean(m("og:title", "twitter:title")) || ldName || clean(titleTag),
-    description: clean(m("og:description", "twitter:description")) || ldDescription || clean(m("description")),
+    description:
+      clean(m("og:description", "twitter:description")) || ldDescription || clean(m("description")),
     price: amount ?? clean(ogPrice),
     currency: currency ?? clean(ogCurrency),
     address:
       first(nodes, (n) => addressText(n.address)) ??
       clean(m("og:street-address", "place:location:address")),
     rooms: first(nodes, (n) => quantity(n.numberOfRooms ?? n.numberOfBedrooms)) ?? "",
-    bathrooms: first(nodes, (n) => quantity(n.numberOfBathroomsTotal ?? n.numberOfFullBathrooms)) ?? "",
+    bathrooms:
+      first(nodes, (n) => quantity(n.numberOfBathroomsTotal ?? n.numberOfFullBathrooms)) ?? "",
     area: first(nodes, (n) => area(n.floorSize ?? n.lotSize)) ?? "",
     images,
     notes: "",
@@ -330,11 +360,25 @@ export class ListingFetchError extends Error {
  */
 function isPrivateHost(hostname: string): boolean {
   const h = hostname.replace(/^\[|\]$/g, "").toLowerCase();
-  if (h === "localhost" || h.endsWith(".localhost") || h.endsWith(".local") || h === "::1" || h === "::") return true;
+  if (
+    h === "localhost" ||
+    h.endsWith(".localhost") ||
+    h.endsWith(".local") ||
+    h === "::1" ||
+    h === "::"
+  )
+    return true;
   const v4 = h.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
   if (v4) {
     const [a, b] = [Number(v4[1]), Number(v4[2])];
-    return a === 0 || a === 10 || a === 127 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
+    return (
+      a === 0 ||
+      a === 10 ||
+      a === 127 ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168)
+    );
   }
   return /^(fc|fd|fe80:)/.test(h);
 }
@@ -345,12 +389,15 @@ export function checkListingUrl(raw: string): URL {
   try {
     url = new URL(raw.trim());
   } catch {
-    throw new ListingFetchError("That is not a URL. Paste the listing's full address, starting with https://.");
+    throw new ListingFetchError(
+      "That is not a URL. Paste the listing's full address, starting with https://.",
+    );
   }
   if (url.protocol !== "https:" && url.protocol !== "http:") {
     throw new ListingFetchError("Only http(s) listing pages can be read.");
   }
-  if (isPrivateHost(url.hostname)) throw new ListingFetchError("That address is on this computer or its network.");
+  if (isPrivateHost(url.hostname))
+    throw new ListingFetchError("That address is on this computer or its network.");
   return url;
 }
 
@@ -378,7 +425,8 @@ export async function fetchListing(
         },
       });
     } catch (error) {
-      const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+      const timedOut =
+        error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
       throw new ListingFetchError(
         timedOut
           ? `The page did not answer within ${Math.round(timeoutMs / 1000)} seconds. Fill the form by hand instead.`
@@ -390,19 +438,28 @@ export async function fetchListing(
     if (hop >= MAX_REDIRECTS) throw new ListingFetchError("The page redirects too many times.");
     url = checkListingUrl(new URL(location, url).toString());
   }
-  if (!response.ok) throw new ListingFetchError(`The page answered ${response.status}. Fill the form by hand instead.`);
+  if (!response.ok)
+    throw new ListingFetchError(
+      `The page answered ${response.status}. Fill the form by hand instead.`,
+    );
   const type = response.headers.get("content-type") ?? "";
-  if (type && !/html|xml/i.test(type)) throw new ListingFetchError(`That is not a web page (${type.split(";")[0]}).`);
+  if (type && !/html|xml/i.test(type))
+    throw new ListingFetchError(`That is not a web page (${type.split(";")[0]}).`);
   const declared = Number(response.headers.get("content-length") ?? 0);
-  if (declared > MAX_PAGE_BYTES) throw new ListingFetchError("That page is too large to be a listing.");
+  if (declared > MAX_PAGE_BYTES)
+    throw new ListingFetchError("That page is too large to be a listing.");
   const html = await response.text();
-  if (html.length > MAX_PAGE_BYTES) throw new ListingFetchError("That page is too large to be a listing.");
+  if (html.length > MAX_PAGE_BYTES)
+    throw new ListingFetchError("That page is too large to be a listing.");
   return parseListingHtml(html, url.toString());
 }
 
 /** Trim every field, keep only absolute http(s) images (deduped, capped) — for anything from a form. */
-export function normalizeListing(input: Partial<Record<keyof ListingFields, unknown>>): ListingFields {
-  const text = (v: unknown) => (typeof v === "string" ? v.trim() : typeof v === "number" ? String(v) : "");
+export function normalizeListing(
+  input: Partial<Record<keyof ListingFields, unknown>>,
+): ListingFields {
+  const text = (v: unknown) =>
+    typeof v === "string" ? v.trim() : typeof v === "number" ? String(v) : "";
   const images: string[] = [];
   for (const raw of Array.isArray(input.images) ? input.images : []) {
     const url = typeof raw === "string" ? absoluteUrl(raw, "") : null;
@@ -432,9 +489,20 @@ export const LISTING_MODES = ["short", "tour"] as const;
 export type ListingMode = (typeof LISTING_MODES)[number];
 
 /** Short: 60–90 s vertical. Tour: a 3–5 minute walk-through, horizontal. */
-export const MODE_SPEC: Record<ListingMode, { targetMinutes: number; aspectRatio: AspectRatio; length: string }> = {
-  short: { targetMinutes: 1.5, aspectRatio: "9:16", length: "60 to 90 seconds (about 150–200 spoken words)" },
-  tour: { targetMinutes: 4, aspectRatio: "16:9", length: "3 to 5 minutes (about 450–650 spoken words)" },
+export const MODE_SPEC: Record<
+  ListingMode,
+  { targetMinutes: number; aspectRatio: AspectRatio; length: string }
+> = {
+  short: {
+    targetMinutes: 1.5,
+    aspectRatio: "9:16",
+    length: "60 to 90 seconds (about 150–200 spoken words)",
+  },
+  tour: {
+    targetMinutes: 4,
+    aspectRatio: "16:9",
+    length: "3 to 5 minutes (about 450–650 spoken words)",
+  },
 };
 
 /** The id the listing page gets in `sources`, cited by every section that states a price or fee. */
@@ -537,7 +605,11 @@ function photoShot(shot: BrollShot, url: string, n: number, chosen: boolean): Br
  *    whose lines mention a price or fee cites it. Without a listing URL there
  *    is no source to cite, so those sections get a talking point instead.
  */
-export function finishListingScript(body: ScriptBodyV1, listing: ListingFields, mode: ListingMode): ScriptBodyV1 {
+export function finishListingScript(
+  body: ScriptBodyV1,
+  listing: ListingFields,
+  mode: ListingMode,
+): ScriptBodyV1 {
   const spec = MODE_SPEC[mode];
   const photos = listing.images;
   const used = new Set<number>();
@@ -574,7 +646,9 @@ export function finishListingScript(body: ScriptBodyV1, listing: ListingFields, 
       if (i !== null && i >= 0) {
         return { ...photoShot(shot, photos[i], i + 1, i === photo), aspectRatio: spec.aspectRatio };
       }
-      const imagePrompt = PHOTO_REF.test(shot.imagePrompt) ? shot.description || "Property exterior, daylight" : shot.imagePrompt;
+      const imagePrompt = PHOTO_REF.test(shot.imagePrompt)
+        ? shot.description || "Property exterior, daylight"
+        : shot.imagePrompt;
       return { ...shot, imagePrompt, aspectRatio: spec.aspectRatio };
     }),
   );
@@ -596,10 +670,14 @@ export function finishListingScript(body: ScriptBodyV1, listing: ListingFields, 
     const text = [...s.spokenLines, ...s.onScreenText].join(" ");
     const money = MONEY.test(text);
     const sourceIds = s.sourceIds.filter((id) => sources.some((src) => src.id === id));
-    if (money && listingSource && !sourceIds.includes(LISTING_SOURCE_ID)) sourceIds.unshift(LISTING_SOURCE_ID);
+    if (money && listingSource && !sourceIds.includes(LISTING_SOURCE_ID))
+      sourceIds.unshift(LISTING_SOURCE_ID);
     const talkingPoints =
       money && !listingSource && !s.talkingPoints.some((t) => t.startsWith("VERIFY"))
-        ? [...s.talkingPoints, "VERIFY BEFORE RECORDING: the price and fees were typed by hand — check them."]
+        ? [
+            ...s.talkingPoints,
+            "VERIFY BEFORE RECORDING: the price and fees were typed by hand — check them.",
+          ]
         : s.talkingPoints;
     return { ...s, sourceIds, talkingPoints, broll: finished[i + 1] };
   });

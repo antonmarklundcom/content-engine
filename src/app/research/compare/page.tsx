@@ -21,8 +21,17 @@ const CHIP_OFF = `${CHIP} surface-border text-[var(--color-ink)] hover:border-[v
  * Own channel vs competitors (build 2b, idea 4). `?brand=` picks the brand;
  * the channel linked with role `own` comes first.
  */
-export default async function ComparePage({ searchParams }: { searchParams: Promise<{ brand?: string }> }) {
-  const [params, , brands, locale] = await Promise.all([searchParams, requireUser(), listBrands(), getLocale()]);
+export default async function ComparePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ brand?: string }>;
+}) {
+  const [params, , brands, locale] = await Promise.all([
+    searchParams,
+    requireUser(),
+    listBrands(),
+    getLocale(),
+  ]);
   const t = translator(locale);
   const brand = brands.find((b) => b.id === params.brand) ?? brands[0];
   const comparison = brand ? await compareBrandChannels(brand.id) : null;
@@ -34,7 +43,9 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
         {t("compare.eyebrow")}
       </p>
       <h1 className="mt-1 text-2xl font-semibold text-[var(--color-ink)]">{t("compare.title")}</h1>
-      <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">{t("compare.intro")}</p>
+      <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+        {t("compare.intro")}
+      </p>
 
       {!brand || !comparison ? (
         <p className="mt-8 text-sm text-[var(--color-ink-muted)]">{t("compare.noBrands")}</p>
@@ -67,9 +78,13 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
           )}
 
           <section className="mt-8">
-            <h2 className="text-lg font-semibold text-[var(--color-ink)]">{t("compare.channels")}</h2>
+            <h2 className="text-lg font-semibold text-[var(--color-ink)]">
+              {t("compare.channels")}
+            </h2>
             {comparison.channels.length === 0 ? (
-              <p className="mt-3 text-sm text-[var(--color-ink-muted)]">{t("compare.channelsEmpty")}</p>
+              <p className="mt-3 text-sm text-[var(--color-ink-muted)]">
+                {t("compare.channelsEmpty")}
+              </p>
             ) : (
               <ul className="mt-3 grid gap-4 md:grid-cols-2">
                 {comparison.channels.map((channel) => (
@@ -82,7 +97,11 @@ export default async function ComparePage({ searchParams }: { searchParams: Prom
           <section className="surface-border surface-card mt-10 p-5">
             <h2 className="text-lg font-semibold text-[var(--color-ink)]">{t("compare.titles")}</h2>
             <p className="mt-1 text-xs text-[var(--color-ink-muted)]">{t("compare.titlesNote")}</p>
-            <CompareTitles own={comparison.ownTitles} competitors={comparison.competitorTitles} locale={locale} />
+            <CompareTitles
+              own={comparison.ownTitles}
+              competitors={comparison.competitorTitles}
+              locale={locale}
+            />
           </section>
         </>
       )}

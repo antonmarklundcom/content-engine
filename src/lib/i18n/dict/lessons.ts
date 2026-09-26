@@ -33,7 +33,8 @@ export const en = {
   "fallback.open": "Analyse without captions",
   "fallback.estimating": "Estimating…",
   "fallback.confirm": "Confirm · ~{cost}",
-  "fallback.explain": "No transcript, so Gemini watches the video from its URL. Estimated cost ~{cost}.",
+  "fallback.explain":
+    "No transcript, so Gemini watches the video from its URL. Estimated cost ~{cost}.",
   "fallback.cancel": "Cancel",
   "fallback.running": "Analysing…",
 } as const;
@@ -71,7 +72,8 @@ export const sv: Record<keyof typeof en, string> = {
   "fallback.open": "Analysera utan undertexter",
   "fallback.estimating": "Uppskattar…",
   "fallback.confirm": "Bekräfta · ~{cost}",
-  "fallback.explain": "Ingen transkription, så Gemini tittar på videon via länken. Uppskattad kostnad ~{cost}.",
+  "fallback.explain":
+    "Ingen transkription, så Gemini tittar på videon via länken. Uppskattad kostnad ~{cost}.",
   "fallback.cancel": "Avbryt",
   "fallback.running": "Analyserar…",
 };

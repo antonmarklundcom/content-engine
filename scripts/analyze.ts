@@ -100,9 +100,7 @@ async function main(): Promise<void> {
 async function resolveOne(argv: string[]): Promise<Video[]> {
   const input = argv.find((a, i) => !a.startsWith("--") && !argv[i - 1]?.startsWith("--"));
   if (!input) {
-    console.error(
-      "Usage: npx tsx scripts/analyze.ts <youtube-url-or-id> | --pending [--limit N]",
-    );
+    console.error("Usage: npx tsx scripts/analyze.ts <youtube-url-or-id> | --pending [--limit N]");
     process.exit(2);
   }
   const youtubeId = parseVideoId(input);

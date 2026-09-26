@@ -7,7 +7,12 @@ import {
   type AudienceQuestion,
   type AudienceQuestionStatus,
 } from "@/db/schema";
-import { mergeExamples, mergeIds, normalizeQuestion, type QuestionCluster } from "@/lib/studio/question-filter";
+import {
+  mergeExamples,
+  mergeIds,
+  normalizeQuestion,
+  type QuestionCluster,
+} from "@/lib/studio/question-filter";
 
 /**
  * Audience questions mined from competitor comments (build 2b, idea 2).
@@ -16,7 +21,9 @@ import { mergeExamples, mergeIds, normalizeQuestion, type QuestionCluster } from
  */
 
 export function isAudienceQuestionStatus(value: unknown): value is AudienceQuestionStatus {
-  return typeof value === "string" && (AUDIENCE_QUESTION_STATUSES as readonly string[]).includes(value);
+  return (
+    typeof value === "string" && (AUDIENCE_QUESTION_STATUSES as readonly string[]).includes(value)
+  );
 }
 
 /** A brand's questions, most asked first; one status or all. */
@@ -36,7 +43,11 @@ export async function listAudienceQuestions(
 }
 
 export async function getAudienceQuestion(id: number): Promise<AudienceQuestion | null> {
-  const [row] = await db.select().from(audienceQuestions).where(eq(audienceQuestions.id, id)).limit(1);
+  const [row] = await db
+    .select()
+    .from(audienceQuestions)
+    .where(eq(audienceQuestions.id, id))
+    .limit(1);
   return row ?? null;
 }
 
@@ -45,7 +56,11 @@ export async function setAudienceQuestionStatus(
   status: AudienceQuestionStatus,
 ): Promise<AudienceQuestion | null> {
   if (!isAudienceQuestionStatus(status)) throw new Error(`Unknown status "${String(status)}".`);
-  const [row] = await db.update(audienceQuestions).set({ status }).where(eq(audienceQuestions.id, id)).returning();
+  const [row] = await db
+    .update(audienceQuestions)
+    .set({ status })
+    .where(eq(audienceQuestions.id, id))
+    .returning();
   return row ?? null;
 }
 
@@ -63,7 +78,10 @@ export async function upsertAudienceQuestions(
   brandId: string,
   clusters: QuestionCluster[],
 ): Promise<{ inserted: number; updated: number }> {
-  const existing = await db.select().from(audienceQuestions).where(eq(audienceQuestions.brandId, brandId));
+  const existing = await db
+    .select()
+    .from(audienceQuestions)
+    .where(eq(audienceQuestions.brandId, brandId));
   const byKey = new Map(existing.map((row) => [normalizeQuestion(row.question), row]));
   let inserted = 0;
   let updated = 0;

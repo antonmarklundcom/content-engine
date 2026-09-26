@@ -47,7 +47,9 @@ export function StudioExports({ scriptId }: { scriptId: number }) {
           </a>
         </div>
       ))}
-      {failed && <span className="text-xs text-[var(--color-danger)]">{t("studio.error.generic")}</span>}
+      {failed && (
+        <span className="text-xs text-[var(--color-danger)]">{t("studio.error.generic")}</span>
+      )}
     </div>
   );
 }

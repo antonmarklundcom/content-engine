@@ -31,14 +31,7 @@ import type {
  */
 export type UnitType = "summary" | "takeaway" | "hook" | "timeline" | "gap" | "idea";
 
-export const UNIT_TYPES: UnitType[] = [
-  "summary",
-  "takeaway",
-  "hook",
-  "timeline",
-  "gap",
-  "idea",
-];
+export const UNIT_TYPES: UnitType[] = ["summary", "takeaway", "hook", "timeline", "gap", "idea"];
 
 export function isUnitType(value: string | undefined): value is UnitType {
   return UNIT_TYPES.some((t) => t === value);

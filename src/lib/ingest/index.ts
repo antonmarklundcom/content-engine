@@ -9,11 +9,7 @@ import {
   type CaptionOutcome,
   type CaptionPipelineOptions,
 } from "./captions";
-import {
-  upsertChannelSource,
-  upsertPlaylistSource,
-  upsertVideoFromMetadata,
-} from "./store";
+import { upsertChannelSource, upsertPlaylistSource, upsertVideoFromMetadata } from "./store";
 
 export type IngestOptions = CaptionPipelineOptions & {
   /** Cap videos taken from a playlist or channel. */
@@ -60,18 +56,25 @@ export type IngestSummary = {
  * corpus still knows the videos exist and the backfill picks up exactly where
  * it stopped, rather than losing the whole listing.
  */
-export async function ingestUrl(input: string, options: IngestOptions = {}): Promise<IngestSummary> {
+export async function ingestUrl(
+  input: string,
+  options: IngestOptions = {},
+): Promise<IngestSummary> {
   const ref = parseYouTubeUrl(input);
   if (!ref) throw new Error(`Not a recognisable YouTube URL or ID: ${input}`);
   return ingestRef(ref, options);
 }
 
-export async function ingestRef(ref: YouTubeRef, options: IngestOptions = {}): Promise<IngestSummary> {
+export async function ingestRef(
+  ref: YouTubeRef,
+  options: IngestOptions = {},
+): Promise<IngestSummary> {
   const client = options.client ?? new YouTubeDataClient();
   const report = options.onProgress ?? (() => {});
 
   const resolved = await client.resolve(ref);
-  if (!resolved) throw new Error("YouTube returned no such entity (deleted, private, or wrong id).");
+  if (!resolved)
+    throw new Error("YouTube returned no such entity (deleted, private, or wrong id).");
 
   let sourceId: number | null = null;
   let videoIds: string[];

@@ -23,9 +23,13 @@ export default async function StudioPage({
   const t = translator(locale);
 
   const brands = await listBrands();
-  const brand = typeof params.brand === "string" && brands.some((b) => b.id === params.brand) ? params.brand : undefined;
+  const brand =
+    typeof params.brand === "string" && brands.some((b) => b.id === params.brand)
+      ? params.brand
+      : undefined;
   const status =
-    typeof params.status === "string" && (SCRIPT_STATUSES as readonly string[]).includes(params.status)
+    typeof params.status === "string" &&
+    (SCRIPT_STATUSES as readonly string[]).includes(params.status)
       ? (params.status as ScriptStatus)
       : undefined;
   const scripts = await listScripts({ brandId: brand, status });
@@ -45,13 +49,20 @@ export default async function StudioPage({
     <div className="mx-auto max-w-5xl px-6 py-10">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-medium tracking-widest text-[var(--color-accent)] uppercase">{t("studio.title")}</p>
+          <p className="text-xs font-medium tracking-widest text-[var(--color-accent)] uppercase">
+            {t("studio.title")}
+          </p>
           <h1 className="mt-1 text-2xl font-semibold text-[var(--color-ink)]">
             {scripts.length} {t(scripts.length === 1 ? "studio.countOne" : "studio.countMany")}
           </h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Link href="/studio/plan" className="text-sm font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-accent)]">{t("publish.link.plan")}</Link>
+          <Link
+            href="/studio/plan"
+            className="text-sm font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-accent)]"
+          >
+            {t("publish.link.plan")}
+          </Link>
           <Link
             href={brand ? `/studio/listing?brand=${encodeURIComponent(brand)}` : "/studio/listing"}
             className="surface-border rounded-[var(--radius-sm)] px-4 py-2 text-sm font-medium text-[var(--color-ink)] hover:border-[var(--color-accent)]"
@@ -68,15 +79,23 @@ export default async function StudioPage({
       </div>
 
       <nav aria-label={t("studio.filter.brand")} className="mb-3 flex flex-wrap gap-2">
-        <Link href={href({ status })} className={pill(!brand)}>{t("studio.filter.allBrands")}</Link>
+        <Link href={href({ status })} className={pill(!brand)}>
+          {t("studio.filter.allBrands")}
+        </Link>
         {brands.map((b) => (
-          <Link key={b.id} href={href({ brand: b.id, status })} className={pill(brand === b.id)}>{b.name}</Link>
+          <Link key={b.id} href={href({ brand: b.id, status })} className={pill(brand === b.id)}>
+            {b.name}
+          </Link>
         ))}
       </nav>
       <nav aria-label={t("studio.filter.status")} className="mb-6 flex flex-wrap gap-2">
-        <Link href={href({ brand })} className={pill(!status)}>{t("studio.filter.allStatuses")}</Link>
+        <Link href={href({ brand })} className={pill(!status)}>
+          {t("studio.filter.allStatuses")}
+        </Link>
         {SCRIPT_STATUSES.map((s) => (
-          <Link key={s} href={href({ brand, status: s })} className={pill(status === s)}>{t(STATUS_LABEL[s])}</Link>
+          <Link key={s} href={href({ brand, status: s })} className={pill(status === s)}>
+            {t(STATUS_LABEL[s])}
+          </Link>
         ))}
       </nav>
 
@@ -85,7 +104,9 @@ export default async function StudioPage({
           <h2 className="text-lg font-medium text-[var(--color-ink)]">
             {t(brand || status ? "studio.noMatch.title" : "studio.empty.title")}
           </h2>
-          <p className="max-w-md text-sm leading-relaxed text-[var(--color-ink-muted)]">{t("studio.empty.body")}</p>
+          <p className="max-w-md text-sm leading-relaxed text-[var(--color-ink-muted)]">
+            {t("studio.empty.body")}
+          </p>
         </div>
       ) : (
         <ul className="flex flex-col gap-3">
@@ -99,7 +120,9 @@ export default async function StudioPage({
                   {s.title}
                 </Link>
                 <span className="text-xs text-[var(--color-ink-muted)]">
-                  <span className="font-medium text-[var(--color-ink)]">{t(STATUS_LABEL[s.status])}</span>
+                  <span className="font-medium text-[var(--color-ink)]">
+                    {t(STATUS_LABEL[s.status])}
+                  </span>
                   {" · "}
                   {brandName.get(s.brandId) ?? s.brandId}
                   {" · "}

@@ -22,23 +22,27 @@ export const en = {
   "studio.status.posted": "Posted",
   "studio.empty.title": "No scripts yet",
   "studio.noMatch.title": "No scripts match",
-  "studio.empty.body": "Start one with “New script”, or pick a competitor video on Research and use it as a reference.",
+  "studio.empty.body":
+    "Start one with “New script”, or pick a competitor video on Research and use it as a reference.",
 
   "studio.brief.title": "New script",
   "studio.brief.noBrands": "There are no brands yet. Add one to the brands table first.",
-  "studio.brief.ownerOnly": "Suggesting titles and writing a script spend money, so only the owner can run them.",
+  "studio.brief.ownerOnly":
+    "Suggesting titles and writing a script spend money, so only the owner can run them.",
   "studio.brief.brand": "Brand",
   "studio.brief.language": "Language",
   "studio.brief.minutes": "Length (min)",
   "studio.brief.topic": "Topic",
   "studio.brief.topicPlaceholder": "What is the video about, in one or two sentences?",
   "studio.brief.references": "Reference videos ({n} chosen)",
-  "studio.brief.referencesHelp": "Analysed competitor videos. Only their structure is used — hook technique, beat order, gaps — never their wording.",
+  "studio.brief.referencesHelp":
+    "Analysed competitor videos. Only their structure is used — hook technique, beat order, gaps — never their wording.",
   "studio.brief.noVideos": "No analysed videos yet. Analyse a competitor video first.",
   "studio.brief.refNotAnalysed": "“{title}” has no analysis yet, so it cannot be a reference.",
   "studio.brief.openVideo": "Open the video to analyse it",
   "studio.brief.lessons": "Lessons ({n} chosen)",
-  "studio.brief.lessonsHelp": "Hooks, facts and patterns to use. With none chosen, titles use the brand's saved hooks and title patterns.",
+  "studio.brief.lessonsHelp":
+    "Hooks, facts and patterns to use. With none chosen, titles use the brand's saved hooks and title patterns.",
   "studio.brief.noLessons": "No saved lessons for this brand yet.",
   "studio.brief.shared": "all brands",
   "studio.brief.suggest": "Suggest titles",
@@ -60,7 +64,8 @@ export const en = {
   "studio.editor.unsaved": "Unsaved changes.",
   "studio.editor.savedCopyNote": "Exports and the teleprompter use the saved version.",
   "studio.editor.invalid": "Not saved — {n} problem(s) to fix",
-  "studio.editor.unreadable": "This script's stored body does not match the current contract, so it cannot be edited here.",
+  "studio.editor.unreadable":
+    "This script's stored body does not match the current contract, so it cannot be edited here.",
   "studio.editor.basics": "Basics",
   "studio.editor.chosenTitle": "Title",
   "studio.editor.topic": "Topic",
@@ -103,7 +108,8 @@ export const en = {
   "studio.export.copy": "Copy",
   "studio.export.copied": "Copied",
   "studio.export.download": "Download",
-  "studio.export.higgsfield": "Paste the shot list into Claude Code and run /higgsfield-shots to generate the b-roll (docs/HIGGSFIELD.md).",
+  "studio.export.higgsfield":
+    "Paste the shot list into Claude Code and run /higgsfield-shots to generate the b-roll (docs/HIGGSFIELD.md).",
 
   "studio.teleprompter.open": "Open teleprompter",
   "studio.teleprompter.exit": "Back",
@@ -137,23 +143,28 @@ export const sv: Record<keyof typeof en, string> = {
   "studio.status.posted": "Publicerat",
   "studio.empty.title": "Inga manus än",
   "studio.noMatch.title": "Inga manus matchar",
-  "studio.empty.body": "Börja med ”Nytt manus”, eller välj en konkurrentvideo under Research och använd den som referens.",
+  "studio.empty.body":
+    "Börja med ”Nytt manus”, eller välj en konkurrentvideo under Research och använd den som referens.",
 
   "studio.brief.title": "Nytt manus",
   "studio.brief.noBrands": "Det finns inga varumärken än. Lägg till ett i brands-tabellen först.",
-  "studio.brief.ownerOnly": "Titelförslag och manusskrivning kostar pengar, så bara ägaren kan köra dem.",
+  "studio.brief.ownerOnly":
+    "Titelförslag och manusskrivning kostar pengar, så bara ägaren kan köra dem.",
   "studio.brief.brand": "Varumärke",
   "studio.brief.language": "Språk",
   "studio.brief.minutes": "Längd (min)",
   "studio.brief.topic": "Ämne",
   "studio.brief.topicPlaceholder": "Vad handlar videon om, i en eller två meningar?",
   "studio.brief.references": "Referensvideor ({n} valda)",
-  "studio.brief.referencesHelp": "Analyserade konkurrentvideor. Bara strukturen används — hook-teknik, ordning, luckor — aldrig deras formuleringar.",
+  "studio.brief.referencesHelp":
+    "Analyserade konkurrentvideor. Bara strukturen används — hook-teknik, ordning, luckor — aldrig deras formuleringar.",
   "studio.brief.noVideos": "Inga analyserade videor än. Analysera en konkurrentvideo först.",
-  "studio.brief.refNotAnalysed": "”{title}” är inte analyserad än och kan därför inte vara referens.",
+  "studio.brief.refNotAnalysed":
+    "”{title}” är inte analyserad än och kan därför inte vara referens.",
   "studio.brief.openVideo": "Öppna videon för att analysera den",
   "studio.brief.lessons": "Lärdomar ({n} valda)",
-  "studio.brief.lessonsHelp": "Hooks, fakta och mönster att använda. Utan val används varumärkets sparade hooks och titelmönster för titlarna.",
+  "studio.brief.lessonsHelp":
+    "Hooks, fakta och mönster att använda. Utan val används varumärkets sparade hooks och titelmönster för titlarna.",
   "studio.brief.noLessons": "Inga sparade lärdomar för det här varumärket än.",
   "studio.brief.shared": "alla varumärken",
   "studio.brief.suggest": "Föreslå titlar",
@@ -175,7 +186,8 @@ export const sv: Record<keyof typeof en, string> = {
   "studio.editor.unsaved": "Osparade ändringar.",
   "studio.editor.savedCopyNote": "Exporter och teleprompter använder den sparade versionen.",
   "studio.editor.invalid": "Inte sparat — {n} problem att rätta",
-  "studio.editor.unreadable": "Det lagrade manuset följer inte det aktuella kontraktet och kan inte redigeras här.",
+  "studio.editor.unreadable":
+    "Det lagrade manuset följer inte det aktuella kontraktet och kan inte redigeras här.",
   "studio.editor.basics": "Grunder",
   "studio.editor.chosenTitle": "Titel",
   "studio.editor.topic": "Ämne",
@@ -218,7 +230,8 @@ export const sv: Record<keyof typeof en, string> = {
   "studio.export.copy": "Kopiera",
   "studio.export.copied": "Kopierat",
   "studio.export.download": "Ladda ner",
-  "studio.export.higgsfield": "Klistra in klipplistan i Claude Code och kör /higgsfield-shots för att skapa b-roll (docs/HIGGSFIELD.md).",
+  "studio.export.higgsfield":
+    "Klistra in klipplistan i Claude Code och kör /higgsfield-shots för att skapa b-roll (docs/HIGGSFIELD.md).",
 
   "studio.teleprompter.open": "Öppna teleprompter",
   "studio.teleprompter.exit": "Tillbaka",

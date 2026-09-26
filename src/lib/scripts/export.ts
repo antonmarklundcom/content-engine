@@ -66,7 +66,13 @@ export function teleprompterMarkdown(script: ExportableScript): string {
     const mark = s.verifyBeforeRecording ? " — ⚠ verify before recording" : "";
     out.push(`- **${s.id}** ${s.claim} — [${s.title || s.url}](${s.url})${mark}`);
   }
-  out.push("", "## Title options", "", ...b.titleOptions.map((t) => `- **${t.title}** — ${t.angle}`), "");
+  out.push(
+    "",
+    "## Title options",
+    "",
+    ...b.titleOptions.map((t) => `- **${t.title}** — ${t.angle}`),
+    "",
+  );
   out.push(
     "## Thumbnail concepts",
     "",
@@ -186,7 +192,10 @@ export function shotListMarkdown(list: ShotList): string {
     out.push(`- **Aspect ratio:** ${s.aspectRatio}`);
     out.push(`- **Image prompt:** ${s.imagePrompt}`);
     if (s.videoPrompt) out.push(`- **Video prompt:** ${s.videoPrompt}`);
-    out.push(`- **Files:** \`${s.files.image}\`${s.files.video ? `, \`${s.files.video}\`` : ""}`, "");
+    out.push(
+      `- **Files:** \`${s.files.image}\`${s.files.video ? `, \`${s.files.video}\`` : ""}`,
+      "",
+    );
   }
   if (list.thumbnails.length) {
     out.push("## Thumbnails", "");

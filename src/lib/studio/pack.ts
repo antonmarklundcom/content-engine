@@ -20,7 +20,9 @@ const PACK_THINKING_TOKENS = 2_000;
 /** The script's spoken text (~3k words for 20 minutes) plus brand and instructions. */
 const PACK_PROMPT_OVERHEAD_TOKENS = 6_000;
 
-export function estimatePackCostUsd(model: string = process.env.GEMINI_MODEL ?? "gemini-3.7-flash"): number {
+export function estimatePackCostUsd(
+  model: string = process.env.GEMINI_MODEL ?? "gemini-3.7-flash",
+): number {
   return costUsdAtRates(ideationRates(model), {
     inputTokens: PACK_PROMPT_OVERHEAD_TOKENS,
     outputTokens: PACK_MAX_OUTPUT_TOKENS + PACK_THINKING_TOKENS,
@@ -56,7 +58,9 @@ export function chaptersFromBody(
   options: { wpm?: number; introTitle?: string } = {},
 ): PublishPack["chapters"] {
   const wpm = options.wpm ?? PLAN_WORDS_PER_MINUTE;
-  const chapters: PublishPack["chapters"] = [{ time: "0:00", title: options.introTitle ?? "Intro" }];
+  const chapters: PublishPack["chapters"] = [
+    { time: "0:00", title: options.introTitle ?? "Intro" },
+  ];
   let words = linesWords(body.hook.spokenLines);
   for (const section of body.sections) {
     chapters.push({ time: formatTimestamp((words / wpm) * 60), title: section.heading });
@@ -65,7 +69,11 @@ export function chaptersFromBody(
   return chapters;
 }
 
-const INTRO_TITLE: Record<string, string> = { en: "Intro", "es-PY": "Introducción", jopara: "Introducción" };
+const INTRO_TITLE: Record<string, string> = {
+  en: "Intro",
+  "es-PY": "Introducción",
+  jopara: "Introducción",
+};
 
 // ---------------------------------------------------------------------------
 // the model's part
@@ -88,11 +96,21 @@ export const PACK_JSON_SCHEMA = {
     },
     pinnedComment: {
       type: "string",
-      description: "A comment the creator pins: a question that invites replies, or the one key link/next step.",
+      description:
+        "A comment the creator pins: a question that invites replies, or the one key link/next step.",
     },
-    instagram: { type: "string", description: "Instagram caption: hook line, 2-3 short lines, 3-5 hashtags at the end." },
-    facebook: { type: "string", description: "Facebook post: 2-4 conversational sentences, no hashtag wall." },
-    tiktok: { type: "string", description: "TikTok caption: one punchy line plus 3-5 hashtags, under 150 characters." },
+    instagram: {
+      type: "string",
+      description: "Instagram caption: hook line, 2-3 short lines, 3-5 hashtags at the end.",
+    },
+    facebook: {
+      type: "string",
+      description: "Facebook post: 2-4 conversational sentences, no hashtag wall.",
+    },
+    tiktok: {
+      type: "string",
+      description: "TikTok caption: one punchy line plus 3-5 hashtags, under 150 characters.",
+    },
   },
   required: ["description", "tags", "pinnedComment", "instagram", "facebook", "tiktok"],
 } as const;
@@ -152,11 +170,17 @@ export function cleanTags(tags: unknown): string[] {
  * script — from the script, never the model. Chapters are kept apart (they are
  * edited on their own) and joined on by `youtubeDescription` when copied.
  */
-export function composeDescription(text: string, sources: ScriptBodyV1["sources"], language: string): string {
+export function composeDescription(
+  text: string,
+  sources: ScriptBodyV1["sources"],
+  language: string,
+): string {
   const parts = [text.trim()];
   if (sources.length) {
     const heading = language === "en" ? "Sources" : "Fuentes";
-    parts.push(`${heading}:\n${sources.map((s) => `- ${s.title || s.claim}: ${s.url}`).join("\n")}`);
+    parts.push(
+      `${heading}:\n${sources.map((s) => `- ${s.title || s.claim}: ${s.url}`).join("\n")}`,
+    );
   }
   return parts.filter(Boolean).join("\n\n");
 }
@@ -168,7 +192,11 @@ export function youtubeDescription(pack: Pick<PublishPack, "description" | "chap
 }
 
 /** The model's answer + the script → a pack. Throws if a required part came back empty. */
-export function assemblePack(raw: RawPack, body: ScriptBodyV1, now: Date = new Date()): PublishPack {
+export function assemblePack(
+  raw: RawPack,
+  body: ScriptBodyV1,
+  now: Date = new Date(),
+): PublishPack {
   const chapters = chaptersFromBody(body, { introTitle: INTRO_TITLE[body.language] });
   const text = str(raw.description);
   const tags = cleanTags(raw.tags);
@@ -177,7 +205,11 @@ export function assemblePack(raw: RawPack, body: ScriptBodyV1, now: Date = new D
     chapters,
     tags,
     pinnedComment: str(raw.pinnedComment),
-    captions: { instagram: str(raw.instagram), facebook: str(raw.facebook), tiktok: str(raw.tiktok) },
+    captions: {
+      instagram: str(raw.instagram),
+      facebook: str(raw.facebook),
+      tiktok: str(raw.tiktok),
+    },
     generatedAt: now.toISOString(),
   };
   const missing = [
@@ -188,7 +220,8 @@ export function assemblePack(raw: RawPack, body: ScriptBodyV1, now: Date = new D
     !pack.captions.facebook && "Facebook caption",
     !pack.captions.tiktok && "TikTok caption",
   ].filter(Boolean);
-  if (missing.length) throw new PackGenerationError(`The model left out: ${missing.join(", ")}. Try again.`);
+  if (missing.length)
+    throw new PackGenerationError(`The model left out: ${missing.join(", ")}. Try again.`);
   return pack;
 }
 
@@ -217,7 +250,9 @@ Write ${PACK_TAGS_MIN}-${PACK_TAGS_MAX} tags. The description's last line is a c
 }
 
 /** Ask the model (Gemini under the spend cap, or the local CLI — §1.38) for a pack. */
-export async function generatePublishPack(input: PackInput): Promise<{ pack: PublishPack; costUsd: number }> {
+export async function generatePublishPack(
+  input: PackInput,
+): Promise<{ pack: PublishPack; costUsd: number }> {
   const { system, prompt } = packPrompt(input);
   const { text, costUsd, finishReason } = await structuredJson({
     system,
@@ -232,9 +267,12 @@ export async function generatePublishPack(input: PackInput): Promise<{ pack: Pub
   try {
     raw = JSON.parse(text) as RawPack;
   } catch {
-    throw new PackGenerationError(`The model didn't return a parseable pack (finish reason: ${finishReason ?? "unknown"}). Try again.`);
+    throw new PackGenerationError(
+      `The model didn't return a parseable pack (finish reason: ${finishReason ?? "unknown"}). Try again.`,
+    );
   }
-  if (typeof raw !== "object" || raw === null) throw new PackGenerationError("The model returned no pack. Try again.");
+  if (typeof raw !== "object" || raw === null)
+    throw new PackGenerationError("The model returned no pack. Try again.");
   return { pack: assemblePack(raw, input.body), costUsd };
 }
 
@@ -249,17 +287,21 @@ const TIME = /^(\d+:)?\d{1,2}:\d{2}$/;
  * public endpoint, so the shape is checked here, field by field; errors are
  * plain sentences the page shows.
  */
-export function validatePublishPack(value: unknown): { ok: true; pack: PublishPack } | { ok: false; errors: string[] } {
+export function validatePublishPack(
+  value: unknown,
+): { ok: true; pack: PublishPack } | { ok: false; errors: string[] } {
   const errors: string[] = [];
   const v = value as Partial<PublishPack> | null;
-  if (typeof v !== "object" || v === null) return { ok: false, errors: ["The pack must be an object."] };
+  if (typeof v !== "object" || v === null)
+    return { ok: false, errors: ["The pack must be an object."] };
   const text = (x: unknown, name: string) => {
     if (typeof x !== "string") errors.push(`${name} must be text.`);
   };
   text(v.description, "description");
   text(v.pinnedComment, "pinnedComment");
   text(v.generatedAt, "generatedAt");
-  if (!Array.isArray(v.tags) || v.tags.some((t) => typeof t !== "string")) errors.push("tags must be a list of text.");
+  if (!Array.isArray(v.tags) || v.tags.some((t) => typeof t !== "string"))
+    errors.push("tags must be a list of text.");
   else if (v.tags.length > PACK_TAGS_MAX) errors.push(`tags: at most ${PACK_TAGS_MAX}.`);
   const c = v.captions as Partial<PublishPack["captions"]> | undefined;
   if (typeof c !== "object" || c === null) errors.push("captions must be an object.");
@@ -271,16 +313,24 @@ export function validatePublishPack(value: unknown): { ok: true; pack: PublishPa
   if (!Array.isArray(v.chapters)) errors.push("chapters must be a list.");
   else
     v.chapters.forEach((ch, i) => {
-      if (typeof ch !== "object" || ch === null || typeof ch.time !== "string" || typeof ch.title !== "string") {
+      if (
+        typeof ch !== "object" ||
+        ch === null ||
+        typeof ch.time !== "string" ||
+        typeof ch.title !== "string"
+      ) {
         errors.push(`chapters[${i}] must have a time and a title.`);
-      } else if (!TIME.test(ch.time.trim())) errors.push(`chapters[${i}].time "${ch.time}" is not like 0:00 or 1:02:03.`);
+      } else if (!TIME.test(ch.time.trim()))
+        errors.push(`chapters[${i}].time "${ch.time}" is not like 0:00 or 1:02:03.`);
     });
   if (errors.length) return { ok: false, errors };
   return {
     ok: true,
     pack: {
       description: v.description!,
-      chapters: v.chapters!.map((ch) => ({ time: ch.time.trim(), title: ch.title.trim() })).filter((ch) => ch.title),
+      chapters: v
+        .chapters!.map((ch) => ({ time: ch.time.trim(), title: ch.title.trim() }))
+        .filter((ch) => ch.title),
       tags: cleanTags(v.tags),
       pinnedComment: v.pinnedComment!,
       captions: { instagram: c!.instagram!, facebook: c!.facebook!, tiktok: c!.tiktok! },
@@ -306,7 +356,8 @@ export function normalizeYoutubeUrl(input: string): string | null {
   if (host === "youtube.com") {
     const id = url.searchParams.get("v");
     if (url.pathname === "/watch" && id) return `https://www.youtube.com/watch?v=${id}`;
-    if (/^\/(shorts|live)\/[\w-]+/.test(url.pathname)) return `https://www.youtube.com${url.pathname}`;
+    if (/^\/(shorts|live)\/[\w-]+/.test(url.pathname))
+      return `https://www.youtube.com${url.pathname}`;
   }
   return null;
 }

@@ -17,8 +17,7 @@ import { secretsMatch } from "@/lib/cron-auth";
 export const CLIP_TOKEN_ENV = "CLIP_TOKEN";
 
 export type ClipAuthResult =
-  | { ok: true; via: "token" }
-  | { ok: false; status: 401 | 503; error: string };
+  { ok: true; via: "token" } | { ok: false; status: 401 | 503; error: string };
 
 /** The Bearer token presented, if any. */
 export function presentedClipToken(headers: Headers): string | null {

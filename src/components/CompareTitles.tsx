@@ -14,7 +14,9 @@ export function CompareTitles({
   const t = translator(locale);
   const column = (heading: string, videos: CompareVideo[], showChannel: boolean) => (
     <div className="min-w-0">
-      <h3 className="text-xs font-medium tracking-wide text-[var(--color-ink-muted)] uppercase">{heading}</h3>
+      <h3 className="text-xs font-medium tracking-wide text-[var(--color-ink-muted)] uppercase">
+        {heading}
+      </h3>
       {videos.length === 0 ? (
         <p className="mt-2 text-xs text-[var(--color-ink-muted)]">{t("compare.titlesEmpty")}</p>
       ) : (

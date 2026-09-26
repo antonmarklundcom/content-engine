@@ -29,11 +29,20 @@ export default async function QuestionsPage({
 }: {
   searchParams: Promise<{ brand?: string; status?: string }>;
 }) {
-  const [params, brands, locale, user] = await Promise.all([searchParams, listBrands(), getLocale(), requireUser()]);
+  const [params, brands, locale, user] = await Promise.all([
+    searchParams,
+    listBrands(),
+    getLocale(),
+    requireUser(),
+  ]);
   const t = translator(locale);
   const brand = brands.find((b) => b.id === params.brand) ?? brands[0];
   const status: AudienceQuestionStatus | "all" =
-    params.status === "all" ? "all" : isAudienceQuestionStatus(params.status) ? params.status : "new";
+    params.status === "all"
+      ? "all"
+      : isAudienceQuestionStatus(params.status)
+        ? params.status
+        : "new";
   const questions = brand
     ? await listAudienceQuestions(brand.id, status === "all" ? {} : { status })
     : [];
@@ -41,9 +50,15 @@ export default async function QuestionsPage({
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
-      <p className="text-xs font-medium tracking-widest text-[var(--color-accent)] uppercase">{t("questions.eyebrow")}</p>
-      <h1 className="mt-1 text-2xl font-semibold text-[var(--color-ink)]">{t("questions.title")}</h1>
-      <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">{t("questions.intro")}</p>
+      <p className="text-xs font-medium tracking-widest text-[var(--color-accent)] uppercase">
+        {t("questions.eyebrow")}
+      </p>
+      <h1 className="mt-1 text-2xl font-semibold text-[var(--color-ink)]">
+        {t("questions.title")}
+      </h1>
+      <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+        {t("questions.intro")}
+      </p>
 
       {!brand ? (
         <p className="mt-8 text-sm text-[var(--color-ink-muted)]">{t("report.noBrands")}</p>
@@ -75,7 +90,10 @@ export default async function QuestionsPage({
                   {s === "all" ? t("questions.all") : t(`questions.status.${s}`)}
                 </a>
               ))}
-              <Link href={`/research/report?${new URLSearchParams({ brand: brand.id })}`} className="ml-2 underline hover:text-[var(--color-accent)]">
+              <Link
+                href={`/research/report?${new URLSearchParams({ brand: brand.id })}`}
+                className="ml-2 underline hover:text-[var(--color-accent)]"
+              >
                 {t("questions.toReport")}
               </Link>
             </div>

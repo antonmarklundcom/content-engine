@@ -39,7 +39,12 @@ export async function lessonsForPrompt(
   return db
     .select(select)
     .from(lessons)
-    .where(and(or(eq(lessons.brandId, brandId), isNull(lessons.brandId)), inArray(lessons.kind, options.kinds)))
+    .where(
+      and(
+        or(eq(lessons.brandId, brandId), isNull(lessons.brandId)),
+        inArray(lessons.kind, options.kinds),
+      ),
+    )
     .orderBy(desc(lessons.createdAt), desc(lessons.id))
     .limit(MAX_PROMPT_LESSONS);
 }

@@ -134,7 +134,11 @@ export function PromoteButton({
       </label>
       <label className="flex flex-col gap-1">
         <span className="text-[var(--color-ink-muted)]">{t("promote.format")}</span>
-        <select className={FIELD} value={format} onChange={(e) => setFormat(e.target.value as Format)}>
+        <select
+          className={FIELD}
+          value={format}
+          onChange={(e) => setFormat(e.target.value as Format)}
+        >
           {FORMATS.map((f) => (
             <option key={f} value={f}>
               {t(FORMAT_KEY[f])}
@@ -151,7 +155,11 @@ export function PromoteButton({
           list="promote-platform-options"
         />
         <datalist id="promote-platform-options">
-          {brands.find((b) => b.id === brandId)?.platforms.map((p) => <option key={p} value={p} />)}
+          {brands
+            .find((b) => b.id === brandId)
+            ?.platforms.map((p) => (
+              <option key={p} value={p} />
+            ))}
         </datalist>
       </label>
       {canAdapt && (

@@ -62,7 +62,10 @@ export async function Header() {
     <header className="surface-border sticky top-0 z-10 border-x-0 border-t-0 bg-[var(--color-surface)]/95 backdrop-blur">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-6 py-4">
         <div className="flex items-center gap-8">
-          <Link href="/" className="whitespace-nowrap text-sm font-semibold tracking-tight text-[var(--color-ink)]">
+          <Link
+            href="/"
+            className="whitespace-nowrap text-sm font-semibold tracking-tight text-[var(--color-ink)]"
+          >
             {t("app.name")}
           </Link>
           <nav className="flex flex-wrap items-center gap-x-5 gap-y-2">
@@ -70,7 +73,11 @@ export async function Header() {
               nav.map((item) =>
                 "items" in item ? (
                   <div key={item.label} className="group relative">
-                    <button type="button" aria-haspopup="true" className={`${LINK} flex items-center gap-1`}>
+                    <button
+                      type="button"
+                      aria-haspopup="true"
+                      className={`${LINK} flex items-center gap-1`}
+                    >
                       {item.label}
                       <span aria-hidden className="text-[10px]">
                         ▾
@@ -80,7 +87,10 @@ export async function Header() {
                       <ul className="surface-border flex min-w-40 flex-col gap-1 rounded-[var(--radius-md)] bg-[var(--color-surface)] p-2 shadow-lg">
                         {item.items.map((sub) => (
                           <li key={sub.href}>
-                            <Link href={sub.href} className={`${LINK} block rounded-[var(--radius-sm)] px-2 py-1`}>
+                            <Link
+                              href={sub.href}
+                              className={`${LINK} block rounded-[var(--radius-sm)] px-2 py-1`}
+                            >
                               {sub.label}
                             </Link>
                           </li>

@@ -106,7 +106,11 @@ export function SaveLessonButton({
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1 text-xs text-[var(--color-ink-muted)]">
           {t("lessons.filter.kind")}
-          <select value={kind} onChange={(e) => setKind(e.target.value as LessonKind)} className={FIELD}>
+          <select
+            value={kind}
+            onChange={(e) => setKind(e.target.value as LessonKind)}
+            className={FIELD}
+          >
             {LESSON_KINDS.map((k) => (
               <option key={k} value={k}>
                 {t(`lessons.kind.${k}` as TranslationKey)}
@@ -119,7 +123,9 @@ export function SaveLessonButton({
           <select value={brandId} onChange={(e) => setBrandId(e.target.value)} className={FIELD}>
             <option value="">{t("lessons.filter.noBrand")}</option>
             {/* The default brand shows before the list arrives, so the select never drops it. */}
-            {brandId && !brands?.some((b) => b.id === brandId) && <option value={brandId}>{brandId}</option>}
+            {brandId && !brands?.some((b) => b.id === brandId) && (
+              <option value={brandId}>{brandId}</option>
+            )}
             {brands?.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}

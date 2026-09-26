@@ -59,7 +59,8 @@ export const sv: Record<keyof typeof en, string> = {
   "research.intro":
     "Kanaler varje varumärke studerar, och videorna som slår kanalens egen medianvisning.",
   "research.brand": "Varumärke",
-  "research.noBrands": "Inga aktiva varumärken än. Lägg till ett i brands-tabellen och kom tillbaka.",
+  "research.noBrands":
+    "Inga aktiva varumärken än. Lägg till ett i brands-tabellen och kom tillbaka.",
 
   "research.channels": "Kanaler",
   "research.addPlaceholder": "Klistra in en konkurrents kanal-URL",
@@ -100,7 +101,8 @@ export const sv: Record<keyof typeof en, string> = {
 
   "research.error.brand": "Varumärket finns inte.",
   "research.error.url": "Klistra in en kanal-URL, t.ex. https://www.youtube.com/@namn.",
-  "research.error.notChannel": "Det är en video eller spellista. Klistra in kanalens URL i stället.",
+  "research.error.notChannel":
+    "Det är en video eller spellista. Klistra in kanalens URL i stället.",
   "research.error.notFound": "YouTube hittade ingen sådan kanal.",
   "research.error.role": "Okänd roll.",
   "research.error.failed": "Kunde inte lägga till kanalen.",

@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { after, afterEach, before, beforeEach, test } from "node:test";
 
-import { FinishReason, GenerateContentResponse, type GenerateContentParameters } from "@google/genai";
+import {
+  FinishReason,
+  GenerateContentResponse,
+  type GenerateContentParameters,
+} from "@google/genai";
 import { sql } from "drizzle-orm";
 import { workAsyncStorage } from "next/dist/server/app-render/work-async-storage.external.js";
 
@@ -34,7 +38,12 @@ import { resetTables, teardown } from "./setup";
  */
 
 const BRAND = "pozo";
-const USAGE = { promptTokenCount: 5_200, candidatesTokenCount: 900, thoughtsTokenCount: 400, totalTokenCount: 6_500 };
+const USAGE = {
+  promptTokenCount: 5_200,
+  candidatesTokenCount: 900,
+  thoughtsTokenCount: 400,
+  totalTokenCount: 6_500,
+};
 
 type Generate = (params: GenerateContentParameters) => Promise<GenerateContentResponse>;
 const fake = fakeGeminiClient();
@@ -62,7 +71,11 @@ before(() => {
     validate(payload, schema);
     return Object.assign(new GenerateContentResponse(), {
       candidates: [
-        { content: { role: "model", parts: [{ text: JSON.stringify(payload) }] }, finishReason: FinishReason.STOP, index: 0 },
+        {
+          content: { role: "model", parts: [{ text: JSON.stringify(payload) }] },
+          finishReason: FinishReason.STOP,
+          index: 0,
+        },
       ],
       usageMetadata: USAGE,
     });
@@ -81,8 +94,22 @@ beforeEach(async () => {
   commentCalls = 0;
   process.env.YOUTUBE_API_KEY ??= "test-key";
   await db.insert(schema.brands).values([
-    { id: BRAND, name: "Pozo", domain: "pozo.example", niche: "well drilling", market: "paraguay", platforms: ["youtube"] },
-    { id: "quiet", name: "Quiet", domain: "quiet.example", niche: "nothing", market: "paraguay", platforms: ["youtube"] },
+    {
+      id: BRAND,
+      name: "Pozo",
+      domain: "pozo.example",
+      niche: "well drilling",
+      market: "paraguay",
+      platforms: ["youtube"],
+    },
+    {
+      id: "quiet",
+      name: "Quiet",
+      domain: "quiet.example",
+      niche: "nothing",
+      market: "paraguay",
+      platforms: ["youtube"],
+    },
   ]);
   globalThis.fetch = (async (input: string | URL | Request) => {
     const url = new URL(input instanceof Request ? input.url : String(input));
@@ -107,7 +134,12 @@ async function channel(title: string): Promise<number> {
   seq += 1;
   const [row] = await db
     .insert(schema.sources)
-    .values({ kind: "channel", youtubeId: `UC${seq}`, title, url: `https://www.youtube.com/channel/UC${seq}` })
+    .values({
+      kind: "channel",
+      youtubeId: `UC${seq}`,
+      title,
+      url: `https://www.youtube.com/channel/UC${seq}`,
+    })
     .returning({ id: schema.sources.id });
   return row.id;
 }
@@ -176,7 +208,11 @@ test("a report is built from the window's outliers, validated, and saved with it
     patterns: ["A question as the title"],
     ideas: [
       { title: "How deep should a well be?", angle: "A copy.", basedOnVideoIds: [hit.id] },
-      { title: "Well depth in the Chaco, by district", angle: "Local numbers they skipped.", basedOnVideoIds: [hit.id, flop.id] },
+      {
+        title: "Well depth in the Chaco, by district",
+        angle: "Local numbers they skipped.",
+        basedOnVideoIds: [hit.id, flop.id],
+      },
     ],
   });
 
@@ -189,18 +225,38 @@ test("a report is built from the window's outliers, validated, and saved with it
   const prompt = prompts[0];
   assert.match(prompt, new RegExp(`id ${hit.id}: "How deep should a well be\\?"`));
   assert.match(prompt, /Explains depth by soil type\./, "the analysis summary reaches the model");
-  assert.doesNotMatch(prompt, /Our new truck/, "a video under its channel's median is not an outlier");
+  assert.doesNotMatch(
+    prompt,
+    /Our new truck/,
+    "a video under its channel's median is not an outlier",
+  );
   assert.doesNotMatch(prompt, /Old video/, "older than the window");
 
-  assert.deepEqual(report.body.winners.map((w) => w.videoId), [hit.id], "unknown ids dropped");
+  assert.deepEqual(
+    report.body.winners.map((w) => w.videoId),
+    [hit.id],
+    "unknown ids dropped",
+  );
   assert.equal(report.body.winners[0].outlierScore, 9, "score from our data: 9,000 ÷ median 1,000");
-  assert.deepEqual(report.body.ideas.map((i) => i.title), ["Well depth in the Chaco, by district"], "the copy is dropped");
-  assert.deepEqual(report.body.ideas[0].basedOnVideoIds, [hit.id], "the sub-median flop was not in the input");
+  assert.deepEqual(
+    report.body.ideas.map((i) => i.title),
+    ["Well depth in the Chaco, by district"],
+    "the copy is dropped",
+  );
+  assert.deepEqual(
+    report.body.ideas[0].basedOnVideoIds,
+    [hit.id],
+    "the sub-median flop was not in the input",
+  );
 
   const [stored] = await listCompetitorReports(BRAND);
   assert.equal(stored.id, report.id);
   const [spend] = await db.select().from(schema.spendLog);
-  assert.equal(Number(spend.costUsd).toFixed(6), report.costUsd.toFixed(6), "the row's cost is what was billed");
+  assert.equal(
+    Number(spend.costUsd).toFixed(6),
+    report.costUsd.toFixed(6),
+    "the row's cost is what was billed",
+  );
 });
 
 test("nothing above the median in the window: no model call, nothing saved", async () => {
@@ -232,7 +288,12 @@ test("Generate now is owner-only and returns the refusal as text", async () => {
   assert.equal(quiet.ok, false);
   assert.match(!quiet.ok ? quiet.error : "", /No new outliers/);
 
-  answer = () => ({ summary: "s", winners: [], patterns: [], ideas: [{ title: "Mine", angle: "a", basedOnVideoIds: [] }] });
+  answer = () => ({
+    summary: "s",
+    winners: [],
+    patterns: [],
+    ideas: [{ title: "Mine", angle: "a", basedOnVideoIds: [] }],
+  });
   const made = await as("owner", () => generateReportAction(BRAND));
   assert.ok(made.ok);
   assert.ok(revalidated);
@@ -247,14 +308,21 @@ function comments(...texts: string[]) {
   return Response.json({
     items: texts.map((text, i) => ({
       id: `c${i}`,
-      snippet: { totalReplyCount: 0, topLevelComment: { id: `c${i}`, snippet: { textDisplay: text, likeCount: i } } },
+      snippet: {
+        totalReplyCount: 0,
+        topLevelComment: { id: `c${i}`, snippet: { textDisplay: text, likeCount: i } },
+      },
     })),
   });
 }
 
 test("mining: only question-like comments reach the model; clusters upsert and merge", async () => {
   const { hit, flop } = await seedCompetitor();
-  commentPages[hit.youtubeId] = comments("How deep for a house in Luque?", "Great video!!", "¿Cuánto cuesta perforar?");
+  commentPages[hit.youtubeId] = comments(
+    "How deep for a house in Luque?",
+    "Great video!!",
+    "¿Cuánto cuesta perforar?",
+  );
   commentPages[flop.youtubeId] = new Response(
     JSON.stringify({ error: { code: 403, errors: [{ reason: "commentsDisabled" }] } }),
     { status: 403 },
@@ -262,8 +330,18 @@ test("mining: only question-like comments reach the model; clusters upsert and m
 
   answer = () => ({
     questions: [
-      { question: "How deep should a well be for a house?", askCount: 1, examples: ["How deep for a house in Luque?"], videoIds: [hit.id, 424242] },
-      { question: "¿Cuánto cuesta perforar un pozo?", askCount: 1, examples: ["¿Cuánto cuesta perforar?"], videoIds: [hit.id] },
+      {
+        question: "How deep should a well be for a house?",
+        askCount: 1,
+        examples: ["How deep for a house in Luque?"],
+        videoIds: [hit.id, 424242],
+      },
+      {
+        question: "¿Cuánto cuesta perforar un pozo?",
+        askCount: 1,
+        examples: ["¿Cuánto cuesta perforar?"],
+        videoIds: [hit.id],
+      },
     ],
   });
   const first = await mineQuestions(BRAND, { videos: 10 });
@@ -282,7 +360,12 @@ test("mining: only question-like comments reach the model; clusters upsert and m
   // Same question, different punctuation and case: bumped and merged, status kept.
   answer = () => ({
     questions: [
-      { question: "how deep should a well be for a house", askCount: 3, examples: ["Is 40 m enough?"], videoIds: [flop.id] },
+      {
+        question: "how deep should a well be for a house",
+        askCount: 3,
+        examples: ["Is 40 m enough?"],
+        videoIds: [flop.id],
+      },
     ],
   });
   commentPages[flop.youtubeId] = comments("Is 40 m enough?");
@@ -296,7 +379,11 @@ test("mining: only question-like comments reach the model; clusters upsert and m
   assert.deepEqual(merged.examples, ["How deep for a house in Luque?", "Is 40 m enough?"]);
   assert.deepEqual(merged.videoIds, [hit.id, flop.id]);
   assert.equal(merged.status, "dismissed", "a dismissed question stays dismissed");
-  assert.deepEqual(rows.map((r) => r.askCount), [4, 1], "most asked first");
+  assert.deepEqual(
+    rows.map((r) => r.askCount),
+    [4, 1],
+    "most asked first",
+  );
 });
 
 test("mining with no question-like comments spends nothing", async () => {
@@ -312,7 +399,14 @@ test("Mine comments is owner-only; Write script marks a question used and links 
   const { hit } = await seedCompetitor();
   commentPages[hit.youtubeId] = comments("Why is my well water salty?");
   answer = () => ({
-    questions: [{ question: "Why is my well water salty?", askCount: 2, examples: ["Why is my well water salty?"], videoIds: [hit.id] }],
+    questions: [
+      {
+        question: "Why is my well water salty?",
+        askCount: 2,
+        examples: ["Why is my well water salty?"],
+        videoIds: [hit.id],
+      },
+    ],
   });
 
   const refused = await as("employee", () => mineQuestionsAction(BRAND));

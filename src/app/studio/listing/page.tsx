@@ -29,18 +29,29 @@ export default async function ListingScriptPage({
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
-      <Link href="/studio" className="text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)]">
+      <Link
+        href="/studio"
+        className="text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)]"
+      >
         &larr; {t("studio.back")}
       </Link>
       <h1 className="mt-2 text-2xl font-semibold text-[var(--color-ink)]">{t("listing.title")}</h1>
-      <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">{t("listing.intro")}</p>
+      <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+        {t("listing.intro")}
+      </p>
       {!brand ? (
         <p className="mt-3 text-sm text-[var(--color-ink-muted)]">{t("listing.noBrands")}</p>
       ) : (
         <>
-          {!isOwner(user) && <p className="mt-3 text-sm text-[var(--color-warn)]">{t("listing.ownerOnly")}</p>}
+          {!isOwner(user) && (
+            <p className="mt-3 text-sm text-[var(--color-warn)]">{t("listing.ownerOnly")}</p>
+          )}
           <ListingForm
-            brands={brands.map((b) => ({ id: b.id, name: b.name, language: defaultScriptLanguage(b) }))}
+            brands={brands.map((b) => ({
+              id: b.id,
+              name: b.name,
+              language: defaultScriptLanguage(b),
+            }))}
             brandId={brand.id}
           />
         </>

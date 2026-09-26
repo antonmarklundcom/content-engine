@@ -117,7 +117,9 @@ function media(segments: string[], cookie: string): Promise<Response> {
 }
 
 async function draftFromListing(): Promise<{ id: number; body: ScriptBodyV1 }> {
-  const result = await as(owner, () => writeListingScript({ brandId: "propia", mode: "short", listing: LISTING }));
+  const result = await as(owner, () =>
+    writeListingScript({ brandId: "propia", mode: "short", listing: LISTING }),
+  );
   assert.ok(result.ok, result.ok ? "" : result.error);
   const row = (await getScript(result.id))!;
   return { id: row.id, body: row.body as ScriptBodyV1 };
@@ -137,7 +139,10 @@ test("a listing becomes a draft short for propia: photos first, 9:16, the listin
   assert.ok(shots.length >= 2);
   assert.equal(shots[0].imagePrompt, `${LISTING_PHOTO_PREFIX}${LISTING.images[0]}`);
   assert.equal(shots[1].imagePrompt, `${LISTING_PHOTO_PREFIX}${LISTING.images[1]}`);
-  assert.ok(shots.slice(2).every((s) => !s.imagePrompt.startsWith(LISTING_PHOTO_PREFIX)), "Higgsfield only beyond the photos");
+  assert.ok(
+    shots.slice(2).every((s) => !s.imagePrompt.startsWith(LISTING_PHOTO_PREFIX)),
+    "Higgsfield only beyond the photos",
+  );
   assert.ok(shots.every((s) => s.aspectRatio === "9:16"));
 
   const source = body.sources.find((s) => s.id === LISTING_SOURCE_ID);
@@ -146,11 +151,20 @@ test("a listing becomes a draft short for propia: photos first, 9:16, the listin
 });
 
 test("writing is owner-only and refuses an empty listing; reading refuses a LAN address without fetching", async () => {
-  const denied = await as(employee, () => writeListingScript({ brandId: "propia", mode: "tour", listing: LISTING }));
-  assert.deepEqual(denied, { ok: false, error: "Writing a script spends money, which is the owner's to spend." });
-  const empty = await as(owner, () => writeListingScript({ brandId: "propia", mode: "tour", listing: {} }));
+  const denied = await as(employee, () =>
+    writeListingScript({ brandId: "propia", mode: "tour", listing: LISTING }),
+  );
+  assert.deepEqual(denied, {
+    ok: false,
+    error: "Writing a script spends money, which is the owner's to spend.",
+  });
+  const empty = await as(owner, () =>
+    writeListingScript({ brandId: "propia", mode: "tour", listing: {} }),
+  );
   assert.equal(empty.ok, false);
-  const badMode = await as(owner, () => writeListingScript({ brandId: "propia", mode: "reel" as "tour", listing: LISTING }));
+  const badMode = await as(owner, () =>
+    writeListingScript({ brandId: "propia", mode: "reel" as "tour", listing: LISTING }),
+  );
   assert.equal(badMode.ok, false);
   assert.equal((await db.select().from(schema.scripts)).length, 0, "nothing saved");
 
@@ -163,7 +177,9 @@ test("export format=thumbnails: numbered 16:9 prompts with overlays, as Markdown
   const call = (query: string) =>
     callRoute(
       (r) => exportScript(r, { params: Promise.resolve({ id: String(id) }) }),
-      new Request(`http://localhost/api/scripts/${id}/export?${query}`, { headers: { cookie: employee } }),
+      new Request(`http://localhost/api/scripts/${id}/export?${query}`, {
+        headers: { cookie: employee },
+      }),
     );
 
   const json = await call("format=thumbnails&as=json");
@@ -221,15 +237,26 @@ test("“Use this one” stores a file from the folder, refuses anything else, a
   const { id } = await draftFromListing();
   assert.equal(id, 7, "the script whose media folder the fixture made");
 
-  assert.deepEqual(await listThumbnails(id), ["1.png", "1-2.png"], "images only, no symlinks, first variant first");
+  assert.deepEqual(
+    await listThumbnails(id),
+    ["1.png", "1-2.png"],
+    "images only, no symlinks, first variant first",
+  );
   const stored = await as(owner, () => chooseThumbnail(id, "1-2.png"));
   assert.equal(stored, "media/7/thumbnails/1-2.png");
   assert.equal((await getScript(id))!.thumbnailFile, "media/7/thumbnails/1-2.png");
 
   for (const bad of ["../../outside/secret.png", "evil.png", "notes.txt", "9.png"]) {
-    await assert.rejects(as(owner, () => chooseThumbnail(id, bad)), /not in this script's thumbnails folder/, bad);
+    await assert.rejects(
+      as(owner, () => chooseThumbnail(id, bad)),
+      /not in this script's thumbnails folder/,
+      bad,
+    );
   }
-  await assert.rejects(as(employee, () => chooseThumbnail(id, "1.png")), /Only the owner/);
+  await assert.rejects(
+    as(employee, () => chooseThumbnail(id, "1.png")),
+    /Only the owner/,
+  );
 
   assert.equal(await as(owner, () => chooseThumbnail(id, null)), null);
   assert.equal((await getScript(id))!.thumbnailFile, null);

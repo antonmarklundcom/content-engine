@@ -24,7 +24,9 @@ test("ignores non-string form entries (a File in a videoId field)", () => {
 });
 
 test("the batch limit is a real ceiling, not advice", () => {
-  const ids = parseVideoIds(Array.from({ length: BULK_ANALYZE_LIMIT + 5 }, (_, i) => String(i + 1)));
+  const ids = parseVideoIds(
+    Array.from({ length: BULK_ANALYZE_LIMIT + 5 }, (_, i) => String(i + 1)),
+  );
   assert.equal(ids.length, BULK_ANALYZE_LIMIT + 5, "parsing does not truncate");
   // The action refuses the whole submission rather than silently analysing the
   // first 200 — a partial submission of paid work nobody asked for is worse

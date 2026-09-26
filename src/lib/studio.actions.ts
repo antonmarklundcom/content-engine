@@ -41,7 +41,10 @@ export async function saveScript(id: number, body: unknown): Promise<SaveScriptR
   if (!verdict.ok) return { ok: false, errors: verdict.errors };
   const b = body as ScriptBodyV1;
   try {
-    const row = await updateScriptBody(id, b, validateScriptBody, { title: b.chosenTitle, language: b.language });
+    const row = await updateScriptBody(id, b, validateScriptBody, {
+      title: b.chosenTitle,
+      language: b.language,
+    });
     if (!row) throw new Error("That script no longer exists.");
     revalidateFor(id);
     return { ok: true, script: row };
@@ -57,7 +60,8 @@ export async function saveScript(id: number, body: unknown): Promise<SaveScriptR
 export async function setStudioScriptStatus(id: number, status: ScriptStatus): Promise<Script> {
   await requireUser();
   assertId(id);
-  if (!(SCRIPT_STATUSES as readonly string[]).includes(status)) throw new Error(`Unknown status "${String(status)}".`);
+  if (!(SCRIPT_STATUSES as readonly string[]).includes(status))
+    throw new Error(`Unknown status "${String(status)}".`);
   const row = await setScriptStatus(id, status);
   if (!row) throw new Error("That script no longer exists.");
   revalidateFor(id);

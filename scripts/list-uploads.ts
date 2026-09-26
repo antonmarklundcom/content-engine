@@ -97,9 +97,7 @@ function formatDuration(seconds: number): string {
 
 function report(client: YouTubeDataClient): void {
   console.log(`\nQuota: ${client.quota.summary()}`);
-  console.log(
-    "For scale: the same listing via search.list would have cost 100 units per call.",
-  );
+  console.log("For scale: the same listing via search.list would have cost 100 units per call.");
 }
 
 main().catch((err) => {

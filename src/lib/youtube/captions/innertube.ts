@@ -1,5 +1,10 @@
 import { assertOkResponse, fetchWithTimeout } from "./http";
-import { CaptionError, type CaptionTrack, type ListTracksOptions, type StrategyName } from "./types";
+import {
+  CaptionError,
+  type CaptionTrack,
+  type ListTracksOptions,
+  type StrategyName,
+} from "./types";
 
 /**
  * Talk to YouTube's internal player API directly.
@@ -38,8 +43,7 @@ export const INNERTUBE_CLIENTS: Record<string, ClientProfile> = {
     clientName: "IOS",
     clientVersion: "19.09.3",
     clientNameId: 5,
-    userAgent:
-      "com.google.ios.youtube/19.09.3 (iPhone14,3; U; CPU iOS 15_6 like Mac OS X)",
+    userAgent: "com.google.ios.youtube/19.09.3 (iPhone14,3; U; CPU iOS 15_6 like Mac OS X)",
     extraClient: {
       deviceMake: "Apple",
       deviceModel: "iPhone14,3",
@@ -167,10 +171,7 @@ export function extractTracks(data: PlayerResponse): CaptionTrack[] {
       // YouTube marks auto-generated tracks with kind="asr"; vssId starting "a."
       // is the older signal and still appears on some responses.
       kind: t.kind === "asr" || t.vssId?.startsWith("a.") ? "asr" : "manual",
-      name:
-        t.name?.simpleText ??
-        t.name?.runs?.map((r) => r.text ?? "").join("") ??
-        t.languageCode,
+      name: t.name?.simpleText ?? t.name?.runs?.map((r) => r.text ?? "").join("") ?? t.languageCode,
     });
   }
 

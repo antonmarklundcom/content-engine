@@ -22,7 +22,8 @@ export type BrandIdea = {
   postedAt?: Date | string | null;
 };
 
-const TAG = "surface-border inline-block rounded-full px-2 py-0.5 text-[11px] tracking-wide uppercase";
+const TAG =
+  "surface-border inline-block rounded-full px-2 py-0.5 text-[11px] tracking-wide uppercase";
 
 const STATUS_TAG: Record<BrandIdea["status"], string> = {
   proposed: "text-[var(--color-ink-muted)]",
@@ -51,7 +52,9 @@ export function BrandIdeaCard({
   return (
     <article className="surface-border surface-card p-5">
       <div className="flex flex-wrap gap-1.5">
-        <span className={`${TAG} ${STATUS_TAG[idea.status]}`}>{t(`brands.status.${idea.status}`)}</span>
+        <span className={`${TAG} ${STATUS_TAG[idea.status]}`}>
+          {t(`brands.status.${idea.status}`)}
+        </span>
         <span className={`${TAG} text-[var(--color-ink-muted)]`}>{idea.format}</span>
         <span className={`${TAG} text-[var(--color-ink-muted)]`}>{idea.platform}</span>
       </div>
@@ -70,13 +73,16 @@ export function BrandIdeaCard({
 
       {idea.visualNotes && (
         <p className="mt-2 text-sm text-[var(--color-ink-muted)]">
-          <strong className="text-[var(--color-ink)]">{t("brands.visual")}</strong> {idea.visualNotes}
+          <strong className="text-[var(--color-ink)]">{t("brands.visual")}</strong>{" "}
+          {idea.visualNotes}
         </p>
       )}
 
       {idea.citations && idea.citations.length > 0 && (
         <details className="mt-2 text-sm text-[var(--color-ink-muted)]">
-          <summary className="cursor-pointer">{t("brands.sources", { count: idea.citations.length })}</summary>
+          <summary className="cursor-pointer">
+            {t("brands.sources", { count: idea.citations.length })}
+          </summary>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             {idea.citations.map((c, i) => (
               <li key={i} className="break-words">

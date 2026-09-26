@@ -46,7 +46,8 @@ export default async function FilmingPlanPage({
   const valid: PlanScript[] = [];
   const invalid: string[] = [];
   for (const r of rows) {
-    if (validateScriptBody(r.body).ok) valid.push({ id: r.id, title: r.title, body: r.body as ScriptBodyV1 });
+    if (validateScriptBody(r.body).ok)
+      valid.push({ id: r.id, title: r.title, body: r.body as ScriptBodyV1 });
     else invalid.push(r.title);
   }
   const plan = valid.length ? buildFilmingPlan(valid) : null;
@@ -58,21 +59,37 @@ export default async function FilmingPlanPage({
     <div className="mx-auto max-w-4xl px-6 py-10">
       <style>{PRINT_CSS}</style>
       <div className="plan-form">
-        <Link href="/studio" className="text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)]">
+        <Link
+          href="/studio"
+          className="text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)]"
+        >
           &larr; {t("studio.back")}
         </Link>
-        <h1 className="mt-2 text-2xl font-semibold text-[var(--color-ink)]">{t("publish.plan.title")}</h1>
+        <h1 className="mt-2 text-2xl font-semibold text-[var(--color-ink)]">
+          {t("publish.plan.title")}
+        </h1>
 
         {pickable.length === 0 ? (
           <p className="mt-6 text-sm text-[var(--color-ink-muted)]">{t("publish.plan.none")}</p>
         ) : (
-          <form method="get" action="/studio/plan" className="surface-border surface-card mt-6 flex flex-col gap-3 px-5 py-4">
-            <p className="text-sm font-semibold text-[var(--color-ink)]">{t("publish.plan.pick")}</p>
+          <form
+            method="get"
+            action="/studio/plan"
+            className="surface-border surface-card mt-6 flex flex-col gap-3 px-5 py-4"
+          >
+            <p className="text-sm font-semibold text-[var(--color-ink)]">
+              {t("publish.plan.pick")}
+            </p>
             <ul className="flex flex-col gap-1">
               {pickable.map((s) => (
                 <li key={s.id}>
                   <label className="flex items-center gap-2 text-sm text-[var(--color-ink)]">
-                    <input type="checkbox" name="id" value={s.id} defaultChecked={selected.includes(s.id)} />
+                    <input
+                      type="checkbox"
+                      name="id"
+                      value={s.id}
+                      defaultChecked={selected.includes(s.id)}
+                    />
                     {s.title}
                     <span className="text-xs text-[var(--color-ink-muted)]">· {s.language}</span>
                   </label>
@@ -85,7 +102,9 @@ export default async function FilmingPlanPage({
           </form>
         )}
         {invalid.length > 0 && (
-          <p className="mt-3 text-sm text-[var(--color-danger)]">{t("publish.plan.invalid", { titles: invalid.join(", ") })}</p>
+          <p className="mt-3 text-sm text-[var(--color-danger)]">
+            {t("publish.plan.invalid", { titles: invalid.join(", ") })}
+          </p>
         )}
       </div>
 
@@ -118,11 +137,15 @@ export default async function FilmingPlanPage({
                     <span className="text-xs text-[var(--color-ink-muted)]">
                       {t("publish.plan.words", { words: item.words })} ·{" "}
                       {t("publish.plan.spoken", { minutes: formatMinutes(item.spokenMinutes) })} ·{" "}
-                      {t("publish.plan.retakes", { minutes: formatMinutes(item.withRetakesMinutes) })}
+                      {t("publish.plan.retakes", {
+                        minutes: formatMinutes(item.withRetakesMinutes),
+                      })}
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
-                    {item.group ? t("publish.plan.group", { name: item.setup.join(", ") }) : t("publish.plan.noSetup")}
+                    {item.group
+                      ? t("publish.plan.group", { name: item.setup.join(", ") })
+                      : t("publish.plan.noSetup")}
                   </p>
                 </li>
               ))}
@@ -135,12 +158,17 @@ export default async function FilmingPlanPage({
               {t("publish.plan.onScreen")}
             </h3>
             {plan.onScreen.length === 0 ? (
-              <p className="text-sm text-[var(--color-ink-muted)]">{t("publish.plan.onScreenNone")}</p>
+              <p className="text-sm text-[var(--color-ink-muted)]">
+                {t("publish.plan.onScreenNone")}
+              </p>
             ) : (
               <ul className="flex flex-col gap-1">
                 {plan.onScreen.map((o, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-[var(--color-ink)]">
-                    <span aria-hidden className="mt-0.5 inline-block h-3.5 w-3.5 shrink-0 border border-current" />
+                    <span
+                      aria-hidden
+                      className="mt-0.5 inline-block h-3.5 w-3.5 shrink-0 border border-current"
+                    />
                     <span>
                       <strong>{o.text}</strong>{" "}
                       <span className="text-xs text-[var(--color-ink-muted)]">
@@ -163,12 +191,15 @@ export default async function FilmingPlanPage({
               <ul className="flex flex-col gap-1">
                 {plan.broll.map((b, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-[var(--color-ink)]">
-                    <span aria-hidden className="mt-0.5 inline-block h-3.5 w-3.5 shrink-0 border border-current" />
+                    <span
+                      aria-hidden
+                      className="mt-0.5 inline-block h-3.5 w-3.5 shrink-0 border border-current"
+                    />
                     <span>
                       {b.description}{" "}
                       <span className="text-xs text-[var(--color-ink-muted)]">
-                        ({b.aspectRatio}, {t(b.still ? "publish.plan.still" : "publish.plan.video")}) — {b.scriptTitle} · {b.part}: “
-                        {b.spokenLine}”
+                        ({b.aspectRatio}, {t(b.still ? "publish.plan.still" : "publish.plan.video")}
+                        ) — {b.scriptTitle} · {b.part}: “{b.spokenLine}”
                       </span>
                     </span>
                   </li>

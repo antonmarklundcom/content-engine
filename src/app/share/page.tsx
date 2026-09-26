@@ -5,7 +5,10 @@ import { translator } from "@/lib/i18n";
 import { ShareCaptureForm } from "./ShareCaptureForm";
 
 export async function generateMetadata(): Promise<Metadata> {
-  return { title: translator(await getLocale())("inbox.quickAdd.submit"), robots: { index: false } };
+  return {
+    title: translator(await getLocale())("inbox.quickAdd.submit"),
+    robots: { index: false },
+  };
 }
 
 export const dynamic = "force-dynamic";

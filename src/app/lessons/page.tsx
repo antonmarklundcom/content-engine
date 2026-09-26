@@ -12,7 +12,11 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: translator(await getLocale())("lessons.title") };
 }
 
-export default async function LessonsPage({ searchParams }: { searchParams: Promise<LessonSearchParams> }) {
+export default async function LessonsPage({
+  searchParams,
+}: {
+  searchParams: Promise<LessonSearchParams>;
+}) {
   const params = await searchParams;
   await requireUser();
   const locale = await getLocale();
@@ -20,7 +24,8 @@ export default async function LessonsPage({ searchParams }: { searchParams: Prom
   const query = lessonsQueryFrom(params);
   const [rows, brands] = await Promise.all([listLessons(query), listAllBrands()]);
   const brandNames = new Map(brands.map((b) => [b.id, b.name]));
-  const hasFilters = query.brandId !== undefined || query.kind !== undefined || query.search !== undefined;
+  const hasFilters =
+    query.brandId !== undefined || query.kind !== undefined || query.search !== undefined;
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
@@ -64,7 +69,9 @@ export default async function LessonsPage({ searchParams }: { searchParams: Prom
                 id: lesson.id,
                 text: lesson.text,
                 kind: lesson.kind,
-                brandName: lesson.brandId ? (brandNames.get(lesson.brandId) ?? lesson.brandId) : null,
+                brandName: lesson.brandId
+                  ? (brandNames.get(lesson.brandId) ?? lesson.brandId)
+                  : null,
                 videoId: lesson.videoId,
                 videoTitle: lesson.videoTitle ?? lesson.videoYoutubeId,
                 videoUrl: lesson.videoYoutubeId

@@ -25,7 +25,10 @@ export default async function ThumbnailsPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-10">
-      <Link href={`/studio/${row.id}`} className="text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)]">
+      <Link
+        href={`/studio/${row.id}`}
+        className="text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)]"
+      >
         &larr; {t("listing.thumbs.back")}
       </Link>
       <h1 className="mt-2 text-2xl font-semibold text-[var(--color-ink)]">
@@ -36,7 +39,9 @@ export default async function ThumbnailsPage({ params }: { params: Promise<{ id:
       </p>
 
       <div className="surface-border surface-card mt-6 flex flex-wrap items-center gap-3 px-5 py-4">
-        <h2 className="text-sm font-semibold text-[var(--color-ink)]">{t("listing.thumbs.prompts")}</h2>
+        <h2 className="text-sm font-semibold text-[var(--color-ink)]">
+          {t("listing.thumbs.prompts")}
+        </h2>
         <ThumbnailExport scriptId={row.id} />
       </div>
 
@@ -53,9 +58,16 @@ export default async function ThumbnailsPage({ params }: { params: Promise<{ id:
               </p>
             )}
             {files.length === 0 ? (
-              <p className="text-sm text-[var(--color-ink-muted)]">{t("listing.thumbs.empty", { dir })}</p>
+              <p className="text-sm text-[var(--color-ink-muted)]">
+                {t("listing.thumbs.empty", { dir })}
+              </p>
             ) : (
-              <ThumbnailPicker scriptId={row.id} files={files} chosen={chosenName} hasChoice={Boolean(chosen)} />
+              <ThumbnailPicker
+                scriptId={row.id}
+                files={files}
+                chosen={chosenName}
+                hasChoice={Boolean(chosen)}
+              />
             )}
           </>
         )}

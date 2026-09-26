@@ -53,7 +53,12 @@ export function BrandGenerateForm({
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <button type="button" onClick={() => generate()} disabled={generating} className={BUTTON_PRIMARY}>
+        <button
+          type="button"
+          onClick={() => generate()}
+          disabled={generating}
+          className={BUTTON_PRIMARY}
+        >
           {generating ? t("brands.generating") : t("brands.generate")}
         </button>
         {generating && (

@@ -14,7 +14,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   if (body.status !== undefined) {
     if (!isIdeaStatus(body.status)) {
-      return NextResponse.json({ error: `status must be one of ${schema.IDEA_STATUSES.join(", ")}` }, { status: 400 });
+      return NextResponse.json(
+        { error: `status must be one of ${schema.IDEA_STATUSES.join(", ")}` },
+        { status: 400 },
+      );
     }
     // posted_at follows the status inside updateIdea (PLAN.md §1.23).
     update.status = body.status;

@@ -50,17 +50,26 @@ test("createLesson trims, defaults the kind, and validates", async () => {
 test("listLessons filters by brand, kind, video and text, newest first", async () => {
   const v = await video();
   const first = await createLesson({ text: "Portfolio-wide 100% rule", kind: "lesson" });
-  await createLesson({ text: "Hook for residency", kind: "hook", brandId: "residency", videoId: v.id });
+  await createLesson({
+    text: "Hook for residency",
+    kind: "hook",
+    brandId: "residency",
+    videoId: v.id,
+  });
   await createLesson({ text: "Fact for residency", kind: "fact", brandId: "residency" });
   await createLesson({ text: "Hook for pozo", kind: "hook", brandId: "pozo" });
 
   assert.equal((await listLessons()).length, 4);
   assert.equal((await listLessons())[0].text, "Hook for pozo", "newest first");
+  assert.deepEqual((await listLessons({ brandId: "residency" })).map((l) => l.kind).sort(), [
+    "fact",
+    "hook",
+  ]);
   assert.deepEqual(
-    (await listLessons({ brandId: "residency" })).map((l) => l.kind).sort(),
-    ["fact", "hook"],
+    (await listLessons({ brandId: null })).map((l) => l.id),
+    [first.id],
+    "null = unbranded only",
   );
-  assert.deepEqual((await listLessons({ brandId: null })).map((l) => l.id), [first.id], "null = unbranded only");
   assert.equal((await listLessons({ kind: "hook" })).length, 2);
 
   const fromVideo = await listLessons({ videoId: v.id });
@@ -79,12 +88,20 @@ test("deleteLesson removes one row and reports whether it existed", async () => 
   await createLesson({ text: "stays" });
   assert.equal(await deleteLesson(lesson.id), true);
   assert.equal(await deleteLesson(lesson.id), false);
-  assert.deepEqual((await listLessons()).map((l) => l.text), ["stays"]);
+  assert.deepEqual(
+    (await listLessons()).map((l) => l.text),
+    ["stays"],
+  );
 });
 
 test("exportLessonsMarkdown groups by kind and links provenance", async () => {
   const v = await video();
-  await createLesson({ text: "Fact one", kind: "fact", brandId: "residency", sourceUrl: "https://example.com/a" });
+  await createLesson({
+    text: "Fact one",
+    kind: "fact",
+    brandId: "residency",
+    sourceUrl: "https://example.com/a",
+  });
   await createLesson({
     text: "Hook one\nsecond line",
     kind: "hook",
@@ -98,7 +115,11 @@ test("exportLessonsMarkdown groups by kind and links provenance", async () => {
   assert.match(md, /^# Lessons — residency\n/);
   assert.ok(md.indexOf("## Hooks") < md.indexOf("## Facts"), "kinds in their fixed order");
   assert.ok(!md.includes("## Lessons\n"), "empty kinds are left out");
-  assert.ok(md.includes("- Hook one\n  second line — [How residency works @ 2:05](https://www.youtube.com/watch?v=abc123def45&t=125s)"));
+  assert.ok(
+    md.includes(
+      "- Hook one\n  second line — [How residency works @ 2:05](https://www.youtube.com/watch?v=abc123def45&t=125s)",
+    ),
+  );
   assert.ok(md.includes("- Fact one — <https://example.com/a>"));
   assert.ok(!md.includes("Other brand"));
 

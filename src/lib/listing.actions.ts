@@ -10,7 +10,12 @@
  */
 
 import { revalidatePath } from "next/cache";
-import { assembleScriptBody, estimateScriptCostUsd, SCRIPT_JSON_SCHEMA, structuredJson } from "@/lib/ai";
+import {
+  assembleScriptBody,
+  estimateScriptCostUsd,
+  SCRIPT_JSON_SCHEMA,
+  structuredJson,
+} from "@/lib/ai";
 import { isOwner } from "@/lib/auth/roles";
 import { getSession, requireUser } from "@/lib/auth/session";
 import { getBrand } from "@/lib/bridge";
@@ -53,8 +58,7 @@ export type WriteListingInput = {
 };
 
 export type WriteListingResult =
-  | { ok: true; id: number; costUsd: number }
-  | { ok: false; error: string; errors?: string[] };
+  { ok: true; id: number; costUsd: number } | { ok: false; error: string; errors?: string[] };
 
 /** Room for a tour's ~650 words plus shots and thumbnails, with headroom. */
 const LISTING_MAX_OUTPUT_TOKENS = 12_000;
@@ -69,10 +73,12 @@ type RawScript = Parameters<typeof assembleScriptBody>[0];
 export async function writeListingScript(input: WriteListingInput): Promise<WriteListingResult> {
   const user = await getSession();
   if (!user) return { ok: false, error: "Sign in first." };
-  if (!isOwner(user)) return { ok: false, error: "Writing a script spends money, which is the owner's to spend." };
+  if (!isOwner(user))
+    return { ok: false, error: "Writing a script spends money, which is the owner's to spend." };
 
   const mode = input?.mode;
-  if (!(LISTING_MODES as readonly string[]).includes(mode)) return { ok: false, error: "Pick “Write short” or “Write tour”." };
+  if (!(LISTING_MODES as readonly string[]).includes(mode))
+    return { ok: false, error: "Pick “Write short” or “Write tour”." };
   const brand = typeof input.brandId === "string" ? await getBrand(input.brandId) : null;
   if (!brand) return { ok: false, error: `Unknown brand "${String(input?.brandId)}".` };
   if (input.language !== undefined && !isScriptLanguage(input.language)) {
@@ -84,7 +90,13 @@ export async function writeListingScript(input: WriteListingInput): Promise<Writ
   }
 
   const language = input.language ?? defaultScriptLanguage(brand);
-  const { system, prompt } = listingScriptPrompt(listing, mode, brand, language, await loadStyleGuide(language));
+  const { system, prompt } = listingScriptPrompt(
+    listing,
+    mode,
+    brand,
+    language,
+    await loadStyleGuide(language),
+  );
 
   let text: string;
   let costUsd: number;
@@ -118,7 +130,11 @@ export async function writeListingScript(input: WriteListingInput): Promise<Writ
   }
   const verdict = validateScriptBody(body);
   if (!verdict.ok) {
-    return { ok: false, error: "The model's script does not match the script contract. Try again.", errors: verdict.errors };
+    return {
+      ok: false,
+      error: "The model's script does not match the script contract. Try again.",
+      errors: verdict.errors,
+    };
   }
 
   const script = await createScript(

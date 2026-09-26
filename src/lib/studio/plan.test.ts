@@ -24,7 +24,12 @@ function body(words: number, talkingPoints: string[] = []): ScriptBodyV1 {
   return b;
 }
 
-function script(id: number, title: string, words: number, talkingPoints: string[] = []): PlanScript {
+function script(
+  id: number,
+  title: string,
+  words: number,
+  talkingPoints: string[] = [],
+): PlanScript {
   return { id, title, body: body(words, talkingPoints) };
 }
 
@@ -51,7 +56,10 @@ test("time math: words ÷ 150 per minute, and half as long again for retakes", (
 });
 
 test("setup words are found as whole words in talking points, locations before props", () => {
-  const b = body(10, ["Film at the desk with the passport in hand", "Carpeta azul en el escritorio"]);
+  const b = body(10, [
+    "Film at the desk with the passport in hand",
+    "Carpeta azul en el escritorio",
+  ]);
   assert.deepEqual(setupWords(b), ["desk", "escritorio", "passport", "carpeta"]);
   // "cartoon" contains "car" but is not the car.
   assert.deepEqual(setupWords(body(10, ["A cartoon style intro"])), []);

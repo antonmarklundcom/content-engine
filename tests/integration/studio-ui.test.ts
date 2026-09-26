@@ -84,18 +84,29 @@ async function createDraft(): Promise<{ id: number; body: ScriptBodyV1 }> {
     writeScript,
     jsonPost(
       "/api/scripts",
-      { brandId: BRAND.id, topic: "Residency timeline", title: "Paraguay residency in 45 days", targetMinutes: 6, competitorVideoIds: [], lessonIds: [] },
+      {
+        brandId: BRAND.id,
+        topic: "Residency timeline",
+        title: "Paraguay residency in 45 days",
+        targetMinutes: 6,
+        competitorVideoIds: [],
+        lessonIds: [],
+      },
       { cookie: owner },
     ),
   );
   assert.equal(response.status, 201);
-  const { script } = (await response.json()) as { script: { id: number; body: ScriptBodyV1; status: string } };
+  const { script } = (await response.json()) as {
+    script: { id: number; body: ScriptBodyV1; status: string };
+  };
   assert.equal(script.status, "draft");
   return { id: script.id, body: script.body };
 }
 
 function exportRequest(id: number, query: string): Request {
-  return new Request(`http://localhost/api/scripts/${id}/export?${query}`, { headers: { cookie: employee } });
+  return new Request(`http://localhost/api/scripts/${id}/export?${query}`, {
+    headers: { cookie: employee },
+  });
 }
 
 test("create → edit → status → export", async () => {
@@ -105,7 +116,11 @@ test("create → edit → status → export", async () => {
   // empty video prompt, a new title. normalizeBody tidies before the save.
   const edited = structuredClone(body);
   edited.chosenTitle = "Residency in 45 days, not 90";
-  edited.sections[0]!.spokenLines = ["  This line was edited in the studio.  ", "", ...edited.sections[0]!.spokenLines];
+  edited.sections[0]!.spokenLines = [
+    "  This line was edited in the studio.  ",
+    "",
+    ...edited.sections[0]!.spokenLines,
+  ];
   edited.sections[0]!.broll.push({
     spokenLine: "This line was edited in the studio.",
     description: "Studio desk close-up",
@@ -115,19 +130,30 @@ test("create → edit → status → export", async () => {
   });
   const saved = await as(employee, () => saveScript(id, normalizeBody(edited)));
   assert.ok(saved.ok, "a valid edit saves");
-  assert.equal(saved.script.title, "Residency in 45 days, not 90", "the title column follows the body");
+  assert.equal(
+    saved.script.title,
+    "Residency in 45 days, not 90",
+    "the title column follows the body",
+  );
   assert.deepEqual(revalidated.sort(), ["_N_T_/studio", `_N_T_/studio/${id}`]);
 
   const stored = (await getScript(id))!.body as ScriptBodyV1;
   assert.equal(stored.sections[0]!.spokenLines[0], "This line was edited in the studio.");
-  assert.equal(stored.sections[0]!.broll.at(-1)!.videoPrompt, null, "an empty video prompt is a still");
+  assert.equal(
+    stored.sections[0]!.broll.at(-1)!.videoPrompt,
+    null,
+    "an empty video prompt is a still",
+  );
 
   const ready = await as(employee, () => setStudioScriptStatus(id, "ready"));
   assert.equal(ready.status, "ready");
   const recorded = await as(owner, () => setStudioScriptStatus(id, "recorded"));
   assert.ok(recorded.recordedAt instanceof Date, "recorded_at stamped");
 
-  const md = await callRoute((r) => exportScript(r, { params: Promise.resolve({ id: String(id) }) }), exportRequest(id, "format=md"));
+  const md = await callRoute(
+    (r) => exportScript(r, { params: Promise.resolve({ id: String(id) }) }),
+    exportRequest(id, "format=md"),
+  );
   assert.equal(md.status, 200);
   const text = await md.text();
   assert.match(text, /^# Residency in 45 days, not 90/);
@@ -157,7 +183,9 @@ test("an invalid body is never saved; its errors come back by path", async () =>
   assert.equal(result.ok, false);
   const errors = result.ok ? [] : result.errors;
   assert.ok(errors.includes("body.sections[0].heading must not be empty"), errors.join("\n"));
-  assert.ok(errors.some((e) => e.startsWith("body.sections[0].sourceIds[0] refers to source \"nope\"")));
+  assert.ok(
+    errors.some((e) => e.startsWith('body.sections[0].sourceIds[0] refers to source "nope"')),
+  );
   assert.ok(errors.some((e) => e.startsWith("body.titleOptions must have exactly 3 items")));
 
   // Not even a partial write: body, title and updated_at are untouched.
@@ -169,9 +197,21 @@ test("an invalid body is never saved; its errors come back by path", async () =>
 
 test("signed out, the actions are refused; a missing script and an unknown status are errors", async () => {
   const { id, body } = await createDraft();
-  await assert.rejects(as("", () => saveScript(id, body)), /redirect/);
-  await assert.rejects(as("", () => setStudioScriptStatus(id, "ready")), /redirect/);
-  await assert.rejects(as(employee, () => saveScript(id + 1000, body)), /no longer exists/);
-  await assert.rejects(as(employee, () => setStudioScriptStatus(id, "scheduled" as schema.ScriptStatus)), /Unknown status/);
+  await assert.rejects(
+    as("", () => saveScript(id, body)),
+    /redirect/,
+  );
+  await assert.rejects(
+    as("", () => setStudioScriptStatus(id, "ready")),
+    /redirect/,
+  );
+  await assert.rejects(
+    as(employee, () => saveScript(id + 1000, body)),
+    /no longer exists/,
+  );
+  await assert.rejects(
+    as(employee, () => setStudioScriptStatus(id, "scheduled" as schema.ScriptStatus)),
+    /Unknown status/,
+  );
   assert.equal((await getScript(id))!.status, "draft");
 });

@@ -8,7 +8,13 @@ import { after, before, beforeEach, test } from "node:test";
 import { db, schema } from "@/db";
 import { latestScriptDerivatives, listScriptDerivatives } from "@/lib/bridge/derivatives";
 import { createScript, getScript, listChildScripts } from "@/lib/bridge/scripts";
-import { generatePack, makeProse, makeShorts, savePublishPack, savePublishUrl } from "@/lib/publish.actions";
+import {
+  generatePack,
+  makeProse,
+  makeShorts,
+  savePublishPack,
+  savePublishUrl,
+} from "@/lib/publish.actions";
 import { validateScriptBody, type ScriptBodyV1 } from "@/lib/scripts/contract";
 import { sampleScriptBody } from "@/lib/scripts/fixture";
 import type { PublishPack } from "@/lib/studio/types";
@@ -49,8 +55,21 @@ const BRAND = {
 // ---------------------------------------------------------------------------
 
 const PACK = {
-  description: "How long residency really takes, and what restarts the clock.\n\nWatch the whole thing before you book a flight.",
-  tags: ["#Paraguay residency", "paraguay residency", "residency timeline", "migraciones", "temporary residency", "paraguay visa", "move to paraguay", "expat paraguay", "residency documents", "cedula paraguay", "paraguay 2026"],
+  description:
+    "How long residency really takes, and what restarts the clock.\n\nWatch the whole thing before you book a flight.",
+  tags: [
+    "#Paraguay residency",
+    "paraguay residency",
+    "residency timeline",
+    "migraciones",
+    "temporary residency",
+    "paraguay visa",
+    "move to paraguay",
+    "expat paraguay",
+    "residency documents",
+    "cedula paraguay",
+    "paraguay 2026",
+  ],
   pinnedComment: "Which document held your file up?",
   instagram: "45 days, not 90.\n#paraguay #residency #expat",
   facebook: "Residency takes about 45 days now if the file is complete.",
@@ -75,7 +94,15 @@ function short(title: string, spoken: string[]) {
     spokenLines: spoken,
     talkingPoints: [],
     onScreenText: [],
-    broll: [{ spokenLine: spoken[0] ?? "x", description: "Stopwatch", imagePrompt: "Stopwatch", videoPrompt: "slow push-in", aspectRatio: "16:9" }],
+    broll: [
+      {
+        spokenLine: spoken[0] ?? "x",
+        description: "Stopwatch",
+        imagePrompt: "Stopwatch",
+        videoPrompt: "slow push-in",
+        aspectRatio: "16:9",
+      },
+    ],
     sourceIds: ["s1", "nope"],
     ctaLines: ["Full video on the channel."],
   };
@@ -171,7 +198,10 @@ beforeEach(async () => {
   owner = (await signIn("owner")).cookie;
   employee = (await signIn("employee")).cookie;
   const body = sampleScriptBody();
-  const row = await createScript({ brandId: BRAND.id, title: body.chosenTitle, language: body.language, body }, validateScriptBody);
+  const row = await createScript(
+    { brandId: BRAND.id, title: body.chosenTitle, language: body.language, body },
+    validateScriptBody,
+  );
   scriptId = row.id;
 });
 
@@ -193,12 +223,17 @@ test("saving a YouTube URL stores it normalised and marks the script posted; a b
   assert.equal(bad.ok, false);
   assert.equal((await getScript(scriptId))!.youtubeUrl, null);
 
-  const ok = await as(employee, () => savePublishUrl(scriptId, " https://youtube.com/watch?v=abc123&t=9 "));
+  const ok = await as(employee, () =>
+    savePublishUrl(scriptId, " https://youtube.com/watch?v=abc123&t=9 "),
+  );
   assert.ok(ok.ok);
   const row = (await getScript(scriptId))!;
   assert.equal(row.youtubeUrl, "https://www.youtube.com/watch?v=abc123");
   assert.equal(row.status, "posted");
-  assert.ok(row.postedAt instanceof Date && row.recordedAt instanceof Date, "posted implies recorded");
+  assert.ok(
+    row.postedAt instanceof Date && row.recordedAt instanceof Date,
+    "posted implies recorded",
+  );
 
   // Clearing the URL does not move the status back.
   const cleared = await as(employee, () => savePublishUrl(scriptId, ""));
@@ -206,7 +241,10 @@ test("saving a YouTube URL stores it normalised and marks the script posted; a b
   assert.equal((await getScript(scriptId))!.youtubeUrl, null);
   assert.equal((await getScript(scriptId))!.status, "posted");
 
-  await assert.rejects(as("", () => savePublishUrl(scriptId, "https://youtu.be/x")), /redirect/);
+  await assert.rejects(
+    as("", () => savePublishUrl(scriptId, "https://youtu.be/x")),
+    /redirect/,
+  );
 });
 
 test("generate pack: through structuredJson, chapters from word counts, the script's sources, saved to publish_pack", async () => {
@@ -223,7 +261,10 @@ test("generate pack: through structuredJson, chapters from word counts, the scri
     { time: "0:02", title: "The real timeline" },
   ]);
   assert.match(stored.description, /^How long residency really takes/);
-  assert.match(stored.description, /Sources:\n- Migraciones: https:\/\/example\.gov\.py\/migraciones\/plazos$/);
+  assert.match(
+    stored.description,
+    /Sources:\n- Migraciones: https:\/\/example\.gov\.py\/migraciones\/plazos$/,
+  );
   assert.equal(stored.tags[0], "Paraguay residency", "# stripped");
   assert.equal(stored.tags.length, 10, "the case-insensitive duplicate is dropped");
   assert.equal(stored.captions.tiktok, PACK.tiktok);
@@ -232,12 +273,19 @@ test("generate pack: through structuredJson, chapters from word counts, the scri
   assert.ok(call, "the CLI was run");
   assert.ok(!call.args.includes("WebSearch"), "the pack does not search the web");
   assert.match(call.input, /Write every field in English/);
-  assert.match(call.input, /It takes about forty-five days\. If the file is complete\./, "the spoken script reaches the model");
+  assert.match(
+    call.input,
+    /It takes about forty-five days\. If the file is complete\./,
+    "the spoken script reaches the model",
+  );
   assert.match(call.input, /https:\/\/youtu\.be\/abc123/, "and so does the saved URL");
 });
 
 test("only the owner generates; an edited pack is saved by anyone signed in, and an invalid edit is not", async () => {
-  await assert.rejects(as(employee, () => generatePack(scriptId)), /Only the owner can generate a publish pack/);
+  await assert.rejects(
+    as(employee, () => generatePack(scriptId)),
+    /Only the owner can generate a publish pack/,
+  );
   assert.equal((await stubCalls()).length, 0, "nothing ran");
 
   const generated = await as(owner, () => generatePack(scriptId));
@@ -252,11 +300,20 @@ test("only the owner generates; an edited pack is saved by anyone signed in, and
   };
   const ok = await as(employee, () => savePublishPack(scriptId, edited));
   assert.ok(ok.ok);
-  assert.deepEqual(((await getScript(scriptId))!.publishPack as PublishPack).chapters[1], { time: "0:45", title: "The real timeline" });
+  assert.deepEqual(((await getScript(scriptId))!.publishPack as PublishPack).chapters[1], {
+    time: "0:45",
+    title: "The real timeline",
+  });
 
-  const bad = await as(employee, () => savePublishPack(scriptId, { ...edited, chapters: [{ time: "later", title: "x" }] }));
+  const bad = await as(employee, () =>
+    savePublishPack(scriptId, { ...edited, chapters: [{ time: "later", title: "x" }] }),
+  );
   assert.equal(bad.ok, false);
-  assert.deepEqual(((await getScript(scriptId))!.publishPack as PublishPack).tags, ["one", "two"], "nothing was saved");
+  assert.deepEqual(
+    ((await getScript(scriptId))!.publishPack as PublishPack).tags,
+    ["one", "two"],
+    "nothing was saved",
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -283,20 +340,34 @@ test("make shorts: each valid short is a new draft script linked to its parent; 
     const body = child.body as ScriptBodyV1;
     assert.equal(body.targetMinutes, 1);
     assert.equal(child.title, body.chosenTitle);
-    assert.ok(body.sections[0]!.broll.every((b) => b.aspectRatio === "9:16"), "shorts are vertical");
-    assert.deepEqual(body.sections[0]!.sourceIds, ["s1"], "an id the parent does not have is dropped");
+    assert.ok(
+      body.sections[0]!.broll.every((b) => b.aspectRatio === "9:16"),
+      "shorts are vertical",
+    );
+    assert.deepEqual(
+      body.sections[0]!.sourceIds,
+      ["s1"],
+      "an id the parent does not have is dropped",
+    );
   }
   assert.equal(children[0]!.title, "45 days, not 90");
 
   const [call] = await stubCalls();
-  assert.match(call!.input, /- s1: Complete applications take about 45 days\./, "the parent's sources are offered by id");
+  assert.match(
+    call!.input,
+    /- s1: Complete applications take about 45 days\./,
+    "the parent's sources are offered by id",
+  );
 });
 
 test("blog post and newsletter blurb are stored as Markdown derivatives, newest shown per kind", async () => {
   const blog = await as(owner, () => makeProse(scriptId, "blog"));
   assert.ok(blog.ok, !blog.ok ? blog.error : "");
   assert.match(blog.content, /^# Residency in 45 days/);
-  assert.match(blog.content, /## Sources\n\n- \[Migraciones\]\(https:\/\/example\.gov\.py\/migraciones\/plazos\)$/);
+  assert.match(
+    blog.content,
+    /## Sources\n\n- \[Migraciones\]\(https:\/\/example\.gov\.py\/migraciones\/plazos\)$/,
+  );
 
   const letter = await as(owner, () => makeProse(scriptId, "newsletter"));
   assert.ok(letter.ok);
@@ -304,12 +375,19 @@ test("blog post and newsletter blurb are stored as Markdown derivatives, newest 
 
   const again = await as(owner, () => makeProse(scriptId, "blog"));
   assert.ok(again.ok);
-  assert.equal((await listScriptDerivatives(scriptId, "blog")).length, 2, "a rewrite never overwrites");
+  assert.equal(
+    (await listScriptDerivatives(scriptId, "blog")).length,
+    2,
+    "a rewrite never overwrites",
+  );
   const latest = await latestScriptDerivatives(scriptId);
   assert.equal(latest.blog!.id, again.derivativeId);
   assert.equal(latest.newsletter!.id, letter.derivativeId);
 
-  await assert.rejects(as(employee, () => makeProse(scriptId, "blog")), /Only the owner/);
+  await assert.rejects(
+    as(employee, () => makeProse(scriptId, "blog")),
+    /Only the owner/,
+  );
   const unknown = await as(owner, () => makeProse(scriptId, "tweet" as "blog"));
   assert.equal(unknown.ok, false);
 });

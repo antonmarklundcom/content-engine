@@ -12,7 +12,7 @@ export const en = {
   "report.generated": "Report saved.",
   "report.ownerOnly": "Only the owner can generate a report.",
   "report.empty":
-    "No report for this brand yet. Reports come from `npm run studio:weekly` (Monday mornings) or \"Generate now\".",
+    'No report for this brand yet. Reports come from `npm run studio:weekly` (Monday mornings) or "Generate now".',
   "report.createdAt": "{date} · last {days} days",
   "report.cost": "cost {cost}",
   "report.summary": "Summary",
@@ -37,9 +37,11 @@ export const en = {
     "Questions viewers ask under competitors' top videos, grouped and counted. A question asked often is a topic with proven demand.",
   "questions.mine": "Mine comments",
   "questions.mining": "Reading comments…",
-  "questions.mined": "Read {comments} comments on {videos} videos: {inserted} new questions, {updated} updated.",
+  "questions.mined":
+    "Read {comments} comments on {videos} videos: {inserted} new questions, {updated} updated.",
   "questions.ownerOnly": "Only the owner can mine comments.",
-  "questions.empty": "No questions yet. \"Mine comments\" reads the top competitor videos' comments.",
+  "questions.empty":
+    'No questions yet. "Mine comments" reads the top competitor videos\' comments.',
   "questions.filter": "Status",
   "questions.all": "All",
   "questions.status.new": "New",
@@ -60,13 +62,14 @@ export const sv: Record<keyof typeof en, string> = {
   "report.intro":
     "Vad som slog kanalens egen median bland varje varumärkes konkurrenter den här veckan, varför det fungerade, och idéer till dina egna videor.",
   "report.brand": "Varumärke",
-  "report.noBrands": "Inga aktiva varumärken än. Lägg till ett i brands-tabellen och kom sedan tillbaka hit.",
+  "report.noBrands":
+    "Inga aktiva varumärken än. Lägg till ett i brands-tabellen och kom sedan tillbaka hit.",
   "report.generate": "Skapa nu",
   "report.generating": "Skapar…",
   "report.generated": "Rapporten sparades.",
   "report.ownerOnly": "Bara ägaren kan skapa en rapport.",
   "report.empty":
-    "Ingen rapport för det här varumärket än. Rapporter kommer från `npm run studio:weekly` (måndagsmorgnar) eller \"Skapa nu\".",
+    'Ingen rapport för det här varumärket än. Rapporter kommer från `npm run studio:weekly` (måndagsmorgnar) eller "Skapa nu".',
   "report.createdAt": "{date} · senaste {days} dagarna",
   "report.cost": "kostnad {cost}",
   "report.summary": "Sammanfattning",
@@ -91,9 +94,11 @@ export const sv: Record<keyof typeof en, string> = {
     "Frågor som tittare ställer under konkurrenternas toppvideor, grupperade och räknade. En fråga som ställs ofta är ett ämne med bevisad efterfrågan.",
   "questions.mine": "Läs kommentarer",
   "questions.mining": "Läser kommentarer…",
-  "questions.mined": "Läste {comments} kommentarer på {videos} videor: {inserted} nya frågor, {updated} uppdaterade.",
+  "questions.mined":
+    "Läste {comments} kommentarer på {videos} videor: {inserted} nya frågor, {updated} uppdaterade.",
   "questions.ownerOnly": "Bara ägaren kan läsa kommentarer.",
-  "questions.empty": "Inga frågor än. \"Läs kommentarer\" läser kommentarerna på konkurrenternas toppvideor.",
+  "questions.empty":
+    'Inga frågor än. "Läs kommentarer" läser kommentarerna på konkurrenternas toppvideor.',
   "questions.filter": "Status",
   "questions.all": "Alla",
   "questions.status.new": "Ny",
