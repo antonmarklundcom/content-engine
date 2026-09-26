@@ -599,6 +599,21 @@ One line per phase; detail in `docs/log/<id>.md`.
 | S8 | #24 | `docs/log/s8.md` | merged |
 | S9 | | `docs/log/s9.md` | not started |
 
+## §6b. Build 2b — studio extras (ideas 1–8, 10)
+
+Runs after S9. Schema landed in PR #34 (migration 0006). Four parallel Opus 5.5
+sessions, disjoint Owns, each one PR:
+
+| Phase | Prompt | Ideas |
+|---|---|---|
+| B2b-A | `prompts/b2b-a-competitor-report.md` | 1 weekly competitor report, 2 comment mining |
+| B2b-B | `prompts/b2b-b-facts-channel.md` | 3 fact sheets + out-of-date check, 4 own channel vs competitors |
+| B2b-C | `prompts/b2b-c-filming-publish-repurpose.md` | 5 filming plan, 6 post-recording pack, 7 repurposing |
+| B2b-D | `prompts/b2b-d-listing-thumbnails.md` | 8 Propia listing → script, 10 thumbnails → Higgsfield |
+
+Idea 9 (weekly implement nudge) shipped in aiinsights. Nav links for the new
+pages are added by the parent session after all four merge.
+
 ## §10. Backlog
 
 - **Build 3 — videoPY (voice, video rendering, clipping).** Waits until Anton

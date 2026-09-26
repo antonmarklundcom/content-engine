@@ -17,6 +17,7 @@ export const en = {
     "No channels yet. Paste a competitor's channel URL above to start tracking it.",
   "research.role.competitor": "Competitor",
   "research.role.inspiration": "Inspiration",
+  "research.role.own": "My channel",
   "research.roleLabel": "Role",
   "research.remove": "Remove",
   "research.removeConfirm":
@@ -69,6 +70,7 @@ export const sv: Record<keyof typeof en, string> = {
     "Inga kanaler än. Klistra in en konkurrents kanal-URL ovan för att börja följa den.",
   "research.role.competitor": "Konkurrent",
   "research.role.inspiration": "Inspiration",
+  "research.role.own": "Min kanal",
   "research.roleLabel": "Roll",
   "research.remove": "Ta bort",
   "research.removeConfirm":
