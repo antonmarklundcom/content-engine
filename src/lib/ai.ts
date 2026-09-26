@@ -1080,7 +1080,22 @@ export type ScriptBrief = {
   styleGuide: string;
   references: StructureReference[];
   lessons: PromptLesson[];
+  /** The brand's fact sheet (build 2b, idea 3). Optional: a brief without one reads as none. */
+  facts?: PromptFact[];
 };
+
+/** A checked fact from the brand's fact sheet: said as-is, cited by its URL. */
+export type PromptFact = {
+  topic: string;
+  claim: string;
+  sourceUrl: string | null;
+};
+
+function factsBlock(facts: PromptFact[] | undefined): string {
+  if (!facts?.length) return "";
+  const lines = facts.map((f) => `- [${f.topic}] ${f.claim}${f.sourceUrl ? ` (source: ${f.sourceUrl})` : " (no source URL on file)"}`);
+  return `\n\nFACTS — Anton's checked fact sheet for this brand. Use these checked facts as-is (do not reword numbers, dates or names) and cite their URL in "sources" when you use one. A fact not listed here — or listed with no source URL on file — still needs its own source:\n${lines.join("\n")}`;
+}
 
 function referenceBlock(refs: StructureReference[]): string {
   if (!refs.length) return "";
@@ -1219,7 +1234,7 @@ Target length: ${brief.targetMinutes} minutes, about ${words} spoken words in to
     brief.lessons.length
       ? `\n\nLESSONS Anton saved — use the hooks as patterns and the facts as leads to verify (a saved fact still needs a source URL):\n${lessonLines(brief.lessons)}`
       : ""
-  }${referenceBlock(brief.references)}
+  }${factsBlock(brief.facts)}${referenceBlock(brief.references)}
 
 Write the script: a hook that earns the next 30 seconds, sections in a clear order, a call to action, three title options (the fixed title first), three thumbnail concepts, b-roll shots and sources.`;
 
