@@ -12,7 +12,8 @@ import { parseBriefParams } from "../model";
 /**
  * `/studio/new` — the brief (PLAN.md §6.S12.1). `?brand=` and repeated
  * `?ref=<videoId>` (S10's "Use as reference") preselect the brand and the
- * competitor videos. Generation itself is O8's routes, called from the form.
+ * competitor videos; `?topic=` (build 2b's report and questions) the topic.
+ * Generation itself is O8's routes, called from the form.
  */
 export default async function NewScriptPage({
   searchParams,
@@ -21,7 +22,10 @@ export default async function NewScriptPage({
 }) {
   const user = await requireUser();
   const t = translator(await getLocale());
-  const { brand: wanted, refs } = parseBriefParams(await searchParams);
+  const params = await searchParams;
+  const { brand: wanted, refs } = parseBriefParams(params);
+  // Build 2b: the competitor report's ideas and mined questions prefill the topic.
+  const topic = typeof params.topic === "string" ? params.topic.trim().slice(0, 500) : "";
 
   const brands = await listBrands();
   const brand = brands.find((b) => b.id === wanted) ?? brands[0];
@@ -85,6 +89,7 @@ export default async function NewScriptPage({
         videos={videos}
         selectedRefs={refs.filter((r) => videos.some((v) => v.id === r))}
         lessons={lessons}
+        initialTopic={topic}
       />
     </div>
   );

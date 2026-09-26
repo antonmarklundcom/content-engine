@@ -18,6 +18,7 @@
     "db:seed": "tsx src/db/seed.ts",
     "smoke": "tsx --conditions=react-server scripts/smoke.ts",
     "db:check": "tsx scripts/check-db.ts",
+    "studio:weekly": "tsx --conditions=react-server scripts/weekly-report.ts",
     "yt:seed-owner": "tsx scripts/seed-yt-owner.ts",
     "yt:uploads": "tsx scripts/list-uploads.ts",
     "yt:ingest": "tsx scripts/ingest.ts",
