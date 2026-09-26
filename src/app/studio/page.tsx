@@ -50,12 +50,15 @@ export default async function StudioPage({
             {scripts.length} {t(scripts.length === 1 ? "studio.countOne" : "studio.countMany")}
           </h1>
         </div>
-        <Link
-          href={brand ? `/studio/new?brand=${encodeURIComponent(brand)}` : "/studio/new"}
-          className="rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-[var(--color-accent-ink)]"
-        >
-          {t("studio.new")}
-        </Link>
+        <div className="flex flex-wrap items-center gap-4">
+          <Link href="/studio/plan" className="text-sm font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-accent)]">{t("publish.link.plan")}</Link>
+          <Link
+            href={brand ? `/studio/new?brand=${encodeURIComponent(brand)}` : "/studio/new"}
+            className="rounded-[var(--radius-sm)] bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-[var(--color-accent-ink)]"
+          >
+            {t("studio.new")}
+          </Link>
+        </div>
       </div>
 
       <nav aria-label={t("studio.filter.brand")} className="mb-3 flex flex-wrap gap-2">
