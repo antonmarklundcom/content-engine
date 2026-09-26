@@ -21,15 +21,23 @@ function RefreshPath {
 }
 
 Step "1/6  Node.js and Git"
-if (-not (Have node)) {
-  winget install --id OpenJS.NodeJS.LTS -e --accept-source-agreements --accept-package-agreements
-  RefreshPath
+function InstallOrAsk($cmd, $wingetId, $url, $name) {
+  if (Have $cmd) { return }
+  if (Have winget) {
+    winget install --id $wingetId -e --accept-source-agreements --accept-package-agreements
+    RefreshPath
+  }
+  if (-not (Have $cmd)) {
+    Write-Host "$name is not installed and winget is not available." -ForegroundColor Yellow
+    Write-Host "A download page opens. Install $name with the default options, then press Enter here."
+    Start-Process $url
+    Read-Host "Press Enter when $name is installed"
+    RefreshPath
+  }
 }
-if (-not (Have git)) {
-  winget install --id Git.Git -e --accept-source-agreements --accept-package-agreements
-  RefreshPath
-}
-if (-not (Have node)) { throw "Node.js did not install. Install it from https://nodejs.org (LTS), then run setup.bat again." }
+InstallOrAsk node "OpenJS.NodeJS.LTS" "https://nodejs.org/en/download" "Node.js (LTS)"
+InstallOrAsk git "Git.Git" "https://git-scm.com/download/win" "Git"
+if (-not (Have node)) { throw "Node.js is still not found. Close this window, open a NEW PowerShell window and run setup.bat again." }
 Write-Host "Node $(node --version)  ·  npm $(npm --version)"
 
 Step "2/6  Settings file (.env)"
