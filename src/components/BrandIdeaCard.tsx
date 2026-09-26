@@ -13,7 +13,8 @@ export type BrandIdea = {
   platform: string;
   draftCopy: string;
   visualNotes: string | null;
-  citations: { claim: string; sources: string[] }[] | null;
+  // Model-written JSON: `sources` is typed as an array but is not guaranteed one.
+  citations: { claim: string; sources?: string[] | null }[] | null;
   status: "proposed" | "approved" | "rejected" | "posted";
   createdAt: string;
 };
@@ -75,7 +76,7 @@ export function BrandIdeaCard({
           <ul className="mt-2 list-disc space-y-1 pl-5">
             {idea.citations.map((c, i) => (
               <li key={i} className="break-words">
-                {c.claim} — {c.sources.join(", ")}
+                {c.claim} — {(c.sources ?? []).join(", ")}
               </li>
             ))}
           </ul>
