@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { db, schema } from "../../../../db";
-import { eq, sql, type SQL } from "drizzle-orm";
+import { schema } from "../../../../db";
+import { isIdeaStatus, updateIdea, type IdeaUpdate } from "@/lib/bridge";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -10,22 +10,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 
   const body = await request.json();
-  const update: Partial<typeof schema.ideas.$inferInsert> = {};
-  let postedAt: SQL | null | undefined;
+  const update: IdeaUpdate = {};
 
   if (body.status !== undefined) {
-    if (!schema.IDEA_STATUSES.includes(body.status)) {
+    if (!isIdeaStatus(body.status)) {
       return NextResponse.json({ error: `status must be one of ${schema.IDEA_STATUSES.join(", ")}` }, { status: 400 });
     }
+    // posted_at follows the status inside updateIdea (PLAN.md §1.23).
     update.status = body.status;
-    // posted_at describes the current status (PLAN.md §1.23): stamped on the
-    // way into `posted`, cleared on the way out. Re-sending `posted` for an
-    // idea already posted keeps the original stamp — decided in the UPDATE
-    // itself, against the row's own status, so there is no read to race.
-    postedAt =
-      body.status === "posted"
-        ? sql`case when ${schema.ideas.status} = 'posted' then ${schema.ideas.postedAt} else now() end`
-        : null;
   }
   if (typeof body.draftCopy === "string") update.draftCopy = body.draftCopy;
   if (typeof body.title === "string") update.title = body.title;
@@ -35,8 +27,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "nothing to update" }, { status: 400 });
   }
 
-  const set = postedAt === undefined ? update : { ...update, postedAt };
-  const [row] = await db.update(schema.ideas).set(set).where(eq(schema.ideas.id, ideaId)).returning();
+  const row = await updateIdea(ideaId, update);
   if (!row) {
     return NextResponse.json({ error: "idea not found" }, { status: 404 });
   }
