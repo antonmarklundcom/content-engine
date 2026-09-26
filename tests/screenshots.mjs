@@ -1,10 +1,10 @@
 /**
  * The one screenshot pass (PLAN.md §4.13).
  *
- * A scaffold in this phase: O4 has no UI to show, so the page list below is the
- * single route that renders without a session. S5 — the phase that builds the
- * one design system — fills it in with the pages it wants a reviewer to look
- * at, and changes nothing else here.
+ * The pages S5 (one design system, §6.S5) wants a reviewer to look at. Every
+ * page but the login needs a session, so when DATABASE_URL is set this upserts
+ * a throwaway owner (`screenshots@example.invalid`) and signs in through the
+ * real login form first. Without a database only the login page is captured.
  *
  * Runs against an already-started server (`next start`), writes PNGs to the
  * git-ignored docs/screenshots/, and CI uploads that directory as an artifact.
@@ -15,6 +15,8 @@
 import { mkdir, rm } from "node:fs/promises";
 import path from "node:path";
 
+import bcrypt from "bcryptjs";
+import pg from "pg";
 import { chromium } from "playwright";
 
 const BASE_URL = process.env.BASE_URL ?? "http://127.0.0.1:3000";
@@ -23,11 +25,48 @@ const OUT_DIR = "docs/screenshots";
 /** Two widths: the phone the inbox is designed for (§1.6), and a desktop. */
 const WIDTHS = [
   { name: "mobile", width: 390, height: 844 },
-  { name: "desktop", width: 1440, height: 900 },
+  { name: "desktop", width: 1280, height: 900 },
 ];
 
-/** S5 extends this. Keep it to ≤ 5 pages — the polish cap is one pass, not a suite. */
-const PAGES = [{ name: "youtube-login", path: "/youtube/login" }];
+/** ≤ 5 pages — the polish cap is one pass, not a suite. `auth: false` is shot signed out. */
+const PAGES = [
+  { name: "youtube-login", path: "/youtube/login", auth: false },
+  { name: "brands", path: "/", auth: true },
+  { name: "brand-propia", path: "/brand/propia", auth: true },
+  { name: "inbox", path: "/inbox", auth: true },
+  { name: "youtube", path: "/youtube", auth: true },
+];
+
+const LOGIN_EMAIL = "screenshots@example.invalid";
+const LOGIN_PASSWORD = "screenshots-only-password";
+
+/** Upsert the throwaway owner. Returns false (skip the signed-in pages) without a database. */
+async function seedLogin() {
+  if (!process.env.DATABASE_URL) return false;
+  const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
+  await client.connect();
+  try {
+    const hash = await bcrypt.hash(LOGIN_PASSWORD, 10);
+    await client.query(
+      `insert into yt_users (email, role, password_hash) values ($1, 'owner', $2)
+       on conflict (email) do update set password_hash = excluded.password_hash`,
+      [LOGIN_EMAIL, hash],
+    );
+  } finally {
+    await client.end();
+  }
+  return true;
+}
+
+async function signIn(page) {
+  await page.goto(new URL("/youtube/login", BASE_URL).toString());
+  await page.fill('input[name="email"]', LOGIN_EMAIL);
+  await page.fill('input[name="password"]', LOGIN_PASSWORD);
+  await Promise.all([
+    page.waitForURL((url) => !url.pathname.startsWith("/youtube/login")),
+    page.click('form:has(input[name="password"]) button[type="submit"]'),
+  ]);
+}
 
 async function main() {
   await rm(OUT_DIR, { recursive: true, force: true });
@@ -37,6 +76,7 @@ async function main() {
   // machine that already has one — a dev box, a sandbox with a preinstalled
   // Chromium — point this at it rather than downloading a second copy.
   const executablePath = process.env.PLAYWRIGHT_CHROMIUM_PATH || undefined;
+  const canSignIn = await seedLogin();
   const browser = await chromium.launch(executablePath ? { executablePath } : {});
   try {
     for (const viewport of WIDTHS) {
@@ -46,13 +86,28 @@ async function main() {
       });
       const page = await context.newPage();
 
-      for (const target of PAGES) {
+      // Signed-out pages first, then sign in once for the rest.
+      const targets = [...PAGES].sort((a, b) => Number(a.auth) - Number(b.auth));
+      let signedIn = false;
+      for (const target of targets) {
+        if (target.auth && !canSignIn) {
+          console.log(`skipped ${target.path} (no DATABASE_URL to sign in with)`);
+          continue;
+        }
+        if (target.auth && !signedIn) {
+          await signIn(page);
+          signedIn = true;
+        }
         const url = new URL(target.path, BASE_URL).toString();
         const response = await page.goto(url, { waitUntil: "networkidle" });
         // A 500 that still paints something would otherwise be uploaded as if
         // it were the page, and reviewed as if it were fine.
         if (!response || response.status() >= 400) {
           throw new Error(`${url} returned ${response ? response.status() : "no response"}`);
+        }
+        // A redirect back to the login page is a failed sign-in, not the page.
+        if (target.auth && new URL(page.url()).pathname !== target.path) {
+          throw new Error(`${url} ended at ${page.url()}`);
         }
         const file = path.join(OUT_DIR, `${target.name}-${viewport.name}.png`);
         await page.screenshot({ path: file, fullPage: true });

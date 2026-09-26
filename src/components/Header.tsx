@@ -17,6 +17,7 @@ export async function Header() {
   const status = user ? await spendStatus() : null;
 
   const nav = [
+    { href: "/", label: t("brands.nav") },
     { href: "/youtube", label: t("nav.digest") },
     { href: "/youtube/topics", label: t("nav.topics") },
     { href: "/youtube/marks", label: t("nav.marks") },
@@ -29,10 +30,10 @@ export async function Header() {
     <header className="surface-border sticky top-0 z-10 border-x-0 border-t-0 bg-[var(--color-surface)]/95 backdrop-blur">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-6 py-4">
         <div className="flex items-center gap-8">
-          <Link href="/youtube" className="text-sm font-semibold tracking-tight text-[var(--color-ink)]">
+          <Link href="/" className="whitespace-nowrap text-sm font-semibold tracking-tight text-[var(--color-ink)]">
             {t("app.name")}
           </Link>
-          <nav className="flex items-center gap-5">
+          <nav className="flex flex-wrap items-center gap-x-5 gap-y-2">
             {user &&
               nav.map((item) => (
                 <Link
