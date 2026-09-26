@@ -36,4 +36,4 @@
 
 ## Verification
 
-`npm run verify` green locally (unit 260, integration 134, build). CI green on the PR head.
+CI green on `26e2cab` (PR #39, merged as `9982277`); `npm run verify` re-run on main after merge: unit 279, integration 149, build green.
