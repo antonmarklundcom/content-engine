@@ -31,6 +31,7 @@ import * as admin from "./dict/admin";
 import * as research from "./dict/research";
 import * as lessons from "./dict/lessons";
 import * as scripts from "./dict/scripts";
+import * as publish from "./dict/publish";
 import * as facts from "./dict/facts";
 import * as listing from "./dict/listing";
 
@@ -48,6 +49,7 @@ export const en = {
   ...research.en,
   ...lessons.en,
   ...scripts.en,
+  ...publish.en,
   ...facts.en,
   ...listing.en,
 } as const;
@@ -68,6 +70,7 @@ export const sv: Record<TranslationKey, string> = {
   ...research.sv,
   ...lessons.sv,
   ...scripts.sv,
+  ...publish.sv,
   ...facts.sv,
   ...listing.sv,
 };

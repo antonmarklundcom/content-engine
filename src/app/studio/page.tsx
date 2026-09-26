@@ -50,7 +50,8 @@ export default async function StudioPage({
             {scripts.length} {t(scripts.length === 1 ? "studio.countOne" : "studio.countMany")}
           </h1>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href="/studio/plan" className="text-sm font-medium text-[var(--color-ink-muted)] hover:text-[var(--color-accent)]">{t("publish.link.plan")}</Link>
           <Link
             href={brand ? `/studio/listing?brand=${encodeURIComponent(brand)}` : "/studio/listing"}
             className="surface-border rounded-[var(--radius-sm)] px-4 py-2 text-sm font-medium text-[var(--color-ink)] hover:border-[var(--color-accent)]"

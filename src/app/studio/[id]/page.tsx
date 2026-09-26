@@ -7,7 +7,7 @@ import { translator } from "@/lib/i18n";
 import { StudioEditor } from "@/components/StudioEditor";
 import { StudioExports } from "@/components/StudioExports";
 import { StudioStatusButtons } from "@/components/StudioStatusButtons";
-import { STUDIO_PRIMARY } from "@/components/StudioStyles";
+import { STUDIO_BUTTON, STUDIO_PRIMARY } from "@/components/StudioStyles";
 import { STATUS_LABEL } from "../model";
 import { loadScript } from "./load";
 
@@ -39,6 +39,10 @@ export default async function ScriptPage({ params }: { params: Promise<{ id: str
           <Link href={`/studio/${row.id}/teleprompter`} className={`${STUDIO_PRIMARY} self-start`}>
             {t("studio.teleprompter.open")}
           </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link href={`/studio/${row.id}/publish`} className={STUDIO_BUTTON}>{t("publish.link.pack")}</Link>
+            <Link href={`/studio/${row.id}/repurpose`} className={STUDIO_BUTTON}>{t("publish.link.repurpose")}</Link>
+          </div>
         </div>
         <div className="surface-border surface-card flex flex-col gap-3 px-5 py-4">
           <h2 className="text-sm font-semibold text-[var(--color-ink)]">{t("studio.export.title")}</h2>

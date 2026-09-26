@@ -146,3 +146,45 @@ export async function setScriptStatus(id: number, status: ScriptStatus): Promise
     .returning();
   return row ?? null;
 }
+
+// ---------------------------------------------------------------------------
+// build 2b columns (ideas 6, 7, 10) — one setter each, no body validation:
+// none of them touches the script body.
+// ---------------------------------------------------------------------------
+
+async function setColumns(id: number, values: Partial<typeof scripts.$inferInsert>): Promise<Script | null> {
+  const [row] = await db
+    .update(scripts)
+    .set({ ...values, updatedAt: sql`now()` })
+    .where(eq(scripts.id, id))
+    .returning();
+  return row ?? null;
+}
+
+/** The published video's URL (idea 6), or null to clear it; null if the script does not exist. */
+export async function setScriptYoutubeUrl(id: number, url: string | null): Promise<Script | null> {
+  return setColumns(id, { youtubeUrl: url });
+}
+
+/**
+ * The post-recording pack (idea 6), shape `PublishPack` in
+ * src/lib/studio/types.ts — checked by its caller, opaque here like the body.
+ */
+export async function setScriptPublishPack(id: number, pack: unknown): Promise<Script | null> {
+  return setColumns(id, { publishPack: pack });
+}
+
+/** The chosen thumbnail, a path under `media/<id>/thumbnails/` (idea 10), or null. */
+export async function setScriptThumbnailFile(id: number, file: string | null): Promise<Script | null> {
+  return setColumns(id, { thumbnailFile: file });
+}
+
+/** Link a short to the long script it was cut from (idea 7), or null to unlink. */
+export async function setScriptParent(id: number, parentScriptId: number | null): Promise<Script | null> {
+  return setColumns(id, { parentScriptId });
+}
+
+/** The shorts cut from a script, oldest first. */
+export async function listChildScripts(parentScriptId: number): Promise<Script[]> {
+  return db.select().from(scripts).where(eq(scripts.parentScriptId, parentScriptId)).orderBy(scripts.id);
+}
