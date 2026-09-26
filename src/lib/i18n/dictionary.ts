@@ -35,6 +35,7 @@ import * as publish from "./dict/publish";
 import * as facts from "./dict/facts";
 import * as listing from "./dict/listing";
 import * as report from "./dict/report";
+import * as settings from "./dict/settings";
 import * as header from "./dict/header";
 
 export const en = {
@@ -55,6 +56,7 @@ export const en = {
   ...facts.en,
   ...listing.en,
   ...report.en,
+  ...settings.en,
   ...header.en,
 } as const;
 
@@ -78,6 +80,7 @@ export const sv: Record<TranslationKey, string> = {
   ...facts.sv,
   ...listing.sv,
   ...report.sv,
+  ...settings.sv,
   ...header.sv,
 };
 

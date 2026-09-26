@@ -3,6 +3,22 @@
 About 20 minutes the first time. You type the lines in grey boxes into
 **PowerShell** (Start menu → type "PowerShell" → open it). Paste with right-click.
 
+
+## Quick install (recommended)
+
+1. Open **PowerShell** and run these two lines (Git asks you to log in to GitHub once):
+   ```powershell
+   winget install --id Git.Git -e
+   git clone https://github.com/antonmarklundcom/content-engine "$HOME\content-engine"
+   ```
+2. Open the `content-engine` folder in your user folder and double-click **`setup.bat`**.
+   It installs Node.js, asks for your free Neon database link and a login, sets
+   everything up and puts a **Content Engine** shortcut on your desktop.
+3. Double-click the shortcut, log in, open **Settings** (`localhost:3000/settings`)
+   and paste your **Gemini** and **YouTube** keys. Press **Test** next to each.
+
+The numbered steps below are the same thing by hand, if the installer stops.
+
 ## 1. Install Node.js and Git (once)
 
 ```powershell

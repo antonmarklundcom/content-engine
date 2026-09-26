@@ -13,6 +13,7 @@ export const en = {
   "header.studio.listing": "From listing",
   "header.facts": "Facts",
   "header.lessons": "Lessons",
+  "header.settings": "Settings",
   "header.youtube": "YouTube",
 } as const;
 
@@ -29,5 +30,6 @@ export const sv: Record<keyof typeof en, string> = {
   "header.studio.listing": "Från annons",
   "header.facts": "Fakta",
   "header.lessons": "Lärdomar",
+  "header.settings": "Inställningar",
   "header.youtube": "YouTube",
 };

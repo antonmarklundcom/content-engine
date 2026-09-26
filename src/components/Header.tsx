@@ -56,6 +56,7 @@ export async function Header() {
       ],
     },
     { href: "/inbox", label: t("nav.inbox") },
+    { href: "/settings", label: t("header.settings") },
   ];
 
   return (
