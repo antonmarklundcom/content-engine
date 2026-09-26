@@ -591,7 +591,7 @@ One line per phase; detail in `docs/log/<id>.md`.
 | S10 | | `docs/log/s10.md` | not started |
 | S11 | | `docs/log/s11.md` | not started |
 | S12 | | `docs/log/s12.md` | not started |
-| S8 | | `docs/log/s8.md` | not started |
+| S8 | (open) | `docs/log/s8.md` | in PR |
 | S9 | | `docs/log/s9.md` | not started |
 
 ## §10. Backlog
