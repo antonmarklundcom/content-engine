@@ -14,6 +14,6 @@ export async function generateMetadata(): Promise<Metadata> {
 export const dynamic = "force-dynamic";
 
 export default function LessonsLayout({ children }: { children: React.ReactNode }) {
-  // The header and <html lang> live in the root layout now (PLAN.md §1.22).
+  // The header and <html lang> live in the root layout (PLAN.md §1.22).
   return children;
 }
