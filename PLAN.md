@@ -593,11 +593,12 @@ One line per phase; detail in `docs/log/<id>.md`.
 | O7 | #20 | `docs/log/o7.md` | merged |
 | O8 | #22 | `docs/log/o8.md` | merged |
 | S7 | — | — | dropped (§1.28) |
-| S10 | (open) | `docs/log/s10.md` | in PR |
+| S10 | #27 | `docs/log/s10.md` | merged |
 | S11 | #30 | `docs/log/s11.md` | merged |
 | S12 | #31 | `docs/log/s12.md` | merged |
 | S8 | #24 | `docs/log/s8.md` | merged |
-| S9 | | `docs/log/s9.md` | not started |
+| S9 | (this PR) | `docs/log/s9.md` | merged |
+| B2b-A–D | #38, #37, #39 (+#41), #40 | `docs/log/b2b-{a,b,c,d}.md` | merged |
 
 ## §6b. Build 2b — studio extras (ideas 1–8, 10)
 

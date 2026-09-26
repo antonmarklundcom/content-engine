@@ -69,9 +69,7 @@ export async function analysisBundleForVideo(
  * "seed from a video" picker's list (§6.S3.2). Only `ok` analyses: a failed
  * row has no payload to ground anything in.
  */
-export async function listAnalyzedVideos(
-  limit = 100,
-): Promise<
+export async function listAnalyzedVideos(limit = 100): Promise<
   {
     analysisId: number;
     videoId: number;

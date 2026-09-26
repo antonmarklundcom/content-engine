@@ -5,12 +5,7 @@ import { workAsyncStorage } from "next/dist/server/app-render/work-async-storage
 
 import { db, schema } from "@/db";
 import { listBrandCompetitors } from "@/lib/bridge/research";
-import {
-  addCompetitorChannel,
-  removeCompetitor,
-  setCompetitorRole,
-  type ResearchActionResult,
-} from "@/lib/research.actions";
+import { addCompetitorChannel, removeCompetitor, setCompetitorRole } from "@/lib/research.actions";
 
 import { callRoute, signIn } from "./route";
 import { resetTables, teardown } from "./setup";

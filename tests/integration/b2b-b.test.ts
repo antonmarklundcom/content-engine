@@ -230,16 +230,14 @@ test("a posted script is flagged once a fact on a source it cites changes after 
     .where(eq(schema.facts.id, fact.id));
   const recent = await postedScript("Posted after the change", 10);
   await postedScript("Not posted yet", 0, "ready");
-  await db
-    .insert(schema.scripts)
-    .values({
-      brandId: "other",
-      title: "Other brand",
-      language: "en",
-      status: "posted",
-      body: sampleScriptBody(),
-      postedAt: sql`now() - make_interval(days => 40)`,
-    });
+  await db.insert(schema.scripts).values({
+    brandId: "other",
+    title: "Other brand",
+    language: "en",
+    status: "posted",
+    body: sampleScriptBody(),
+    postedAt: sql`now() - make_interval(days => 40)`,
+  });
 
   assert.deepEqual(
     await brandScriptsNeedingCorrection(BRAND.id),
