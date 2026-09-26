@@ -584,7 +584,7 @@ One line per phase; detail in `docs/log/<id>.md`.
 | O5 | #15 | `docs/log/o5.md` | merged — live smoke handed off |
 | O6 | #18 | `docs/log/o6.md` | merged |
 | S5 | | `docs/log/s5.md` | not started |
-| S6 | | `docs/log/s6.md` | not started |
+| S6 | (open) | `docs/log/s6.md` | in PR |
 | O7 | #20 | `docs/log/o7.md` | merged |
 | O8 | #22 | `docs/log/o8.md` | merged |
 | S7 | — | — | dropped (§1.28) |
