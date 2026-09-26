@@ -41,18 +41,20 @@ export function StudioBriefForm({
   videos,
   selectedRefs,
   lessons,
+  initialTopic = "",
 }: {
   brands: { id: string; name: string; language: ScriptLanguage }[];
   brandId: string;
   videos: BriefVideo[];
   selectedRefs: number[];
   lessons: BriefLesson[];
+  initialTopic?: string;
 }) {
   const t = useTranslator();
   const router = useRouter();
   const brandDefault = brands.find((b) => b.id === brandId)?.language ?? "en";
 
-  const [topic, setTopic] = useState("");
+  const [topic, setTopic] = useState(initialTopic);
   const [language, setLanguage] = useState<ScriptLanguage>(brandDefault);
   const [minutes, setMinutes] = useState(8);
   const [refs, setRefs] = useState<number[]>(selectedRefs);
