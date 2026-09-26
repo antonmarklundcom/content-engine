@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { generateScript, ScriptGenerationError } from "@/lib/ai";
 import { getBrand } from "@/lib/bridge";
 import { createScript } from "@/lib/bridge/scripts";
-import { lessonsForPrompt, structureReferences, UnknownReferenceVideoError } from "@/lib/scripts/brief";
+import { factsForPrompt, lessonsForPrompt, structureReferences, UnknownReferenceVideoError } from "@/lib/scripts/brief";
 import { validateScriptBody } from "@/lib/scripts/contract";
 import { defaultScriptLanguage, isScriptLanguage, loadStyleGuide } from "@/lib/scripts/language";
 import { idList, ownerOnly } from "@/lib/scripts/owner-gate";
@@ -16,7 +16,8 @@ export const maxDuration = 300; // grounded research + a full script
  *
  * Body: `{ brandId, topic, title, targetMinutes, language?, competitorVideoIds?,
  * lessonIds?, ideaId? }`. Competitor videos (by `videos.id`) must have an
- * analysis; they are passed as structure references only. Responds 201 with
+ * analysis; they are passed as structure references only. The brand's fact
+ * sheet always goes along (build 2b, idea 3). Responds 201 with
  * `{ script, costUsd }`.
  */
 export async function POST(request: Request) {
@@ -64,7 +65,10 @@ export async function POST(request: Request) {
     throw error;
   }
   const language = body.language ?? defaultScriptLanguage(brand);
-  const lessons = await lessonsForPrompt(brand.id, { ids: lessonIds });
+  const [lessons, facts] = await Promise.all([
+    lessonsForPrompt(brand.id, { ids: lessonIds }),
+    factsForPrompt(brand.id),
+  ]);
 
   let generated;
   try {
@@ -76,6 +80,7 @@ export async function POST(request: Request) {
       styleGuide: await loadStyleGuide(language),
       references,
       lessons,
+      facts,
     });
   } catch (error) {
     if (error instanceof SpendCapExceededError) {

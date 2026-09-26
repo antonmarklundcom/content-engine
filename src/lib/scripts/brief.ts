@@ -3,12 +3,14 @@ import { and, desc, eq, inArray, isNull, or } from "drizzle-orm";
 
 import { db } from "@/db";
 import { lessons, videos } from "@/db/schema";
-import type { PromptLesson, StructureReference } from "@/lib/ai";
+import type { PromptFact, PromptLesson, StructureReference } from "@/lib/ai";
+import { listFacts } from "@/lib/bridge/facts";
 import { latestAnalysisForVideo } from "@/lib/analysis/latest";
 
 /**
  * What the titles and script prompts are given besides the topic: saved
- * lessons (§1.31) and competitor analyses as structure references.
+ * lessons (§1.31), competitor analyses as structure references, and the
+ * brand's fact sheet (build 2b, idea 3).
  */
 
 /** More than this and the prompt is a lesson dump, not guidance. */
@@ -40,6 +42,17 @@ export async function lessonsForPrompt(
     .where(and(or(eq(lessons.brandId, brandId), isNull(lessons.brandId)), inArray(lessons.kind, options.kinds)))
     .orderBy(desc(lessons.createdAt), desc(lessons.id))
     .limit(MAX_PROMPT_LESSONS);
+}
+
+/** A fact sheet longer than this is a research dump; the script prompt gets the first ones by topic. */
+export const MAX_PROMPT_FACTS = 40;
+
+/** The brand's checked facts for the script prompt, grouped by topic. */
+export async function factsForPrompt(brandId: string): Promise<PromptFact[]> {
+  const sheet = await listFacts(brandId);
+  return sheet
+    .slice(0, MAX_PROMPT_FACTS)
+    .map((f) => ({ topic: f.topic, claim: f.claim, sourceUrl: f.sourceUrl }));
 }
 
 export class UnknownReferenceVideoError extends Error {
