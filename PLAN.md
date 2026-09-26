@@ -161,6 +161,11 @@ Decided 2026-09-11 (Fable review, `docs/REVIEW-2026-09-11.md`):
     `create_trigger`; never inherit, never Fable. Where a prompt says
     "SONNET session", read "Opus 5.5, low effort". If a newer model exists
     when a phase runs, still use `claude-opus-5-5` unless this line is edited.
+38. **Subscription mode.** `AI_PROVIDER=gemini|claude|codex`. Studio writing
+    (titles, scripts, reports, packs) goes through `structuredJson()` in
+    `ai.ts`, which runs the logged-in Claude Code / Codex CLI locally
+    (`src/lib/ai-cli.ts`) at $0 app cost, or Gemini under the spend cap.
+    YouTube digests/screening stay on Gemini. See `docs/SUBSCRIPTION-MODE.md`.
 36. **Out of scope for build 2:** voice, video rendering, clipping
     (videoPY, deferred), children's stories (separate build), auto-posting.
 
