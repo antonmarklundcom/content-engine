@@ -11,9 +11,8 @@ export function SpendMeter({ status, locale }: { status: SpendStatus; locale: Lo
   // Committed money is spent as far as the cap is concerned (PR-26), so the
   // figure shown is the projected one — a meter that reads lower than the
   // number the guard refuses on would be worse than no meter.
-  const committed = status.committedUsd > 0
-    ? ` · ${formatUsd(status.committedUsd)} ${t("spend.committed")}`
-    : "";
+  const committed =
+    status.committedUsd > 0 ? ` · ${formatUsd(status.committedUsd)} ${t("spend.committed")}` : "";
   const barColor = status.overCap
     ? "bg-[var(--color-danger)]"
     : status.fraction > 0.8
@@ -21,7 +20,10 @@ export function SpendMeter({ status, locale }: { status: SpendStatus; locale: Lo
       : "bg-[var(--color-accent)]";
 
   return (
-    <div className="flex flex-col gap-1.5" title={`${formatUsd(status.projectedUsd)} / ${formatUsd(status.capUsd)} ${t("spend.tooltip")}${committed}`}>
+    <div
+      className="flex flex-col gap-1.5"
+      title={`${formatUsd(status.projectedUsd)} / ${formatUsd(status.capUsd)} ${t("spend.tooltip")}${committed}`}
+    >
       <div className="flex items-baseline gap-1.5 text-sm">
         <span className="font-medium text-[var(--color-ink)]">
           {formatUsd(status.projectedUsd)}

@@ -47,11 +47,7 @@ async function promoteSourcesFor(clip: InboxClip): Promise<PromoteSourceOption[]
   }));
 }
 
-export default async function InboxPage({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
+export default async function InboxPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const params = await searchParams;
   const user = await requireUser();
   const locale = await getLocale();

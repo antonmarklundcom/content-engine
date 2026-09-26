@@ -28,7 +28,12 @@ after(teardown);
 async function source(youtubeId: string, title = youtubeId): Promise<number> {
   const [row] = await db
     .insert(schema.sources)
-    .values({ kind: "channel", youtubeId, title, url: `https://www.youtube.com/channel/${youtubeId}` })
+    .values({
+      kind: "channel",
+      youtubeId,
+      title,
+      url: `https://www.youtube.com/channel/${youtubeId}`,
+    })
     .returning({ id: schema.sources.id });
   return row.id;
 }
@@ -68,11 +73,19 @@ test("link, relink with a new role, list per source, unlink", async () => {
   assert.equal((await db.select().from(schema.brandSources)).length, 3);
 
   const forA = await brandsForSource(a);
-  assert.deepEqual(forA.map((r) => r.brandId), ["pozo", "propia"], "one channel, several brands (§1.29)");
+  assert.deepEqual(
+    forA.map((r) => r.brandId),
+    ["pozo", "propia"],
+    "one channel, several brands (§1.29)",
+  );
 
   assert.equal(await unlinkSourceFromBrand("pozo", a), true);
   assert.equal(await unlinkSourceFromBrand("pozo", a), false, "second unlink finds nothing");
-  assert.equal((await db.select().from(schema.sources)).length, 2, "unlinking never deletes the source");
+  assert.equal(
+    (await db.select().from(schema.sources)).length,
+    2,
+    "unlinking never deletes the source",
+  );
 
   await assert.rejects(linkSourceToBrand("pozo", a, "rival" as never), InvalidBrandSourceRoleError);
 });
@@ -95,22 +108,30 @@ test("listBrandCompetitors: stats per linked channel, role filter, newest link f
   await linkSourceToBrand("pozo", b, "inspiration");
 
   const all = await listBrandCompetitors("pozo");
-  assert.deepEqual(all.map((c) => c.title), ["Beta", "Alpha"]);
+  assert.deepEqual(
+    all.map((c) => c.title),
+    ["Beta", "Alpha"],
+  );
 
   const alpha = all.find((c) => c.sourceId === a)!;
   assert.equal(alpha.videoCount, 7);
   assert.equal(alpha.analyzedCount, 1, "a failed row is not an analysis");
   assert.equal(alpha.medianViews, 350, "median of the six with a view count");
   assert.ok(alpha.latestPublishedAt instanceof Date);
-  assert.ok(Math.abs(Date.now() - alpha.latestPublishedAt.getTime() - 5 * 86_400_000) < 3_600_000,
-    "timestamps come back in UTC, not shifted by the machine's zone");
+  assert.ok(
+    Math.abs(Date.now() - alpha.latestPublishedAt.getTime() - 5 * 86_400_000) < 3_600_000,
+    "timestamps come back in UTC, not shifted by the machine's zone",
+  );
 
   const beta = all.find((c) => c.sourceId === b)!;
   assert.equal(beta.medianViews, null, "under 5 videos → no baseline");
   assert.equal(beta.role, "inspiration");
 
   const competitors = await listBrandCompetitors("pozo", { role: "competitor" });
-  assert.deepEqual(competitors.map((c) => c.sourceId), [a]);
+  assert.deepEqual(
+    competitors.map((c) => c.sourceId),
+    [a],
+  );
   assert.deepEqual(await listBrandCompetitors("nobody"), []);
 });
 
@@ -158,8 +179,14 @@ test("topOutliersForBrand agrees with the pure outlier function", async () => {
   assert.ok(board.length > 0);
   for (const entry of board) {
     const expected = reference.get(entry.videoId);
-    assert.ok(expected !== null && expected !== undefined, `video ${entry.videoId} has a reference score`);
-    assert.ok(Math.abs(entry.score - expected) < 1e-9, `video ${entry.videoId}: ${entry.score} vs ${expected}`);
+    assert.ok(
+      expected !== null && expected !== undefined,
+      `video ${entry.videoId} has a reference score`,
+    );
+    assert.ok(
+      Math.abs(entry.score - expected) < 1e-9,
+      `video ${entry.videoId}: ${entry.score} vs ${expected}`,
+    );
     assert.ok(entry.sourceId !== small && entry.sourceId !== zero && entry.sourceId !== other);
   }
   // Everything the reference scores inside the window is on the board.
@@ -178,7 +205,10 @@ test("topOutliersForBrand agrees with the pure outlier function", async () => {
   assert.equal(board[0].sourceTitle, "Alpha");
   assert.ok(!board.some((e) => e.videoId === oldViral.id), "outside the window");
   const sorted = [...board].sort((x, y) => y.score - x.score);
-  assert.deepEqual(board.map((e) => e.score), sorted.map((e) => e.score));
+  assert.deepEqual(
+    board.map((e) => e.score),
+    sorted.map((e) => e.score),
+  );
 
   // Window, limit and role all narrow the same statement.
   const recent = await topOutliersForBrand("pozo", { days: 1 });

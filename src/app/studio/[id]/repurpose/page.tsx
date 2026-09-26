@@ -23,11 +23,19 @@ export default async function RepurposePage({ params }: { params: Promise<{ id: 
     row.parentScriptId ? getScript(row.parentScriptId) : Promise.resolve(null),
   ]);
   const owner = isOwner(user);
-  const slug = row.title.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "").slice(0, 60) || `script-${row.id}`;
+  const slug =
+    row.title
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 60) || `script-${row.id}`;
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
-      <Link href={`/studio/${row.id}`} className="text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)]">
+      <Link
+        href={`/studio/${row.id}`}
+        className="text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)]"
+      >
         &larr; {t("publish.back")}
       </Link>
       <h1 className="mt-2 text-2xl font-semibold text-[var(--color-ink)]">
@@ -40,11 +48,17 @@ export default async function RepurposePage({ params }: { params: Promise<{ id: 
           </Link>
         </p>
       )}
-      {!valid && <p className="mt-4 text-sm text-[var(--color-danger)]">{t("studio.editor.unreadable")}</p>}
-      {!owner && <p className="mt-4 text-xs text-[var(--color-ink-muted)]">{t("publish.ownerOnly")}</p>}
+      {!valid && (
+        <p className="mt-4 text-sm text-[var(--color-danger)]">{t("studio.editor.unreadable")}</p>
+      )}
+      {!owner && (
+        <p className="mt-4 text-xs text-[var(--color-ink-muted)]">{t("publish.ownerOnly")}</p>
+      )}
 
       <section className="surface-border surface-card mt-6 flex flex-col gap-3 px-5 py-4">
-        <h2 className="text-sm font-semibold text-[var(--color-ink)]">{t("publish.repurpose.shorts")}</h2>
+        <h2 className="text-sm font-semibold text-[var(--color-ink)]">
+          {t("publish.repurpose.shorts")}
+        </h2>
         <p className="text-xs text-[var(--color-ink-muted)]">{t("publish.repurpose.shortsHelp")}</p>
         {owner && valid && <RepurposeShortsButton scriptId={row.id} />}
         <h3 className="mt-2 text-xs font-medium tracking-wide text-[var(--color-ink-muted)] uppercase">
@@ -56,7 +70,10 @@ export default async function RepurposePage({ params }: { params: Promise<{ id: 
           <ul className="flex flex-col gap-1">
             {children.map((c) => (
               <li key={c.id} className="text-sm">
-                <Link href={`/studio/${c.id}`} className="text-[var(--color-ink)] hover:text-[var(--color-accent)]">
+                <Link
+                  href={`/studio/${c.id}`}
+                  className="text-[var(--color-ink)] hover:text-[var(--color-accent)]"
+                >
                   {c.title}
                 </Link>
                 <span className="text-xs text-[var(--color-ink-muted)]">

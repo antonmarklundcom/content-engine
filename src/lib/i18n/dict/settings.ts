@@ -16,12 +16,14 @@ export const en = {
   "settings.placeholderKeep": "Leave empty to keep the current value",
   "settings.save": "Save",
   "settings.saving": "Saving…",
-  "settings.saved": "Saved. Keys are active now; if something still says a key is missing, restart the app (close the window and run start.bat).",
+  "settings.saved":
+    "Saved. Keys are active now; if something still says a key is missing, restart the app (close the window and run start.bat).",
   "settings.test": "Test",
   "settings.testing": "Testing…",
   "settings.clear": "Remove",
   "settings.database": "Database",
-  "settings.databaseNote": "Set by the installer. Changing it means a different database, so it is not editable here.",
+  "settings.databaseNote":
+    "Set by the installer. Changing it means a different database, so it is not editable here.",
   "settings.error": "Could not save: {detail}",
 } as const;
 
@@ -41,11 +43,13 @@ export const sv: Record<keyof typeof en, string> = {
   "settings.placeholderKeep": "Lämna tomt för att behålla nuvarande värde",
   "settings.save": "Spara",
   "settings.saving": "Sparar…",
-  "settings.saved": "Sparat. Nycklarna gäller nu; om något fortfarande säger att en nyckel saknas, starta om appen (stäng fönstret och kör start.bat).",
+  "settings.saved":
+    "Sparat. Nycklarna gäller nu; om något fortfarande säger att en nyckel saknas, starta om appen (stäng fönstret och kör start.bat).",
   "settings.test": "Testa",
   "settings.testing": "Testar…",
   "settings.clear": "Ta bort",
   "settings.database": "Databas",
-  "settings.databaseNote": "Sattes av installationen. Att ändra den betyder en annan databas, så den går inte att ändra här.",
+  "settings.databaseNote":
+    "Sattes av installationen. Att ändra den betyder en annan databas, så den går inte att ändra här.",
   "settings.error": "Kunde inte spara: {detail}",
 };

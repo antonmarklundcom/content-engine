@@ -61,7 +61,11 @@ export async function mineQuestions(
   const limit = Math.min(50, Math.max(1, Math.floor(opts.videos ?? 10)));
   const top = await topOutliersForBrand(brandId, { days: opts.days ?? 90, limit });
   if (top.length === 0) {
-    return { ok: false, reason: "no_videos", message: `No scored competitor videos for ${brand.name} yet.` };
+    return {
+      ok: false,
+      reason: "no_videos",
+      message: `No scored competitor videos for ${brand.name} yet.`,
+    };
   }
 
   const client = opts.client ?? new YouTubeCommentsClient();
@@ -70,7 +74,8 @@ export async function mineQuestions(
   for (const video of top) {
     const page = await client.topComments(video.youtubeId);
     comments += page.length;
-    for (const c of page) if (isLikelyQuestion(c.text)) questions.push({ videoId: video.videoId, text: c.text });
+    for (const c of page)
+      if (isLikelyQuestion(c.text)) questions.push({ videoId: video.videoId, text: c.text });
   }
   if (questions.length === 0) {
     return {
@@ -95,7 +100,9 @@ export async function mineQuestions(
   try {
     raw = JSON.parse(text);
   } catch {
-    throw new Error(`The model didn't return parseable questions (finish reason: ${finishReason ?? "unknown"}). Try again.`);
+    throw new Error(
+      `The model didn't return parseable questions (finish reason: ${finishReason ?? "unknown"}). Try again.`,
+    );
   }
   const clusters = validateQuestionClusters(
     raw,

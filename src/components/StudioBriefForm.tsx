@@ -19,7 +19,10 @@ const KIND_LABEL: Record<LessonKind, TranslationKey> = {
   fact: "studio.lessonKind.fact",
 };
 
-async function postJson(url: string, body: unknown): Promise<{ ok: boolean; data: Record<string, unknown> }> {
+async function postJson(
+  url: string,
+  body: unknown,
+): Promise<{ ok: boolean; data: Record<string, unknown> }> {
   const res = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -78,7 +81,8 @@ export function StudioBriefForm({
     router.replace(`/studio/new?${q}`);
   }
 
-  const toggle = (list: number[], id: number) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
+  const toggle = (list: number[], id: number) =>
+    list.includes(id) ? list.filter((x) => x !== id) : [...list, id];
 
   async function suggestTitles() {
     setError(null);
@@ -129,17 +133,29 @@ export function StudioBriefForm({
       <div className="grid gap-4 sm:grid-cols-3">
         <label className="block">
           <span className={LABEL}>{t("studio.brief.brand")}</span>
-          <select className={STUDIO_INPUT} value={brandId} onChange={(e) => switchBrand(e.target.value)}>
+          <select
+            className={STUDIO_INPUT}
+            value={brandId}
+            onChange={(e) => switchBrand(e.target.value)}
+          >
             {brands.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
             ))}
           </select>
         </label>
         <label className="block">
           <span className={LABEL}>{t("studio.brief.language")}</span>
-          <select className={STUDIO_INPUT} value={language} onChange={(e) => setLanguage(e.target.value as ScriptLanguage)}>
+          <select
+            className={STUDIO_INPUT}
+            value={language}
+            onChange={(e) => setLanguage(e.target.value as ScriptLanguage)}
+          >
             {SCRIPT_LANGUAGES.map((l) => (
-              <option key={l} value={l}>{l}</option>
+              <option key={l} value={l}>
+                {l}
+              </option>
             ))}
           </select>
         </label>
@@ -169,7 +185,9 @@ export function StudioBriefForm({
 
       <fieldset>
         <legend className={LABEL}>{t("studio.brief.references", { n: refs.length })}</legend>
-        <p className="mb-2 text-xs text-[var(--color-ink-muted)]">{t("studio.brief.referencesHelp")}</p>
+        <p className="mb-2 text-xs text-[var(--color-ink-muted)]">
+          {t("studio.brief.referencesHelp")}
+        </p>
         {videos.length === 0 ? (
           <p className="text-sm text-[var(--color-ink-muted)]">{t("studio.brief.noVideos")}</p>
         ) : (
@@ -177,10 +195,16 @@ export function StudioBriefForm({
             {videos.map((v) => (
               <li key={v.id}>
                 <label className="flex items-start gap-2 px-1 py-1 text-sm text-[var(--color-ink)]">
-                  <input type="checkbox" checked={refs.includes(v.id)} onChange={() => setRefs(toggle(refs, v.id))} />
+                  <input
+                    type="checkbox"
+                    checked={refs.includes(v.id)}
+                    onChange={() => setRefs(toggle(refs, v.id))}
+                  />
                   <span>
                     {v.title}
-                    {v.channel && <span className="text-[var(--color-ink-muted)]"> · {v.channel}</span>}
+                    {v.channel && (
+                      <span className="text-[var(--color-ink-muted)]"> · {v.channel}</span>
+                    )}
                   </span>
                 </label>
               </li>
@@ -191,7 +215,9 @@ export function StudioBriefForm({
 
       <fieldset>
         <legend className={LABEL}>{t("studio.brief.lessons", { n: lessonIds.length })}</legend>
-        <p className="mb-2 text-xs text-[var(--color-ink-muted)]">{t("studio.brief.lessonsHelp")}</p>
+        <p className="mb-2 text-xs text-[var(--color-ink-muted)]">
+          {t("studio.brief.lessonsHelp")}
+        </p>
         {lessons.length === 0 ? (
           <p className="text-sm text-[var(--color-ink-muted)]">{t("studio.brief.noLessons")}</p>
         ) : (
@@ -205,8 +231,15 @@ export function StudioBriefForm({
                     onChange={() => setLessonIds(toggle(lessonIds, l.id))}
                   />
                   <span>
-                    <span className="text-xs text-[var(--color-accent)]">{t(KIND_LABEL[l.kind])}</span>
-                    {l.shared && <span className="text-xs text-[var(--color-ink-muted)]"> · {t("studio.brief.shared")}</span>}{" "}
+                    <span className="text-xs text-[var(--color-accent)]">
+                      {t(KIND_LABEL[l.kind])}
+                    </span>
+                    {l.shared && (
+                      <span className="text-xs text-[var(--color-ink-muted)]">
+                        {" "}
+                        · {t("studio.brief.shared")}
+                      </span>
+                    )}{" "}
                     {l.text}
                   </span>
                 </label>
@@ -217,7 +250,12 @@ export function StudioBriefForm({
       </fieldset>
 
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" className={STUDIO_BUTTON} disabled={!topic.trim() || busy !== null} onClick={suggestTitles}>
+        <button
+          type="button"
+          className={STUDIO_BUTTON}
+          disabled={!topic.trim() || busy !== null}
+          onClick={suggestTitles}
+        >
           {busy === "titles" ? t("studio.brief.suggesting") : t("studio.brief.suggest")}
         </button>
         <span className="text-xs text-[var(--color-ink-muted)]">{t("studio.brief.spends")}</span>
@@ -230,7 +268,12 @@ export function StudioBriefForm({
             {titles.map((s) => (
               <li key={s.title}>
                 <label className="surface-border flex items-start gap-2 rounded-[var(--radius-sm)] px-3 py-2 text-sm">
-                  <input type="radio" name="title" checked={title === s.title} onChange={() => setTitle(s.title)} />
+                  <input
+                    type="radio"
+                    name="title"
+                    checked={title === s.title}
+                    onChange={() => setTitle(s.title)}
+                  />
                   <span>
                     <span className="font-medium text-[var(--color-ink)]">{s.title}</span>
                     <span className="block text-xs text-[var(--color-ink-muted)]">{s.angle}</span>
@@ -262,7 +305,11 @@ export function StudioBriefForm({
         >
           {busy === "script" ? t("studio.brief.writing") : t("studio.brief.write")}
         </button>
-        {busy === "script" && <span className="text-xs text-[var(--color-ink-muted)]">{t("studio.brief.writingHelp")}</span>}
+        {busy === "script" && (
+          <span className="text-xs text-[var(--color-ink-muted)]">
+            {t("studio.brief.writingHelp")}
+          </span>
+        )}
       </div>
     </form>
   );

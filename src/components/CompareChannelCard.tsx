@@ -3,7 +3,13 @@ import { formatCompactNumber } from "@/lib/format";
 import { translator, type Locale } from "@/lib/i18n";
 
 /** One channel's figures on the compare page (build 2b, idea 4). */
-export function CompareChannelCard({ channel, locale }: { channel: CompareChannel; locale: Locale }) {
+export function CompareChannelCard({
+  channel,
+  locale,
+}: {
+  channel: CompareChannel;
+  locale: Locale;
+}) {
   const t = translator(locale);
   const own = channel.role === "own";
   return (
@@ -19,14 +25,18 @@ export function CompareChannelCard({ channel, locale }: { channel: CompareChanne
         >
           {channel.title}
         </a>
-        <span className="text-xs font-medium text-[var(--color-accent)]">{t(`research.role.${channel.role}`)}</span>
+        <span className="text-xs font-medium text-[var(--color-accent)]">
+          {t(`research.role.${channel.role}`)}
+        </span>
       </div>
       <dl className="mt-3 grid grid-cols-3 gap-3 text-center">
         <div>
           <dt className="text-xs text-[var(--color-ink-muted)]">{t("compare.median")}</dt>
           <dd className="mt-1 text-lg font-semibold text-[var(--color-ink)]">
             {channel.medianViews === null ? (
-              <span className="text-xs font-normal text-[var(--color-ink-muted)]">{t("compare.noMedian")}</span>
+              <span className="text-xs font-normal text-[var(--color-ink-muted)]">
+                {t("compare.noMedian")}
+              </span>
             ) : (
               formatCompactNumber(channel.medianViews, locale)
             )}
@@ -34,11 +44,15 @@ export function CompareChannelCard({ channel, locale }: { channel: CompareChanne
         </div>
         <div>
           <dt className="text-xs text-[var(--color-ink-muted)]">{t("compare.uploads")}</dt>
-          <dd className="mt-1 text-lg font-semibold text-[var(--color-ink)]">{channel.uploadsPerMonth}</dd>
+          <dd className="mt-1 text-lg font-semibold text-[var(--color-ink)]">
+            {channel.uploadsPerMonth}
+          </dd>
         </div>
         <div>
           <dt className="text-xs text-[var(--color-ink-muted)]">{t("compare.videos")}</dt>
-          <dd className="mt-1 text-lg font-semibold text-[var(--color-ink)]">{channel.videoCount}</dd>
+          <dd className="mt-1 text-lg font-semibold text-[var(--color-ink)]">
+            {channel.videoCount}
+          </dd>
         </div>
       </dl>
       <h3 className="mt-4 text-xs font-medium tracking-wide text-[var(--color-ink-muted)] uppercase">

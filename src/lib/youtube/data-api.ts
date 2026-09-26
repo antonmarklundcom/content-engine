@@ -1,8 +1,4 @@
-import {
-  QuotaExhaustedError,
-  QuotaTracker,
-  type QuotaOperation,
-} from "./quota";
+import { QuotaExhaustedError, QuotaTracker, type QuotaOperation } from "./quota";
 import type { YouTubeRef } from "./url";
 
 /**
@@ -452,7 +448,10 @@ export function parseIso8601Duration(input: string | null): number | null {
   if (!m) return null;
   const [, d, h, min, s] = m;
   return (
-    Number(d ?? 0) * 86400 + Number(h ?? 0) * 3600 + Number(min ?? 0) * 60 + Math.round(Number(s ?? 0))
+    Number(d ?? 0) * 86400 +
+    Number(h ?? 0) * 3600 +
+    Number(min ?? 0) * 60 +
+    Math.round(Number(s ?? 0))
   );
 }
 

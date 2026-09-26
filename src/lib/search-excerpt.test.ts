@@ -23,7 +23,10 @@ test("case-insensitive, like the LIKE that selected the row", () => {
 });
 
 test("newlines are collapsed so the window reads as one line", () => {
-  assert.equal(excerptAround("first line\n\n  second line", "second", 40), "first line second line");
+  assert.equal(
+    excerptAround("first line\n\n  second line", "second", 40),
+    "first line second line",
+  );
 });
 
 test("nothing to show returns null rather than an empty string", () => {

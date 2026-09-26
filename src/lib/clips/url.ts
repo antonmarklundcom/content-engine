@@ -12,7 +12,13 @@ import type { ClipPlatform } from "@/db/schema";
 const HOSTS: { platform: ClipPlatform; hosts: string[] }[] = [
   {
     platform: "youtube",
-    hosts: ["youtube.com", "m.youtube.com", "music.youtube.com", "youtube-nocookie.com", "youtu.be"],
+    hosts: [
+      "youtube.com",
+      "m.youtube.com",
+      "music.youtube.com",
+      "youtube-nocookie.com",
+      "youtu.be",
+    ],
   },
   {
     platform: "instagram",

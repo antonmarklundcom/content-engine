@@ -46,7 +46,8 @@ export const en = {
   "compare.brand": "Brand",
   "compare.noBrands": "No active brands yet. Add one to the brands table, then come back here.",
   "compare.channels": "Channels",
-  "compare.channelsEmpty": "No channels linked to this brand yet. Link competitors on the research page.",
+  "compare.channelsEmpty":
+    "No channels linked to this brand yet. Link competitors on the research page.",
   "compare.own": "My channel",
   "compare.noOwn": "No channel of yours is linked to this brand yet.",
   "compare.linkOwn": "Link my channel",
@@ -74,7 +75,8 @@ export const sv: Record<keyof typeof en, string> = {
   "facts.intro":
     "Kontrollerade fakta per varumärke, med källa. Manus använder dem som de är; ett faktum som ändras efter att en video publicerats flaggar videon.",
   "facts.brand": "Varumärke",
-  "facts.noBrands": "Inga aktiva varumärken än. Lägg till ett i brands-tabellen och kom tillbaka hit.",
+  "facts.noBrands":
+    "Inga aktiva varumärken än. Lägg till ett i brands-tabellen och kom tillbaka hit.",
   "facts.add": "Lägg till faktum",
   "facts.adding": "Sparar…",
   "facts.added": "Sparat.",
@@ -112,9 +114,11 @@ export const sv: Record<keyof typeof en, string> = {
   "compare.intro":
     "Per kanal: medianvisningar för de senaste 30 videorna, uppladdningar per månad de senaste 90 dagarna och de fem bästa videorna efter outlier-poäng. Bara lagrad data — inget hämtas.",
   "compare.brand": "Varumärke",
-  "compare.noBrands": "Inga aktiva varumärken än. Lägg till ett i brands-tabellen och kom tillbaka hit.",
+  "compare.noBrands":
+    "Inga aktiva varumärken än. Lägg till ett i brands-tabellen och kom tillbaka hit.",
   "compare.channels": "Kanaler",
-  "compare.channelsEmpty": "Inga kanaler kopplade till varumärket än. Koppla konkurrenter på researchsidan.",
+  "compare.channelsEmpty":
+    "Inga kanaler kopplade till varumärket än. Koppla konkurrenter på researchsidan.",
   "compare.own": "Min kanal",
   "compare.noOwn": "Ingen egen kanal är kopplad till varumärket än.",
   "compare.linkOwn": "Koppla min kanal",
@@ -129,7 +133,8 @@ export const sv: Record<keyof typeof en, string> = {
   "compare.bestEmpty": "För få videor för att poängsätta än.",
   "compare.score": "{score}× median",
   "compare.titles": "Titlar sida vid sida",
-  "compare.titlesNote": "Mina senaste titlar bredvid konkurrenternas bästa titlar efter outlier-poäng.",
+  "compare.titlesNote":
+    "Mina senaste titlar bredvid konkurrenternas bästa titlar efter outlier-poäng.",
   "compare.ownTitles": "Mina senaste titlar",
   "compare.competitorTitles": "Konkurrenternas bästa titlar",
   "compare.titlesEmpty": "Inget än.",

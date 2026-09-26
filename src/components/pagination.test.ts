@@ -7,7 +7,10 @@ test("a page link stays on the listing it was rendered from", () => {
   // a topic shelf silently became page 2 of the whole corpus.
   const params = new URLSearchParams({ sort: "views", page: "1" });
   assert.equal(buildHref("/topics/topic/seo", params, 2), "/topics/topic/seo?sort=views&page=2");
-  assert.equal(buildHref("/marks", new URLSearchParams({ type: "idea" }), 3), "/marks?type=idea&page=3");
+  assert.equal(
+    buildHref("/marks", new URLSearchParams({ type: "idea" }), 3),
+    "/marks?type=idea&page=3",
+  );
 });
 
 test("the feed is still the default shape", () => {

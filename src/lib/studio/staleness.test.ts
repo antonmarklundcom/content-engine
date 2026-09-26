@@ -27,8 +27,15 @@ test("normalizeUrl ignores case of the host, the fragment and a trailing slash",
   assert.equal(normalizeUrl(" https://Example.GOV/rules/ "), "https://example.gov/rules");
   assert.equal(normalizeUrl("https://example.gov/rules#fees"), "https://example.gov/rules");
   assert.equal(normalizeUrl("https://example.gov/"), "https://example.gov");
-  assert.notEqual(normalizeUrl("https://example.gov/a?x=1"), normalizeUrl("https://example.gov/a?x=2"));
-  assert.notEqual(normalizeUrl("https://example.gov/A"), normalizeUrl("https://example.gov/a"), "path case matters");
+  assert.notEqual(
+    normalizeUrl("https://example.gov/a?x=1"),
+    normalizeUrl("https://example.gov/a?x=2"),
+  );
+  assert.notEqual(
+    normalizeUrl("https://example.gov/A"),
+    normalizeUrl("https://example.gov/a"),
+    "path case matters",
+  );
   assert.equal(normalizeUrl("not a url "), "not a url");
 });
 
@@ -66,7 +73,10 @@ test("a posted script is flagged when a cited fact changed after it was posted",
 
 test("a fact changed before posting, or not changed, flags nothing", () => {
   const facts = [fact(1, "https://gov.py/residency", 30)];
-  assert.deepEqual(scriptsNeedingCorrection([script(10, ["https://gov.py/residency"], 20)], facts), []);
+  assert.deepEqual(
+    scriptsNeedingCorrection([script(10, ["https://gov.py/residency"], 20)], facts),
+    [],
+  );
 });
 
 test("only posted scripts with a postedAt are checked", () => {
@@ -82,7 +92,12 @@ test("only posted scripts with a postedAt are checked", () => {
 });
 
 test("facts without a source never match, and a script lists each fact once", () => {
-  const facts = [fact(1, null, 1), fact(2, "  ", 1), fact(3, "https://a.example/x", 1), fact(4, "https://a.example/x#top", 2)];
+  const facts = [
+    fact(1, null, 1),
+    fact(2, "  ", 1),
+    fact(3, "https://a.example/x", 1),
+    fact(4, "https://a.example/x#top", 2),
+  ];
   const flagged = scriptsNeedingCorrection(
     [script(7, ["https://a.example/x", "https://A.example/x/", ""], 10)],
     facts,
@@ -98,7 +113,10 @@ test("facts without a source never match, and a script lists each fact once", ()
 test("flagged scripts come newest-posted first", () => {
   const facts = [fact(1, "https://a.example/x", 1)];
   const urls = ["https://a.example/x"];
-  const flagged = scriptsNeedingCorrection([script(1, urls, 30), script(2, urls, 5), script(3, urls, 12)], facts);
+  const flagged = scriptsNeedingCorrection(
+    [script(1, urls, 30), script(2, urls, 5), script(3, urls, 12)],
+    facts,
+  );
   assert.deepEqual(
     flagged.map((f) => f.scriptId),
     [2, 3, 1],

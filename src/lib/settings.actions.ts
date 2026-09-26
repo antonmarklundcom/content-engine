@@ -37,7 +37,10 @@ async function guard(): Promise<string | null> {
   return null;
 }
 
-export async function saveSettingsAction(_prev: SettingsResult | null, form: FormData): Promise<SettingsResult> {
+export async function saveSettingsAction(
+  _prev: SettingsResult | null,
+  form: FormData,
+): Promise<SettingsResult> {
   const denied = await guard();
   if (denied) return { ok: false, error: denied };
 
@@ -97,15 +100,21 @@ function runVersion(bin: string): Promise<string> {
 }
 
 /** A free check that the saved value works. Never spends money. */
-export async function testSettingAction(which: "gemini" | "youtube" | "cli"): Promise<SettingsResult> {
+export async function testSettingAction(
+  which: "gemini" | "youtube" | "cli",
+): Promise<SettingsResult> {
   const denied = await guard();
   if (denied) return { ok: false, error: denied };
   try {
     if (which === "gemini") {
       const key = process.env.GEMINI_API_KEY;
       if (!key) return { ok: false, error: "No Gemini key saved yet." };
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?pageSize=1&key=${encodeURIComponent(key)}`);
-      return res.ok ? { ok: true, message: "Gemini key works." } : { ok: false, error: `Gemini said HTTP ${res.status}. Check the key.` };
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models?pageSize=1&key=${encodeURIComponent(key)}`,
+      );
+      return res.ok
+        ? { ok: true, message: "Gemini key works." }
+        : { ok: false, error: `Gemini said HTTP ${res.status}. Check the key.` };
     }
     if (which === "youtube") {
       const key = process.env.YOUTUBE_API_KEY;
@@ -115,13 +124,23 @@ export async function testSettingAction(which: "gemini" | "youtube" | "cli"): Pr
       );
       return res.ok
         ? { ok: true, message: "YouTube key works (used 1 of 10,000 free daily units)." }
-        : { ok: false, error: `YouTube said HTTP ${res.status}. Is “YouTube Data API v3” enabled for this key's project?` };
+        : {
+            ok: false,
+            error: `YouTube said HTTP ${res.status}. Is “YouTube Data API v3” enabled for this key's project?`,
+          };
     }
     const provider = aiProvider();
-    if (provider === "gemini") return { ok: true, message: "Using the Gemini API — nothing to test here." };
-    const bin = provider === "claude-cli" ? process.env.CLAUDE_CLI_BIN || "claude" : process.env.CODEX_CLI_BIN || "codex";
+    if (provider === "gemini")
+      return { ok: true, message: "Using the Gemini API — nothing to test here." };
+    const bin =
+      provider === "claude-cli"
+        ? process.env.CLAUDE_CLI_BIN || "claude"
+        : process.env.CODEX_CLI_BIN || "codex";
     const version = await runVersion(bin);
-    return { ok: true, message: `${bin} found: ${version}. Make sure you have logged in to it once.` };
+    return {
+      ok: true,
+      message: `${bin} found: ${version}. Make sure you have logged in to it once.`,
+    };
   } catch (err) {
     return {
       ok: false,

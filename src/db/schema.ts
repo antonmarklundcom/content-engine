@@ -52,7 +52,9 @@ export const brands = pgTable("brands", {
   voice: text("voice"), // tone/style notes for research + copy
   platforms: json("platforms").$type<string[]>().notNull(), // ["instagram","facebook",...]
   active: boolean("active").notNull().default(true),
-  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  createdAt: timestamp("created_at")
+    .notNull()
+    .default(sql`now()`),
 });
 
 // A research finding worth sharing across brands — e.g. "Paraguay approves
@@ -67,7 +69,9 @@ export const researchNotes = pgTable("research_notes", {
   market: text("market").notNull(),
   relatedBrandIds: json("related_brand_ids").$type<string[]>().notNull(),
   sources: json("sources").$type<string[]>(),
-  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  createdAt: timestamp("created_at")
+    .notNull()
+    .default(sql`now()`),
 });
 
 // The actual deliverable: a content idea with ready-to-post copy. Produced
@@ -109,7 +113,9 @@ export const ideas = pgTable("ideas", {
    * always describes the current status, never a past one.
    */
   postedAt: timestamp("posted_at"),
-  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  createdAt: timestamp("created_at")
+    .notNull()
+    .default(sql`now()`),
 });
 
 // =============================================================================
@@ -206,7 +212,9 @@ export const users = pgTable("yt_users", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   /** owner spends money and deletes things; employee does neither. */
-  role: text("role", { enum: ["owner", "employee"] as const }).notNull().default("employee"),
+  role: text("role", { enum: ["owner", "employee"] as const })
+    .notNull()
+    .default("employee"),
   /** bcrypt hash, null until a password is set. */
   passwordHash: varchar("password_hash", { length: 255 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -325,7 +333,9 @@ export const analyses = pgTable(
     model: varchar("model", { length: 64 }).notNull(),
     promptVersion: smallint("prompt_version").notNull().default(1),
 
-    status: text("status", { enum: ["ok", "failed"] as const }).notNull().default("ok"),
+    status: text("status", { enum: ["ok", "failed"] as const })
+      .notNull()
+      .default("ok"),
 
     summary: text("summary"),
     takeaways: json("takeaways").$type<string[]>(),
@@ -419,7 +429,9 @@ export const outlines = pgTable(
     analysisId: integer("analysis_id").notNull(),
     ideaIndex: smallint("idea_index").notNull(),
 
-    status: text("status", { enum: ["ok", "failed"] as const }).notNull().default("ok"),
+    status: text("status", { enum: ["ok", "failed"] as const })
+      .notNull()
+      .default("ok"),
     error: varchar("error", { length: 1024 }),
 
     content: json("content").$type<OutlinePayload>(),
@@ -449,7 +461,9 @@ export const screenings = pgTable(
   {
     id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
     videoId: integer("video_id").notNull(),
-    status: text("status", { enum: ["ok", "failed"] as const }).notNull().default("ok"),
+    status: text("status", { enum: ["ok", "failed"] as const })
+      .notNull()
+      .default("ok"),
     /** 0–100, how well the metadata says this video is worth reading. Null on a failed row. */
     score: smallint("score"),
     /** One sentence, in the model's words, for why. Shown in the UI verbatim. */

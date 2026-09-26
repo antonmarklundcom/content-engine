@@ -83,13 +83,23 @@ function sourcesBlock(body: ScriptBodyV1): string {
 const SHORT_BROLL_SCHEMA = {
   type: "object",
   properties: {
-    spokenLine: { type: "string", description: "The exact spoken line (copied from spokenLines) this shot plays under." },
-    description: { type: "string", description: "What the shot shows, in a few words, in English." },
+    spokenLine: {
+      type: "string",
+      description: "The exact spoken line (copied from spokenLines) this shot plays under.",
+    },
+    description: {
+      type: "string",
+      description: "What the shot shows, in a few words, in English.",
+    },
     imagePrompt: {
       type: "string",
-      description: "English prompt for a vertical 9:16 image: subject, setting, light, camera. Photographic, no text, no real people's likenesses.",
+      description:
+        "English prompt for a vertical 9:16 image: subject, setting, light, camera. Photographic, no text, no real people's likenesses.",
     },
-    videoPrompt: { type: "string", description: "English image-to-video motion prompt, or an empty string for a still." },
+    videoPrompt: {
+      type: "string",
+      description: "English image-to-video motion prompt, or an empty string for a still.",
+    },
   },
   required: ["spokenLine", "description", "imagePrompt", "videoPrompt"],
 } as const;
@@ -127,19 +137,28 @@ export const SHORTS_JSON_SCHEMA = {
               properties: {
                 description: { type: "string" },
                 textOverlay: { type: "string" },
-                imagePrompt: { type: "string", description: "English, vertical 9:16, no text in the image." },
+                imagePrompt: {
+                  type: "string",
+                  description: "English, vertical 9:16, no text in the image.",
+                },
               },
               required: ["description", "textOverlay", "imagePrompt"],
             },
           },
-          hookLines: { ...LINES, description: "1-2 spoken lines that stop the scroll in the first 2 seconds." },
+          hookLines: {
+            ...LINES,
+            description: "1-2 spoken lines that stop the scroll in the first 2 seconds.",
+          },
           hookOnScreenText: LINES,
           heading: { type: "string", description: "What this short is about, a few words." },
           spokenLines: { ...LINES, description: "The body: short spoken lines, one idea each." },
           talkingPoints: LINES,
           onScreenText: LINES,
           broll: { type: "array", items: SHORT_BROLL_SCHEMA, description: "2-4 vertical shots." },
-          sourceIds: { ...LINES, description: "Ids from SOURCES backing a claim made in this short." },
+          sourceIds: {
+            ...LINES,
+            description: "Ids from SOURCES backing a claim made in this short.",
+          },
           ctaLines: { ...LINES, description: "One spoken line pointing to the long video." },
         },
         required: [
@@ -161,7 +180,12 @@ export const SHORTS_JSON_SCHEMA = {
   required: ["shorts"],
 } as const;
 
-type RawShot = { spokenLine?: string; description?: string; imagePrompt?: string; videoPrompt?: string | null };
+type RawShot = {
+  spokenLine?: string;
+  description?: string;
+  imagePrompt?: string;
+  videoPrompt?: string | null;
+};
 export type RawShort = {
   titleOptions?: { title: string; angle: string }[];
   thumbnailConcepts?: { description: string; textOverlay: string; imagePrompt: string }[];
@@ -177,7 +201,12 @@ export type RawShort = {
 };
 
 function clean(lines: unknown): string[] {
-  return Array.isArray(lines) ? lines.filter((l): l is string => typeof l === "string").map((l) => l.trim()).filter(Boolean) : [];
+  return Array.isArray(lines)
+    ? lines
+        .filter((l): l is string => typeof l === "string")
+        .map((l) => l.trim())
+        .filter(Boolean)
+    : [];
 }
 
 function shots(list: RawShot[] | undefined): BrollShot[] {
@@ -198,7 +227,10 @@ function shots(list: RawShot[] | undefined): BrollShot[] {
 export function assembleShortBody(raw: RawShort, parent: ScriptBodyV1): ScriptBodyV1 {
   const parentSources = new Map(parent.sources.map((s) => [s.id, s]));
   const sourceIds = [...new Set(clean(raw.sourceIds).filter((id) => parentSources.has(id)))];
-  const titleOptions = (raw.titleOptions ?? []).map((o) => ({ title: String(o?.title ?? "").trim(), angle: String(o?.angle ?? "").trim() }));
+  const titleOptions = (raw.titleOptions ?? []).map((o) => ({
+    title: String(o?.title ?? "").trim(),
+    angle: String(o?.angle ?? "").trim(),
+  }));
   const chosenTitle = titleOptions[0]?.title ?? "";
   return {
     version: SCRIPT_BODY_VERSION,
@@ -212,7 +244,11 @@ export function assembleShortBody(raw: RawShort, parent: ScriptBodyV1): ScriptBo
       textOverlay: String(t?.textOverlay ?? "").trim(),
       imagePrompt: String(t?.imagePrompt ?? "").trim(),
     })),
-    hook: { spokenLines: clean(raw.hookLines), onScreenText: clean(raw.hookOnScreenText), broll: [] },
+    hook: {
+      spokenLines: clean(raw.hookLines),
+      onScreenText: clean(raw.hookOnScreenText),
+      broll: [],
+    },
     sections: [
       {
         heading: String(raw.heading ?? "").trim() || chosenTitle,
@@ -262,7 +298,9 @@ export async function generateShorts(
   try {
     raw = JSON.parse(text) as typeof raw;
   } catch {
-    throw new RepurposeError(`The model didn't return parseable shorts (finish reason: ${finishReason ?? "unknown"}). Try again.`);
+    throw new RepurposeError(
+      `The model didn't return parseable shorts (finish reason: ${finishReason ?? "unknown"}). Try again.`,
+    );
   }
   const shorts: ScriptBodyV1[] = [];
   const rejected: string[][] = [];
@@ -279,7 +317,10 @@ export async function generateShorts(
     else rejected.push(verdict.errors);
   }
   if (!shorts.length) {
-    throw new RepurposeError("None of the model's shorts matched the script contract. Try again.", rejected.flat());
+    throw new RepurposeError(
+      "None of the model's shorts matched the script contract. Try again.",
+      rejected.flat(),
+    );
   }
   return { shorts, rejected, costUsd };
 }
@@ -291,7 +332,10 @@ export async function generateShorts(
 export const PROSE_JSON_SCHEMA = {
   type: "object",
   properties: {
-    markdown: { type: "string", description: "The whole text in Markdown. No sources section — it is added separately." },
+    markdown: {
+      type: "string",
+      description: "The whole text in Markdown. No sources section — it is added separately.",
+    },
   },
   required: ["markdown"],
 } as const;
@@ -301,7 +345,10 @@ const PROSE_BRIEF: Record<ScriptDerivativeKind, string> = {
   newsletter: `a newsletter blurb (80-150 words): a bold one-line hook, two or three sentences on what the video explains and why it matters now, and a last line linking to the video. Friendly, personal, first person.`,
 };
 
-export function prosePrompt(kind: ScriptDerivativeKind, input: RepurposeInput): { system: string; prompt: string } {
+export function prosePrompt(
+  kind: ScriptDerivativeKind,
+  input: RepurposeInput,
+): { system: string; prompt: string } {
   const system = `You turn a creator's recorded YouTube script into ${kind === "blog" ? "a blog post" : "a newsletter blurb"}. Write in the script's language. Never add a fact, price, law or date that is not in the script. Answer with JSON matching the required schema and nothing else.`;
   const urls = input.body.sources.map((s) => `- ${s.id}: ${s.claim} (${s.url})`).join("\n");
   const prompt = `${brandLines(input)}
@@ -320,7 +367,11 @@ Write ${PROSE_BRIEF[kind]}${input.youtubeUrl ? ` The video is at ${input.youtube
  * The model's Markdown, then (for a blog post) a sources list built from the
  * script, so every URL shown is one the script already cites.
  */
-export function composeProse(kind: ScriptDerivativeKind, markdown: string, body: ScriptBodyV1): string {
+export function composeProse(
+  kind: ScriptDerivativeKind,
+  markdown: string,
+  body: ScriptBodyV1,
+): string {
   const text = markdown.trim();
   if (kind !== "blog" || !body.sources.length) return text;
   const heading = body.language === "en" ? "Sources" : "Fuentes";
@@ -345,7 +396,9 @@ export async function generateProse(
   try {
     raw = JSON.parse(text) as typeof raw;
   } catch {
-    throw new RepurposeError(`The model didn't return parseable text (finish reason: ${finishReason ?? "unknown"}). Try again.`);
+    throw new RepurposeError(
+      `The model didn't return parseable text (finish reason: ${finishReason ?? "unknown"}). Try again.`,
+    );
   }
   const markdown = typeof raw?.markdown === "string" ? raw.markdown : "";
   if (!markdown.trim()) throw new RepurposeError("The model returned an empty text. Try again.");

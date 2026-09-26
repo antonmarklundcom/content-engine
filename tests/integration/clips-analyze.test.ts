@@ -38,7 +38,10 @@ const WORD_COUNT = 5_000;
 
 /** What the fake's analysis call must bill, interactive (no batch discount). */
 function expectedAnalysisCostUsd(): number {
-  return estimateCostUsd("gemini-3.1-flash-lite", readUsage({ usageMetadata: USAGE.analysis } as never));
+  return estimateCostUsd(
+    "gemini-3.1-flash-lite",
+    readUsage({ usageMetadata: USAGE.analysis } as never),
+  );
 }
 
 const realFetch = globalThis.fetch;
@@ -46,7 +49,9 @@ const realFetch = globalThis.fetch;
 /** Serve `videos.list` for our one id; refuse everything else, loudly. */
 function stubYouTubeDataApi(): void {
   globalThis.fetch = (async (input: RequestInfo | URL) => {
-    const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
+    const url = new URL(
+      typeof input === "string" ? input : input instanceof URL ? input.href : input.url,
+    );
     if (url.pathname.endsWith("/youtube/v3/videos")) {
       return Response.json({
         items: [
@@ -58,7 +63,9 @@ function stubYouTubeDataApi(): void {
               channelId: "UCtest0000000000000000",
               channelTitle: "Expat Desk",
               publishedAt: "2026-08-01T10:00:00Z",
-              thumbnails: { high: { url: "https://i.ytimg.com/vi/x/hq.jpg", width: 480, height: 360 } },
+              thumbnails: {
+                high: { url: "https://i.ytimg.com/vi/x/hq.jpg", width: 480, height: 360 },
+              },
             },
             contentDetails: { duration: "PT31M20S" },
             statistics: { viewCount: "12345", likeCount: "678" },
@@ -119,9 +126,13 @@ test("a Bearer capture ingests, analyses on the fake, and lands `analyzed`", asy
 
   const response = await callRoute(
     clips,
-    jsonPost("/api/clips", { url: CLIP_URL, note: "for the residency series" }, {
-      authorization: `Bearer ${CLIP_TOKEN}`,
-    }),
+    jsonPost(
+      "/api/clips",
+      { url: CLIP_URL, note: "for the residency series" },
+      {
+        authorization: `Bearer ${CLIP_TOKEN}`,
+      },
+    ),
   );
 
   assert.equal(response.status, 201);
@@ -311,6 +322,9 @@ test("a video with no transcript is `analyzed` without paying for anything", asy
   assert.equal(fake.calls.length, 0);
   assert.equal(await monthToDateUsd(), 0);
 
-  const [video] = await db.select().from(schema.videos).where(eq(schema.videos.youtubeId, YOUTUBE_ID));
+  const [video] = await db
+    .select()
+    .from(schema.videos)
+    .where(eq(schema.videos.youtubeId, YOUTUBE_ID));
   assert.equal(video.captionStatus, "none");
 });

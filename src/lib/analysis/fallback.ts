@@ -35,8 +35,7 @@ export class FallbackNotFoundError extends Error {
 }
 
 export type FallbackEstimate =
-  | { ok: true; estimatedUsd: number; durationSeconds: number }
-  | { ok: false; reason: string };
+  { ok: true; estimatedUsd: number; durationSeconds: number } | { ok: false; reason: string };
 
 /** What a fallback analysis of this video would reserve, or why it would be refused — for the confirm step. */
 export async function fallbackEstimate(videoId: number): Promise<FallbackEstimate> {

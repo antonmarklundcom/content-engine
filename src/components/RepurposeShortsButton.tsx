@@ -30,24 +30,34 @@ export function RepurposeShortsButton({ scriptId }: { scriptId: number }) {
                     ok: true,
                     lines: [
                       t("publish.repurpose.made", { count: r.ids.length }),
-                      ...(r.rejected ? [t("publish.repurpose.rejected", { count: r.rejected })] : []),
+                      ...(r.rejected
+                        ? [t("publish.repurpose.rejected", { count: r.rejected })]
+                        : []),
                       t("publish.cost", { cost: r.costUsd.toFixed(4) }),
                     ],
                   });
                   router.refresh();
                 } else setNote({ ok: false, lines: [r.error, ...(r.errors ?? []).slice(0, 8)] });
               } catch (error) {
-                setNote({ ok: false, lines: [error instanceof Error ? error.message : t("studio.error.generic")] });
+                setNote({
+                  ok: false,
+                  lines: [error instanceof Error ? error.message : t("studio.error.generic")],
+                });
               }
             })
           }
         >
           {t("publish.repurpose.makeShorts")}
         </button>
-        {pending && <span className="text-xs text-[var(--color-ink-muted)]">{t("publish.generating")}</span>}
+        {pending && (
+          <span className="text-xs text-[var(--color-ink-muted)]">{t("publish.generating")}</span>
+        )}
       </div>
       {note && (
-        <div role="status" className={`text-sm ${note.ok ? "text-[var(--color-ink-muted)]" : "text-[var(--color-danger)]"}`}>
+        <div
+          role="status"
+          className={`text-sm ${note.ok ? "text-[var(--color-ink-muted)]" : "text-[var(--color-danger)]"}`}
+        >
           {note.lines.map((l, i) => (
             <p key={i}>{l}</p>
           ))}

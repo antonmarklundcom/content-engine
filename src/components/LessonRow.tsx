@@ -32,7 +32,9 @@ export function LessonRow({ lesson, locale }: { lesson: LessonRowData; locale: L
         <span className="rounded-full bg-[var(--color-accent)]/15 px-2 py-0.5 font-medium text-[var(--color-accent)]">
           {t(`lessons.kind.${lesson.kind}` as TranslationKey)}
         </span>
-        <span className="text-[var(--color-ink-muted)]">{lesson.brandName ?? t("lessons.filter.noBrand")}</span>
+        <span className="text-[var(--color-ink-muted)]">
+          {lesson.brandName ?? t("lessons.filter.noBrand")}
+        </span>
         <button
           type="button"
           disabled={pending}
@@ -54,12 +56,22 @@ export function LessonRow({ lesson, locale }: { lesson: LessonRowData; locale: L
       {(lesson.videoUrl || lesson.sourceUrl) && (
         <p className="flex flex-wrap gap-3 text-xs text-[var(--color-ink-muted)]">
           {lesson.videoUrl && (
-            <a href={lesson.videoUrl} target="_blank" rel="noreferrer" className="hover:text-[var(--color-accent)]">
+            <a
+              href={lesson.videoUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-[var(--color-accent)]"
+            >
               {t("lessons.fromVideo", { title: lesson.videoTitle ?? "YouTube" })}
             </a>
           )}
           {lesson.sourceUrl && /^https?:\/\//i.test(lesson.sourceUrl) && (
-            <a href={lesson.sourceUrl} target="_blank" rel="noreferrer" className="break-all hover:text-[var(--color-accent)]">
+            <a
+              href={lesson.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="break-all hover:text-[var(--color-accent)]"
+            >
               {lesson.sourceUrl}
             </a>
           )}

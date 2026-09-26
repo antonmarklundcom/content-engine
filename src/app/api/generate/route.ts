@@ -78,10 +78,7 @@ export async function POST(request: Request) {
     // broken, and the caller's next move is to raise the cap or wait — which a
     // 500 would not tell them (PLAN.md §1.10).
     if (error instanceof SpendCapExceededError) {
-      return NextResponse.json(
-        { error: error.message, spend: error.status },
-        { status: 429 },
-      );
+      return NextResponse.json({ error: error.message, spend: error.status }, { status: 429 });
     }
     throw error;
   }

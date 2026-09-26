@@ -8,12 +8,7 @@ import {
   runHealth,
   summariseHealth,
 } from "./health";
-import type {
-  CaptionFailureReason,
-  CaptionResult,
-  StrategyName,
-  StrategyOutcome,
-} from "./types";
+import type { CaptionFailureReason, CaptionResult, StrategyName, StrategyOutcome } from "./types";
 
 /**
  * The behaviour under test is a cost guard: on a host YouTube refuses, the
@@ -23,10 +18,7 @@ import type {
  * a video rather than of the network path.
  */
 
-function fail(
-  strategy: StrategyName,
-  reason: CaptionFailureReason = "blocked",
-): StrategyOutcome {
+function fail(strategy: StrategyName, reason: CaptionFailureReason = "blocked"): StrategyOutcome {
   return { ok: false, strategy, reason, stage: "list", error: reason, ms: 1, trackCount: 0 };
 }
 

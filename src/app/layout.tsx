@@ -5,7 +5,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Content Engine",
-  description: "Research, ideas, and copy for social media — per brand — plus a YouTube research tool.",
+  description:
+    "Research, ideas, and copy for social media — per brand — plus a YouTube research tool.",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

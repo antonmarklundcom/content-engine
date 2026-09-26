@@ -131,6 +131,17 @@ Output goes to `poll.log` in the app folder. It never spends past
 `MONTHLY_SPEND_CAP_USD` (default $25). To remove it:
 `schtasks /Delete /TN "content-engine yt-poll" /F`.
 
+Exit codes in `poll.log`: 0 ok or already running, 3 spend cap hit, 1 crashed.
+
+**Weekly competitor report (optional).** Mondays at 08:00, after the poll has run:
+
+```
+schtasks /Create /F /SC WEEKLY /D MON /ST 08:00 /TN "content-engine weekly report" ^
+  /TR "cmd /c cd /d C:\dev\content-engine && npm run studio:weekly >> weekly.log 2>&1"
+```
+
+To remove it: `schtasks /Delete /TN "content-engine weekly report" /F`.
+
 ## 8. Updating
 
 When there is a new version:

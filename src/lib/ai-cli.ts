@@ -28,7 +28,12 @@ export function aiProvider(env: Env = process.env): AiProvider {
 /** A CLI run is slow (it may search the web); a hung one must still end. */
 export const CLI_TIMEOUT_MS = 10 * 60 * 1000;
 
-export function buildCliPrompt(system: string, prompt: string, schema: unknown, webSearch: boolean): string {
+export function buildCliPrompt(
+  system: string,
+  prompt: string,
+  schema: unknown,
+  webSearch: boolean,
+): string {
   return `${system}
 
 ${
@@ -85,7 +90,8 @@ export function codexCommand(outputFile: string, env: Env = process.env): CliCom
 export function unwrapClaudeEnvelope(stdout: string): string {
   try {
     const parsed = JSON.parse(stdout) as { result?: unknown; is_error?: boolean };
-    if (parsed.is_error) throw new Error(`Claude CLI reported an error: ${String(parsed.result ?? "")}`);
+    if (parsed.is_error)
+      throw new Error(`Claude CLI reported an error: ${String(parsed.result ?? "")}`);
     if (typeof parsed.result === "string") return parsed.result;
   } catch (err) {
     if (err instanceof Error && err.message.startsWith("Claude CLI")) throw err;
@@ -104,7 +110,9 @@ function run(cmd: CliCommand, input: string, timeoutMs: number): Promise<string>
     let stderr = "";
     const timer = setTimeout(() => {
       child.kill();
-      reject(new Error(`${cmd.bin} did not answer within ${Math.round(timeoutMs / 60000)} minutes.`));
+      reject(
+        new Error(`${cmd.bin} did not answer within ${Math.round(timeoutMs / 60000)} minutes.`),
+      );
     }, timeoutMs);
     child.stdout.on("data", (d) => (stdout += d));
     child.stderr.on("data", (d) => (stderr += d));
@@ -119,7 +127,11 @@ function run(cmd: CliCommand, input: string, timeoutMs: number): Promise<string>
     child.on("close", (code) => {
       clearTimeout(timer);
       if (code !== 0) {
-        reject(new Error(`${cmd.bin} exited with code ${code}: ${(stderr || stdout).trim().slice(0, 400)}`));
+        reject(
+          new Error(
+            `${cmd.bin} exited with code ${code}: ${(stderr || stdout).trim().slice(0, 400)}`,
+          ),
+        );
       } else resolve(stdout);
     });
     child.stdin.end(input);

@@ -37,7 +37,9 @@ async function main(): Promise<number> {
   const only = flag(argv, "--brand");
   const brandIds = only ? [only] : await brandIdsWithCompetitors();
   if (brandIds.length === 0) {
-    console.log("No brand has competitor channels yet. Link some on /research, then run this again.");
+    console.log(
+      "No brand has competitor channels yet. Link some on /research, then run this again.",
+    );
     return 0;
   }
 
@@ -59,7 +61,9 @@ async function main(): Promise<number> {
       }
     } catch (err) {
       failed += 1;
-      console.error(`  ${brandId.padEnd(20)} FAILED — ${err instanceof Error ? err.message : String(err)}`);
+      console.error(
+        `  ${brandId.padEnd(20)} FAILED — ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
   console.log(`\nDone. Spent ${formatUsd(spent)}.${failed ? ` ${failed} brand(s) failed.` : ""}`);

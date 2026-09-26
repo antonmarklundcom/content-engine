@@ -26,6 +26,10 @@ npm run dev             # http://localhost:3000
 After that, `start.bat` in the repo root builds once and starts the app.
 To update: `git pull`, `npm install`, `npm run db:migrate`.
 
+Studio writing (titles, scripts, reports, packs) can run through your logged-in
+Claude Code or Codex CLI at no app cost instead of Gemini: see
+**[docs/SUBSCRIPTION-MODE.md](docs/SUBSCRIPTION-MODE.md)** (`AI_PROVIDER`).
+
 ## Login and roles
 
 Every page is behind a login (`/youtube/login`). There are two roles:
@@ -67,7 +71,7 @@ Copy `.env.example` to `.env`. Each variable is explained there in full.
 
 ## Checking it works
 
-- `npm run verify` — typecheck, unit tests, integration tests, build. Needs a
+- `npm run verify` — typecheck, lint (ESLint + Prettier), unit tests, integration tests, build. Needs a
   local, non-Neon Postgres in `DATABASE_URL` (the tests wipe every table). CI
   runs the same thing on every PR.
 - `npm run smoke -- <brandId> --dry-run` — what a live run would do and cost.

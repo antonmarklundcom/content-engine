@@ -3,7 +3,12 @@ import { NextResponse } from "next/server";
 import { generateScript, ScriptGenerationError } from "@/lib/ai";
 import { getBrand } from "@/lib/bridge";
 import { createScript } from "@/lib/bridge/scripts";
-import { factsForPrompt, lessonsForPrompt, structureReferences, UnknownReferenceVideoError } from "@/lib/scripts/brief";
+import {
+  factsForPrompt,
+  lessonsForPrompt,
+  structureReferences,
+  UnknownReferenceVideoError,
+} from "@/lib/scripts/brief";
 import { validateScriptBody } from "@/lib/scripts/contract";
 import { defaultScriptLanguage, isScriptLanguage, loadStyleGuide } from "@/lib/scripts/language";
 import { idList, ownerOnly } from "@/lib/scripts/owner-gate";
@@ -38,21 +43,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "targetMinutes must be between 1 and 30" }, { status: 400 });
   }
   if (body.language !== undefined && !isScriptLanguage(body.language)) {
-    return NextResponse.json({ error: "language must be one of en, es-PY, jopara" }, { status: 400 });
+    return NextResponse.json(
+      { error: "language must be one of en, es-PY, jopara" },
+      { status: 400 },
+    );
   }
   const competitorVideoIds = idList(body.competitorVideoIds);
   const lessonIds = idList(body.lessonIds);
   if (!competitorVideoIds) {
-    return NextResponse.json({ error: "competitorVideoIds must be a list of video ids" }, { status: 400 });
+    return NextResponse.json(
+      { error: "competitorVideoIds must be a list of video ids" },
+      { status: 400 },
+    );
   }
-  if (!lessonIds) return NextResponse.json({ error: "lessonIds must be a list of lesson ids" }, { status: 400 });
+  if (!lessonIds)
+    return NextResponse.json({ error: "lessonIds must be a list of lesson ids" }, { status: 400 });
   const ideaId = body.ideaId === undefined || body.ideaId === null ? null : Number(body.ideaId);
   if (ideaId !== null && (!Number.isInteger(ideaId) || ideaId <= 0)) {
     return NextResponse.json({ error: "ideaId must be an idea id" }, { status: 400 });
   }
 
   const brand = await getBrand(body.brandId);
-  if (!brand) return NextResponse.json({ error: `unknown brandId "${body.brandId}"` }, { status: 400 });
+  if (!brand)
+    return NextResponse.json({ error: `unknown brandId "${body.brandId}"` }, { status: 400 });
 
   // Everything that can be refused for free is refused before the paid call.
   let references;

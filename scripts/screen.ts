@@ -13,7 +13,12 @@
  */
 
 import { closeDb } from "../src/db";
-import { estimateAnalysisCostUsd, formatUsd, SpendCapExceededError, spendStatus } from "../src/lib/spend";
+import {
+  estimateAnalysisCostUsd,
+  formatUsd,
+  SpendCapExceededError,
+  spendStatus,
+} from "../src/lib/spend";
 import { DEFAULT_MODEL, UPGRADE_MODEL, type AnalysisModel } from "../src/lib/analysis/pricing";
 import { screenInterests, screenMinScore, screeningEnabled } from "../src/lib/screening/policy";
 import {
@@ -84,9 +89,7 @@ async function main(): Promise<void> {
     `\n${kept} kept · ${run.culled} culled · ${run.failed} failed · ${formatUsd(run.costUsd)}`,
   );
   if (run.failed > 0) {
-    console.log(
-      "Failed screenings keep their video in the work list — the gallring fails open.",
-    );
+    console.log("Failed screenings keep their video in the work list — the gallring fails open.");
   }
   const after = await spendStatus();
   console.log(`Spend this month: ${formatUsd(after.projectedUsd)} of ${formatUsd(after.capUsd)}`);

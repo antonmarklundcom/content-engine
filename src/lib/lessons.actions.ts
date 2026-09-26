@@ -34,24 +34,37 @@ export type SaveLessonInput = {
 };
 
 /** Save one lesson. Any signed-in user: a lesson is a note, not spend (§1.20). */
-export async function saveLessonAction(input: SaveLessonInput): Promise<LessonActionResult<{ id: number }>> {
+export async function saveLessonAction(
+  input: SaveLessonInput,
+): Promise<LessonActionResult<{ id: number }>> {
   await requireUser();
   // A server action is a public endpoint: every field is checked, not trusted.
   if (typeof input?.text !== "string") return { ok: false, error: "A lesson needs some text." };
   if (!(LESSON_KINDS as readonly string[]).includes(input.kind)) {
     return { ok: false, error: `Unknown kind "${String(input.kind)}".` };
   }
-  const brandId = typeof input.brandId === "string" && input.brandId.trim() ? input.brandId.trim() : null;
+  const brandId =
+    typeof input.brandId === "string" && input.brandId.trim() ? input.brandId.trim() : null;
   if (brandId && !(await getBrand(brandId))) return { ok: false, error: `No brand "${brandId}".` };
   const videoId = input.videoId ?? null;
-  if (videoId !== null && !isPositiveId(videoId)) return { ok: false, error: "That is not a video id." };
+  if (videoId !== null && !isPositiveId(videoId))
+    return { ok: false, error: "That is not a video id." };
   const timestampSec = input.timestampSec ?? null;
-  if (timestampSec !== null && (typeof timestampSec !== "number" || !Number.isFinite(timestampSec))) {
+  if (
+    timestampSec !== null &&
+    (typeof timestampSec !== "number" || !Number.isFinite(timestampSec))
+  ) {
     return { ok: false, error: "The timestamp must be a number of seconds." };
   }
 
   try {
-    const row = await createLesson({ text: input.text, kind: input.kind, brandId, videoId, timestampSec });
+    const row = await createLesson({
+      text: input.text,
+      kind: input.kind,
+      brandId,
+      videoId,
+      timestampSec,
+    });
     revalidatePath("/lessons");
     return { ok: true, id: row.id };
   } catch (err) {
@@ -76,12 +89,16 @@ export async function lessonBrandOptionsAction(): Promise<{ id: string; name: st
 }
 
 /** What a fallback analysis would cost, for the confirm step. Owner only — it prices spend. */
-export async function fallbackEstimateAction(videoId: number): Promise<LessonActionResult<{ estimate: string }>> {
+export async function fallbackEstimateAction(
+  videoId: number,
+): Promise<LessonActionResult<{ estimate: string }>> {
   try {
     await requireOwner("analyse a video without captions");
     if (!isPositiveId(videoId)) return { ok: false, error: "That is not a video id." };
     const estimate = await fallbackEstimate(videoId);
-    return estimate.ok ? { ok: true, estimate: formatUsd(estimate.estimatedUsd) } : { ok: false, error: estimate.reason };
+    return estimate.ok
+      ? { ok: true, estimate: formatUsd(estimate.estimatedUsd) }
+      : { ok: false, error: estimate.reason };
   } catch (err) {
     if (err instanceof ForbiddenError) return { ok: false, error: err.message };
     throw err;
@@ -92,15 +109,19 @@ export async function fallbackEstimateAction(videoId: number): Promise<LessonAct
  * Run the no-captions fallback (§1.35). Owner only, one video, on a click —
  * `analyzeWithoutCaptions` reserves through `withSpendCap` itself.
  */
-export async function analyzeWithoutCaptionsAction(videoId: number): Promise<LessonActionResult<{ message: string }>> {
+export async function analyzeWithoutCaptionsAction(
+  videoId: number,
+): Promise<LessonActionResult<{ message: string }>> {
   try {
     await requireOwner("analyse a video without captions");
     if (!isPositiveId(videoId)) return { ok: false, error: "That is not a video id." };
     const result = await analyzeWithoutCaptions(videoId);
     revalidatePath("/youtube");
     revalidatePath(`/youtube/video/${videoId}`);
-    if (result.status === "ok") return { ok: true, message: `Analysed for ${formatUsd(result.costUsd)}.` };
-    if (result.status === "skipped") return { ok: true, message: "Already analysed — nothing was spent." };
+    if (result.status === "ok")
+      return { ok: true, message: `Analysed for ${formatUsd(result.costUsd)}.` };
+    if (result.status === "skipped")
+      return { ok: true, message: "Already analysed — nothing was spent." };
     return { ok: false, error: result.error };
   } catch (err) {
     if (err instanceof ForbiddenError || err instanceof SpendCapExceededError) {

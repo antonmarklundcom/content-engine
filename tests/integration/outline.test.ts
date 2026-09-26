@@ -23,7 +23,10 @@ import { resetTables, teardown } from "./setup";
 const CAP = "5";
 
 function expectedOutlineCostUsd(): number {
-  return estimateCostUsd("gemini-3.1-flash-lite", readUsage({ usageMetadata: USAGE.outline } as never));
+  return estimateCostUsd(
+    "gemini-3.1-flash-lite",
+    readUsage({ usageMetadata: USAGE.outline } as never),
+  );
 }
 
 async function seedAnalysis() {
@@ -40,7 +43,11 @@ async function seedAnalysis() {
       summary: "A walkthrough.",
       ideas: [
         { title: "The 45-day timeline", premise: "Walk it end to end.", why_now: "Rule change." },
-        { title: "The four documents", premise: "Name each one.", why_now: "Most files are incomplete." },
+        {
+          title: "The four documents",
+          premise: "Name each one.",
+          why_now: "Most files are incomplete.",
+        },
       ],
     })
     .returning();

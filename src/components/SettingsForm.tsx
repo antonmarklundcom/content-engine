@@ -13,17 +13,31 @@ const INPUT =
 const BUTTON =
   "rounded-[var(--radius-sm)] px-3 py-1.5 text-xs font-medium surface-border text-[var(--color-ink)] hover:border-[var(--color-accent)] disabled:opacity-50";
 
-function TestButton({ which, locale }: { which: NonNullable<SettingField["test"]>; locale: Locale }) {
+function TestButton({
+  which,
+  locale,
+}: {
+  which: NonNullable<SettingField["test"]>;
+  locale: Locale;
+}) {
   const t = translator(locale);
   const [pending, start] = useTransition();
   const [result, setResult] = useState<SettingsResult | null>(null);
   return (
     <span className="inline-flex items-center gap-2">
-      <button type="button" className={BUTTON} disabled={pending} onClick={() => start(async () => setResult(await testSettingAction(which)))}>
+      <button
+        type="button"
+        className={BUTTON}
+        disabled={pending}
+        onClick={() => start(async () => setResult(await testSettingAction(which)))}
+      >
         {pending ? t("settings.testing") : t("settings.test")}
       </button>
       {result && (
-        <span role="status" className={`text-xs ${result.ok ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}`}>
+        <span
+          role="status"
+          className={`text-xs ${result.ok ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}`}
+        >
           {result.ok ? result.message : result.error}
         </span>
       )}
@@ -45,8 +59,10 @@ export function SettingsForm({ fields, locale }: { fields: FieldView[]; locale: 
               {f.label}
             </label>
             <span className="text-xs text-[var(--color-muted)]">
-              {f.isSet ? `${t("settings.set")}${f.display ? ` · ${f.display}` : ""}` : t("settings.notSet")} ·{" "}
-              {f.required ? t("settings.required") : t("settings.optional")}
+              {f.isSet
+                ? `${t("settings.set")}${f.display ? ` · ${f.display}` : ""}`
+                : t("settings.notSet")}{" "}
+              · {f.required ? t("settings.required") : t("settings.optional")}
             </span>
           </div>
           <p className="mt-1 text-xs text-[var(--color-muted)]">
@@ -58,7 +74,12 @@ export function SettingsForm({ fields, locale }: { fields: FieldView[]; locale: 
             )}
           </p>
           {f.kind === "select" ? (
-            <select id={`s-${f.key}`} name={f.key} defaultValue={f.display || f.options?.[0]?.value} className={INPUT}>
+            <select
+              id={`s-${f.key}`}
+              name={f.key}
+              defaultValue={f.display || f.options?.[0]?.value}
+              className={INPUT}
+            >
               {f.options?.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
@@ -87,7 +108,11 @@ export function SettingsForm({ fields, locale }: { fields: FieldView[]; locale: 
         </div>
       ))}
       <div className="flex items-center gap-3">
-        <button type="submit" disabled={pending} className={`${BUTTON} bg-[var(--color-accent)] text-[var(--color-accent-ink)]`}>
+        <button
+          type="submit"
+          disabled={pending}
+          className={`${BUTTON} bg-[var(--color-accent)] text-[var(--color-accent-ink)]`}
+        >
           {pending ? t("settings.saving") : t("settings.save")}
         </button>
         {state && (

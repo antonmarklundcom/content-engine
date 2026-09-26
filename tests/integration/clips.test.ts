@@ -55,7 +55,11 @@ test("a re-save with no note keeps the note the clip already had", async () => {
   for (const note of [undefined, null, "", "   "]) {
     const again = await saveClip({ url: YT, note });
     assert.ok(again.ok);
-    assert.equal(again.clip.note, "why I saved this", `note survived a re-save with ${JSON.stringify(note)}`);
+    assert.equal(
+      again.clip.note,
+      "why I saved this",
+      `note survived a re-save with ${JSON.stringify(note)}`,
+    );
   }
 });
 

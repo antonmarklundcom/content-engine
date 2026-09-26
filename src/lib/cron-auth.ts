@@ -11,9 +11,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
 
 export const CRON_SECRET_HEADER = "x-cron-secret";
 
-export type CronAuthResult =
-  | { ok: true }
-  | { ok: false; status: 401 | 503; error: string };
+export type CronAuthResult = { ok: true } | { ok: false; status: 401 | 503; error: string };
 
 /**
  * Constant-time comparison of two secrets.

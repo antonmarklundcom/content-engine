@@ -78,7 +78,12 @@ test("a real analysis costs about what PLAN.md budgeted for one", () => {
 
 test("the batch discount is a flat half, and applies to every component", () => {
   assert.equal(BATCH_DISCOUNT, 0.5);
-  const usage = { inputTokens: 9_000, outputTokens: 3_000, cacheReadTokens: 500, cacheWriteTokens: 0 };
+  const usage = {
+    inputTokens: 9_000,
+    outputTokens: 3_000,
+    cacheReadTokens: 500,
+    cacheWriteTokens: 0,
+  };
   assert.equal(
     estimateCostUsd("gemini-3.7-flash", usage, { batch: true }),
     estimateCostUsd("gemini-3.7-flash", usage) * BATCH_DISCOUNT,
@@ -107,7 +112,11 @@ test("a long-context request bills at the long-context rate, input and output", 
   // the output million bills at $18, not $12.
   assert.equal(cost, ((LONG_CONTEXT_THRESHOLD_TOKENS + 1) * 4) / 1_000_000 + 18);
   // …and one token below it, at the short-context rate.
-  const short = { inputTokens: LONG_CONTEXT_THRESHOLD_TOKENS, outputTokens: 1_000_000, ...NO_CACHE };
+  const short = {
+    inputTokens: LONG_CONTEXT_THRESHOLD_TOKENS,
+    outputTokens: 1_000_000,
+    ...NO_CACHE,
+  };
   assert.equal(costUsdAtRates(rates, short), (LONG_CONTEXT_THRESHOLD_TOKENS * 2) / 1_000_000 + 12);
 });
 
@@ -136,6 +145,11 @@ test("cached tokens are never billed as free", () => {
   // implicit discount is not guaranteed on the Gemini 3 family — so a cached
   // token costs the same as a plain input token here, deliberately.
   const rates = MODEL_RATES["gemini-3.7-flash"];
-  const cached = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 1_000_000, cacheWriteTokens: 0 };
+  const cached = {
+    inputTokens: 0,
+    outputTokens: 0,
+    cacheReadTokens: 1_000_000,
+    cacheWriteTokens: 0,
+  };
   assert.equal(costUsdAtRates(rates, cached), rates.input);
 });

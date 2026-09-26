@@ -53,7 +53,10 @@ export function PublishUrlForm({ scriptId, initialUrl }: { scriptId: number; ini
       </div>
       <p className="text-xs text-[var(--color-ink-muted)]">{t("publish.pack.urlHelp")}</p>
       {note && (
-        <p className={`text-xs ${note.ok ? "text-[var(--color-ink-muted)]" : "text-[var(--color-danger)]"}`} role="status">
+        <p
+          className={`text-xs ${note.ok ? "text-[var(--color-ink-muted)]" : "text-[var(--color-danger)]"}`}
+          role="status"
+        >
           {note.text}
         </p>
       )}

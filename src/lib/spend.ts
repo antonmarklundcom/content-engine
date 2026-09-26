@@ -283,8 +283,7 @@ export function estimateAnalysisCostUsd(
 ): number {
   const rates = MODEL_RATES[model];
   const inputTokens = Math.ceil(wordCount * TOKENS_PER_WORD) + PROMPT_OVERHEAD_TOKENS;
-  const cost =
-    (inputTokens * rates.input + ESTIMATED_OUTPUT_TOKENS * rates.output) / 1_000_000;
+  const cost = (inputTokens * rates.input + ESTIMATED_OUTPUT_TOKENS * rates.output) / 1_000_000;
   // PLAN.md §1.2: the Batch API is a flat 50% discount.
   return options.batch ? cost * 0.5 : cost;
 }

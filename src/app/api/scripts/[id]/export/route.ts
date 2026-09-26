@@ -34,12 +34,16 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
   const { id: rawId } = await context.params;
   const id = Number(rawId);
-  if (!Number.isInteger(id) || id <= 0) return NextResponse.json({ error: "not a script id" }, { status: 400 });
+  if (!Number.isInteger(id) || id <= 0)
+    return NextResponse.json({ error: "not a script id" }, { status: 400 });
 
   const url = new URL(request.url);
   const format = (url.searchParams.get("format") ?? "md") as ExportFormat;
   if (!EXPORT_FORMATS.includes(format)) {
-    return NextResponse.json({ error: `format must be one of ${EXPORT_FORMATS.join(", ")}` }, { status: 400 });
+    return NextResponse.json(
+      { error: `format must be one of ${EXPORT_FORMATS.join(", ")}` },
+      { status: 400 },
+    );
   }
 
   const row = await getScript(id);
@@ -48,13 +52,23 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
   const verdict = validateScriptBody(row.body);
   if (!verdict.ok) {
     // Only possible if a later contract version is stored and this code is older.
-    return NextResponse.json({ error: "stored body does not match contract v1", errors: verdict.errors }, { status: 500 });
+    return NextResponse.json(
+      { error: "stored body does not match contract v1", errors: verdict.errors },
+      { status: 500 },
+    );
   }
-  const script = { id: row.id, brandId: row.brandId, status: row.status, body: row.body as ScriptBodyV1 };
+  const script = {
+    id: row.id,
+    brandId: row.brandId,
+    status: row.status,
+    body: row.body as ScriptBodyV1,
+  };
 
   const name = `script-${row.id}-${slugify(row.title)}`;
   const disposition = (file: string): Record<string, string> =>
-    url.searchParams.get("download") ? { "content-disposition": `attachment; filename="${file}"` } : {};
+    url.searchParams.get("download")
+      ? { "content-disposition": `attachment; filename="${file}"` }
+      : {};
 
   if (format === "json") {
     return NextResponse.json(script.body, { headers: disposition(`${name}.json`) });
@@ -65,7 +79,10 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       return NextResponse.json(list, { headers: disposition(`${name}-shots.json`) });
     }
     return new NextResponse(shotListMarkdown(list), {
-      headers: { "content-type": "text/markdown; charset=utf-8", ...disposition(`${name}-shots.md`) },
+      headers: {
+        "content-type": "text/markdown; charset=utf-8",
+        ...disposition(`${name}-shots.md`),
+      },
     });
   }
   if (format === "thumbnails") {
@@ -74,7 +91,10 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       return NextResponse.json(list, { headers: disposition(`${name}-thumbnails.json`) });
     }
     return new NextResponse(thumbnailListMarkdown(list), {
-      headers: { "content-type": "text/markdown; charset=utf-8", ...disposition(`${name}-thumbnails.md`) },
+      headers: {
+        "content-type": "text/markdown; charset=utf-8",
+        ...disposition(`${name}-thumbnails.md`),
+      },
     });
   }
   return new NextResponse(teleprompterMarkdown(script), {

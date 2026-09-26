@@ -18,27 +18,79 @@ export const MAX_COMMENT_CHARS = 400;
  */
 const OPENERS = new Set([
   // en
-  "how", "what", "whats", "why", "when", "where", "which", "who", "whom", "whose",
-  "can", "could", "does", "do", "did", "is", "are", "should", "would", "anyone", "anybody",
+  "how",
+  "what",
+  "whats",
+  "why",
+  "when",
+  "where",
+  "which",
+  "who",
+  "whom",
+  "whose",
+  "can",
+  "could",
+  "does",
+  "do",
+  "did",
+  "is",
+  "are",
+  "should",
+  "would",
+  "anyone",
+  "anybody",
   // es
-  "cual", "cuales", "cuando", "donde", "adonde", "quien", "quienes",
-  "cuanto", "cuanta", "cuantos", "cuantas", "puedo", "puede", "pueden",
-  "alguien", "sabes", "saben", "conviene",
+  "cual",
+  "cuales",
+  "cuando",
+  "donde",
+  "adonde",
+  "quien",
+  "quienes",
+  "cuanto",
+  "cuanta",
+  "cuantos",
+  "cuantas",
+  "puedo",
+  "puede",
+  "pueden",
+  "alguien",
+  "sabes",
+  "saben",
+  "conviene",
 ]);
 
 /** Phrases that mark a question anywhere in a comment, question mark or not. */
 const PHRASES = [
-  "does anyone", "anyone know", "any idea", "i wonder", "i was wondering", "can someone", "can you explain",
-  "how do i", "how do you", "how much", "is it possible", "what about",
-  "alguien sabe", "me pregunto", "por que", "como hago", "como se", "cuanto cuesta", "cuanto sale",
-  "se puede", "hay alguna", "que pasa si", "me podes", "me pueden", "podrias explicar",
+  "does anyone",
+  "anyone know",
+  "any idea",
+  "i wonder",
+  "i was wondering",
+  "can someone",
+  "can you explain",
+  "how do i",
+  "how do you",
+  "how much",
+  "is it possible",
+  "what about",
+  "alguien sabe",
+  "me pregunto",
+  "por que",
+  "como hago",
+  "como se",
+  "cuanto cuesta",
+  "cuanto sale",
+  "se puede",
+  "hay alguna",
+  "que pasa si",
+  "me podes",
+  "me pueden",
+  "podrias explicar",
 ];
 
 export function fold(text: string): string {
-  return text
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase();
+  return text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 }
 
 /**
@@ -55,7 +107,10 @@ export function isLikelyQuestion(comment: string): boolean {
   if (PHRASES.some((p) => folded.includes(p))) return true;
   // Each sentence's first word; a question buried after "Great video." counts.
   for (const sentence of folded.split(/[.!\n]+/)) {
-    const first = sentence.replace(/[^\p{L}\p{N}\s]/gu, " ").trim().split(/\s+/)[0];
+    const first = sentence
+      .replace(/[^\p{L}\p{N}\s]/gu, " ")
+      .trim()
+      .split(/\s+/)[0];
     if (first && OPENERS.has(first)) return true;
   }
   return false;
@@ -81,9 +136,14 @@ export const QUESTIONS_JSON_SCHEMA = {
         properties: {
           question: {
             type: "string",
-            description: "The question in one clean sentence, in the language most commenters used.",
+            description:
+              "The question in one clean sentence, in the language most commenters used.",
           },
-          askCount: { type: "integer", minimum: 1, description: "How many of the comments ask it." },
+          askCount: {
+            type: "integer",
+            minimum: 1,
+            description: "How many of the comments ask it.",
+          },
           examples: {
             type: "array",
             maxItems: MAX_QUESTION_EXAMPLES,
@@ -132,7 +192,10 @@ export type QuestionCluster = {
  * normalised text) merged, counts made positive integers, examples trimmed to
  * five non-empty strings, and video ids kept only if they were in the input.
  */
-export function validateQuestionClusters(raw: unknown, knownVideoIds: Iterable<number>): QuestionCluster[] {
+export function validateQuestionClusters(
+  raw: unknown,
+  knownVideoIds: Iterable<number>,
+): QuestionCluster[] {
   const known = new Set(knownVideoIds);
   const list = (raw as { questions?: unknown } | null)?.questions;
   if (!Array.isArray(list)) throw new Error("The model's answer has no questions list.");
@@ -147,7 +210,9 @@ export function validateQuestionClusters(raw: unknown, knownVideoIds: Iterable<n
     const examples = (Array.isArray(q.examples) ? q.examples : [])
       .filter((e): e is string => typeof e === "string" && e.trim() !== "")
       .map((e) => e.trim());
-    const videoIds = (Array.isArray(q.videoIds) ? q.videoIds : []).map(Number).filter((id) => known.has(id));
+    const videoIds = (Array.isArray(q.videoIds) ? q.videoIds : [])
+      .map(Number)
+      .filter((id) => known.has(id));
 
     const existing = byKey.get(key);
     if (existing) {
@@ -155,10 +220,17 @@ export function validateQuestionClusters(raw: unknown, knownVideoIds: Iterable<n
       existing.examples = mergeExamples(existing.examples, examples);
       existing.videoIds = mergeIds(existing.videoIds, videoIds);
     } else {
-      byKey.set(key, { question, askCount: count, examples: mergeExamples([], examples), videoIds: mergeIds([], videoIds) });
+      byKey.set(key, {
+        question,
+        askCount: count,
+        examples: mergeExamples([], examples),
+        videoIds: mergeIds([], videoIds),
+      });
     }
   }
-  return [...byKey.values()].sort((a, b) => b.askCount - a.askCount).slice(0, MAX_QUESTION_CLUSTERS);
+  return [...byKey.values()]
+    .sort((a, b) => b.askCount - a.askCount)
+    .slice(0, MAX_QUESTION_CLUSTERS);
 }
 
 export function mergeExamples(a: string[], b: string[]): string[] {

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { formatValue, maskValue, readEnv, writeEnv } from "./envfile";
 
 test("readEnv reads plain, quoted and export lines, skips comments", () => {
-  const env = readEnv('# c\nA=1\nexport B="two words"\nC=\'x\'\n bad line\n');
+  const env = readEnv("# c\nA=1\nexport B=\"two words\"\nC='x'\n bad line\n");
   assert.deepEqual(env, { A: "1", B: "two words", C: "x" });
 });
 
@@ -22,7 +22,10 @@ test("writeEnv on an empty file", () => {
 });
 
 test("formatValue quotes only when needed", () => {
-  assert.equal(formatValue("postgresql://u:p@h/db?sslmode=require"), "postgresql://u:p@h/db?sslmode=require");
+  assert.equal(
+    formatValue("postgresql://u:p@h/db?sslmode=require"),
+    "postgresql://u:p@h/db?sslmode=require",
+  );
   assert.equal(formatValue('a "b"'), '"a \\"b\\""');
   assert.equal(formatValue("a#b"), '"a#b"');
 });

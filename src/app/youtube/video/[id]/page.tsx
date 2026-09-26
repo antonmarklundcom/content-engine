@@ -24,6 +24,8 @@ import { PromoteButton } from "@/components/PromoteButton";
 import { UnitMarkButton } from "@/components/UnitMarkButton";
 import { VideoReadControls } from "@/components/VideoReadControls";
 import { CaptionBadge } from "@/components/CaptionBadge";
+import { FallbackAnalyzeButton } from "@/components/FallbackAnalyzeButton";
+import { SaveLessonButton } from "@/components/SaveLessonButton";
 import { CopyAnalysisButton } from "@/components/CopyAnalysisButton";
 import { CopyTextButton } from "@/components/CopyTextButton";
 import { IdeaOutline } from "@/components/IdeaOutline";
@@ -109,12 +111,13 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
     .from(transcripts)
     .where(eq(transcripts.videoId, video.id))
     .limit(1);
-  const estimate = canSpend && transcript
-    ? {
-        standard: formatUsd(estimateAnalysisCostUsd(transcript.wordCount, DEFAULT_MODEL)),
-        upgrade: formatUsd(estimateAnalysisCostUsd(transcript.wordCount, UPGRADE_MODEL)),
-      }
-    : null;
+  const estimate =
+    canSpend && transcript
+      ? {
+          standard: formatUsd(estimateAnalysisCostUsd(transcript.wordCount, DEFAULT_MODEL)),
+          upgrade: formatUsd(estimateAnalysisCostUsd(transcript.wordCount, UPGRADE_MODEL)),
+        }
+      : null;
   // Both statuses (PR-29). PR-16 made a failed generation write a row precisely
   // so a paid failure would survive a reload — filtering them out here is what
   // kept them invisible, which meant the row it preserved was never read.
@@ -226,11 +229,7 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
           panel below says "not analysed", and an explanation that appears after
           the thing it explains is read as an excuse. */}
       {screening && screening.status === "ok" && (
-        <div
-          className={`surface-border surface-card mb-4 px-5 py-4 ${
-            culled ? "" : "opacity-80"
-          }`}
-        >
+        <div className={`surface-border surface-card mb-4 px-5 py-4 ${culled ? "" : "opacity-80"}`}>
           <p className="text-sm font-medium text-[var(--color-ink)]">
             {t(culled ? "screen.culled.title" : "screen.kept.title")}{" "}
             <span className="text-[var(--color-ink-muted)]">
@@ -241,9 +240,7 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
             <p className="mt-1 text-sm text-[var(--color-ink-muted)]">{screening.reason}</p>
           )}
           {culled && (
-            <p className="mt-2 text-xs text-[var(--color-ink-muted)]">
-              {t("screen.culled.body")}
-            </p>
+            <p className="mt-2 text-xs text-[var(--color-ink-muted)]">{t("screen.culled.body")}</p>
           )}
         </div>
       )}
@@ -264,6 +261,8 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
               locale={locale}
             />
           )}
+          {/* [S11] No transcript: the click-only URL fallback (§1.35). Owner only. */}
+          {!transcript && <FallbackAnalyzeButton videoId={video.id} isOwner={canSpend} />}
         </div>
       )}
 
@@ -334,9 +333,7 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
               with everything else carrying it. Placed above the summary because
               the useful move after reading one analysis is usually sideways —
               to the other four videos about the same thing. */}
-          {(!!analysis.topics?.length ||
-            !!analysis.entities?.length ||
-            !!analysis.contentType) && (
+          {(!!analysis.topics?.length || !!analysis.entities?.length || !!analysis.contentType) && (
             <div className="mb-6 flex flex-wrap items-center gap-2">
               {analysis.contentType && (
                 <span className="rounded-full bg-[var(--color-surface-raised)] px-3 py-1 text-xs text-[var(--color-ink-muted)]">
@@ -360,7 +357,10 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
                   {analysis.takeaways.map((takeaway, i) => (
                     <li key={i} className="flex items-start gap-2">
                       {star("takeaway", i) ?? <span className="w-6 shrink-0" />}
-                      <span>{takeaway}</span>
+                      <div className="flex flex-col items-start gap-1">
+                        <span>{takeaway}</span>
+                        <SaveLessonButton videoId={video.id} text={takeaway} />
+                      </div>
                     </li>
                   ))}
                 </ul>

@@ -21,8 +21,7 @@ import { parseYouTubeUrl } from "@/lib/youtube/url";
  */
 
 export type ResearchActionResult =
-  | { ok: true }
-  | { ok: false; error: TranslationKey; detail?: string };
+  { ok: true } | { ok: false; error: TranslationKey; detail?: string };
 
 function isRole(value: unknown): value is BrandSourceRole {
   return typeof value === "string" && (BRAND_SOURCE_ROLES as readonly string[]).includes(value);
@@ -59,7 +58,8 @@ export async function addCompetitorChannel(
 
   try {
     const resolved = await new YouTubeDataClient().resolve(ref);
-    if (!resolved || resolved.kind !== "channel") return { ok: false, error: "research.error.notFound" };
+    if (!resolved || resolved.kind !== "channel")
+      return { ok: false, error: "research.error.notFound" };
     const source = await upsertChannelSource(resolved.channel);
     await linkSourceToBrand(brandId, source.id, role);
   } catch (err) {

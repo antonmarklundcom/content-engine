@@ -230,9 +230,7 @@ export function messageCostUsd(
   groundingQueries: number,
   model: string = MODEL,
 ): number {
-  return (
-    costUsdAtRates(ideationRates(model), usage) + groundingQueries * GROUNDING_USD_PER_QUERY
-  );
+  return costUsdAtRates(ideationRates(model), usage) + groundingQueries * GROUNDING_USD_PER_QUERY;
 }
 
 export type GeneratedIdea = {
@@ -669,7 +667,8 @@ export function estimateVideoUrlAnalysisCostUsd(
     );
   }
   return estimateCostUsd(model, {
-    inputTokens: Math.ceil(durationSeconds * VIDEO_TOKENS_PER_SECOND) + VIDEO_PROMPT_OVERHEAD_TOKENS,
+    inputTokens:
+      Math.ceil(durationSeconds * VIDEO_TOKENS_PER_SECOND) + VIDEO_PROMPT_OVERHEAD_TOKENS,
     outputTokens: VIDEO_MAX_OUTPUT_TOKENS,
     cacheReadTokens: 0,
     cacheWriteTokens: 0,
@@ -946,7 +945,9 @@ Propose ${TITLE_SUGGESTION_COUNT} distinct titles, each with its angle. Vary the
     try {
       parsed = JSON.parse(text) as typeof parsed;
     } catch {
-      throw new Error(`The model didn't return parseable titles (finish reason: ${finishReason ?? "unknown"}). Try again.`);
+      throw new Error(
+        `The model didn't return parseable titles (finish reason: ${finishReason ?? "unknown"}). Try again.`,
+      );
     }
     const titles = (parsed.titles ?? []).filter((t) => t?.title?.trim());
     if (titles.length === 0) throw new Error("The model returned no titles. Try again.");
@@ -961,7 +962,10 @@ const BROLL_JSON_SCHEMA = {
       type: "string",
       description: "The exact spoken line (copied from spokenLines) this shot plays under.",
     },
-    description: { type: "string", description: "What the shot shows, in a few words, in English." },
+    description: {
+      type: "string",
+      description: "What the shot shows, in a few words, in English.",
+    },
     imagePrompt: {
       type: "string",
       description:
@@ -1006,7 +1010,10 @@ export const SCRIPT_JSON_SCHEMA = {
         properties: {
           description: { type: "string" },
           textOverlay: { type: "string", description: "At most 4 words, or empty." },
-          imagePrompt: { type: "string", description: "English image prompt, no text in the image." },
+          imagePrompt: {
+            type: "string",
+            description: "English image prompt, no text in the image.",
+          },
         },
         required: ["description", "textOverlay", "imagePrompt"],
       },
@@ -1054,13 +1061,17 @@ export const SCRIPT_JSON_SCHEMA = {
     },
     sources: {
       type: "array",
-      description: "One entry per factual claim in the script. Every entry has a real URL you found by searching.",
+      description:
+        "One entry per factual claim in the script. Every entry has a real URL you found by searching.",
       items: {
         type: "object",
         properties: {
           id: { type: "string", description: "s1, s2, ..." },
           claim: { type: "string" },
-          url: { type: "string", description: "The full https URL of the page that states this claim." },
+          url: {
+            type: "string",
+            description: "The full https URL of the page that states this claim.",
+          },
           title: { type: "string", description: "Page or publisher name." },
           verifyBeforeRecording: {
             type: "boolean",
@@ -1098,15 +1109,21 @@ export type PromptFact = {
 
 function factsBlock(facts: PromptFact[] | undefined): string {
   if (!facts?.length) return "";
-  const lines = facts.map((f) => `- [${f.topic}] ${f.claim}${f.sourceUrl ? ` (source: ${f.sourceUrl})` : " (no source URL on file)"}`);
+  const lines = facts.map(
+    (f) =>
+      `- [${f.topic}] ${f.claim}${f.sourceUrl ? ` (source: ${f.sourceUrl})` : " (no source URL on file)"}`,
+  );
   return `\n\nFACTS — Anton's checked fact sheet for this brand. Use these checked facts as-is (do not reword numbers, dates or names) and cite their URL in "sources" when you use one. A fact not listed here — or listed with no source URL on file — still needs its own source:\n${lines.join("\n")}`;
 }
 
 function referenceBlock(refs: StructureReference[]): string {
   if (!refs.length) return "";
   const parts = refs.map((r, i) => {
-    const lines = [`Reference ${i + 1}: "${r.videoTitle}"${r.channelTitle ? ` (${r.channelTitle})` : ""}`];
-    if (r.hook) lines.push(`  Hook technique: ${r.hook.technique} — why it works: ${r.hook.why_it_works}`);
+    const lines = [
+      `Reference ${i + 1}: "${r.videoTitle}"${r.channelTitle ? ` (${r.channelTitle})` : ""}`,
+    ];
+    if (r.hook)
+      lines.push(`  Hook technique: ${r.hook.technique} — why it works: ${r.hook.why_it_works}`);
     if (r.timeline?.length) {
       lines.push(`  Structure: ${r.timeline.map((t) => `${t.ts} ${t.topic}`).join(" → ")}`);
     }
@@ -1117,12 +1134,24 @@ function referenceBlock(refs: StructureReference[]): string {
 }
 
 /** What the model returns: the body minus the fields this app fills in itself. */
-type RawScript = Omit<ScriptBodyV1, "version" | "language" | "topic" | "chosenTitle" | "targetMinutes" | "sources" | "hook" | "sections"> & {
+type RawScript = Omit<
+  ScriptBodyV1,
+  | "version"
+  | "language"
+  | "topic"
+  | "chosenTitle"
+  | "targetMinutes"
+  | "sources"
+  | "hook"
+  | "sections"
+> & {
   hook: Omit<ScriptBodyV1["hook"], "broll"> & { broll: RawBroll[] };
   sections: (Omit<ScriptBodyV1["sections"][number], "broll"> & { broll: RawBroll[] })[];
   sources: ScriptSource[];
 };
-type RawBroll = Omit<ScriptBodyV1["hook"]["broll"][number], "videoPrompt"> & { videoPrompt: string | null };
+type RawBroll = Omit<ScriptBodyV1["hook"]["broll"][number], "videoPrompt"> & {
+  videoPrompt: string | null;
+};
 
 function isHttpUrl(value: unknown): value is string {
   if (typeof value !== "string") return false;
@@ -1145,7 +1174,10 @@ function isHttpUrl(value: unknown): value is string {
  * The verify flag is the model's OR `needsVerification`'s (§5.O8: legal and
  * residency facts always carry it).
  */
-export function assembleScriptBody(raw: RawScript, brief: Pick<ScriptBrief, "topic" | "title" | "targetMinutes" | "language">): ScriptBodyV1 {
+export function assembleScriptBody(
+  raw: RawScript,
+  brief: Pick<ScriptBrief, "topic" | "title" | "targetMinutes" | "language">,
+): ScriptBodyV1 {
   const kept = new Map<string, ScriptSource>();
   const dropped = new Map<string, string>();
   for (const s of raw.sources ?? []) {
@@ -1181,13 +1213,19 @@ export function assembleScriptBody(raw: RawScript, brief: Pick<ScriptBrief, "top
     targetMinutes: brief.targetMinutes,
     titleOptions: raw.titleOptions,
     thumbnailConcepts: raw.thumbnailConcepts,
-    hook: { spokenLines: raw.hook.spokenLines, onScreenText: raw.hook.onScreenText, broll: broll(raw.hook.broll) },
+    hook: {
+      spokenLines: raw.hook.spokenLines,
+      onScreenText: raw.hook.onScreenText,
+      broll: broll(raw.hook.broll),
+    },
     sections: raw.sections.map((s) => ({
       heading: s.heading,
       spokenLines: s.spokenLines,
       talkingPoints: [
         ...s.talkingPoints,
-        ...s.sourceIds.filter((id) => dropped.has(id)).map((id) => `UNSOURCED — verify or cut: ${dropped.get(id)}`),
+        ...s.sourceIds
+          .filter((id) => dropped.has(id))
+          .map((id) => `UNSOURCED — verify or cut: ${dropped.get(id)}`),
       ],
       onScreenText: s.onScreenText,
       broll: broll(s.broll),
@@ -1271,7 +1309,10 @@ Write the script: a hook that earns the next 30 seconds, sections in a clear ord
   }
   const verdict = validateScriptBody(body);
   if (!verdict.ok) {
-    throw new ScriptGenerationError("Gemini's script does not match the script contract. Try again.", verdict.errors);
+    throw new ScriptGenerationError(
+      "Gemini's script does not match the script contract. Try again.",
+      verdict.errors,
+    );
   }
   return { body, costUsd, groundingQueries };
 }

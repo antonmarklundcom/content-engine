@@ -13,10 +13,13 @@ import { sampleScriptBody } from "@/lib/scripts/fixture";
 import { errorsUnder, normalizeBody, parseBriefParams, teleprompterBlocks } from "./model";
 
 test("parseBriefParams reads ?brand= and repeated ?ref=, ignoring junk and duplicates", () => {
-  assert.deepEqual(parseBriefParams({ brand: "residency-guide", ref: ["12", "7", "12", "abc", "-3", "0"] }), {
-    brand: "residency-guide",
-    refs: [12, 7],
-  });
+  assert.deepEqual(
+    parseBriefParams({ brand: "residency-guide", ref: ["12", "7", "12", "abc", "-3", "0"] }),
+    {
+      brand: "residency-guide",
+      refs: [12, 7],
+    },
+  );
   assert.deepEqual(parseBriefParams({ ref: "5,6" }), { brand: null, refs: [5, 6] });
   assert.deepEqual(parseBriefParams({ brand: "  " }), { brand: null, refs: [] });
 });
@@ -30,12 +33,20 @@ test("normalizeBody drops blank rows, trims lines and turns an empty video promp
   assert.deepEqual(clean.hook.spokenLines, ["First.", "Second."]);
   assert.deepEqual(clean.sections[0]!.talkingPoints, []);
   assert.equal(clean.hook.broll[0]!.videoPrompt, null);
-  assert.deepEqual(body.hook.spokenLines, ["  First.  ", "", "Second."], "the input is not mutated");
+  assert.deepEqual(
+    body.hook.spokenLines,
+    ["  First.  ", "", "Second."],
+    "the input is not mutated",
+  );
   assert.ok(validateScriptBody(clean).ok);
 });
 
 test("errorsUnder matches a path exactly, not a longer index", () => {
-  const errors = ["body.sections[1].heading must not be empty", "body.sections[10] must be an object", "body.sections[1] x"];
+  const errors = [
+    "body.sections[1].heading must not be empty",
+    "body.sections[10] must be an object",
+    "body.sections[1] x",
+  ];
   assert.deepEqual(errorsUnder(errors, "body.sections[1]"), [
     "body.sections[1].heading must not be empty",
     "body.sections[1] x",
@@ -51,8 +62,10 @@ test("teleprompter blocks are spoken lines only, with flagged sources on their s
   assert.equal(blocks.at(-1)!.kind, "cta");
   assert.deepEqual(blocks[1]!.verify, [body.sources[0]!.id]);
   const all = blocks.flatMap((b) => b.lines).join("\n");
-  for (const point of body.sections[0]!.talkingPoints) assert.ok(!all.includes(point), "talking points are not read aloud");
-  for (const text of body.sections[0]!.onScreenText) assert.ok(!all.includes(text), "on-screen text is not read aloud");
+  for (const point of body.sections[0]!.talkingPoints)
+    assert.ok(!all.includes(point), "talking points are not read aloud");
+  for (const text of body.sections[0]!.onScreenText)
+    assert.ok(!all.includes(text), "on-screen text is not read aloud");
 });
 
 // tsx compiles JSX with the classic runtime (tsconfig has `jsx: preserve` for
@@ -64,9 +77,17 @@ test("the teleprompter renders every spoken line, the verify badge and its contr
   body.sources[0]!.verifyBeforeRecording = true;
   body.sections[0]!.sourceIds = [body.sources[0]!.id];
   const html = renderToStaticMarkup(
-    createElement(StudioTeleprompter, { title: body.chosenTitle, blocks: teleprompterBlocks(body), backHref: "/studio/1" }),
+    createElement(StudioTeleprompter, {
+      title: body.chosenTitle,
+      blocks: teleprompterBlocks(body),
+      backHref: "/studio/1",
+    }),
   );
-  for (const line of [...body.hook.spokenLines, ...body.sections[0]!.spokenLines, ...body.cta.spokenLines]) {
+  for (const line of [
+    ...body.hook.spokenLines,
+    ...body.sections[0]!.spokenLines,
+    ...body.cta.spokenLines,
+  ]) {
     assert.ok(html.includes(line.replace(/'/g, "&#x27;")), `renders "${line}"`);
   }
   assert.match(html, /data-verify-badge/);

@@ -1,6 +1,13 @@
 import "server-only";
 import { cookies } from "next/headers";
-import { DEFAULT_LOCALE, isLocale, LOCALE_COOKIE, translator, type Locale, type Translator } from ".";
+import {
+  DEFAULT_LOCALE,
+  isLocale,
+  LOCALE_COOKIE,
+  translator,
+  type Locale,
+  type Translator,
+} from ".";
 
 /**
  * The locale for this request, from a cookie.

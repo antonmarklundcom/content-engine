@@ -3,7 +3,14 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useTranslator } from "@/lib/i18n/client";
 import type { TranslationKey } from "@/lib/i18n";
-import { clampRate, DEFAULT_RATE, formatRate, MAX_RATE, MIN_RATE, RATE_STEP } from "@/lib/listen/rate";
+import {
+  clampRate,
+  DEFAULT_RATE,
+  formatRate,
+  MAX_RATE,
+  MIN_RATE,
+  RATE_STEP,
+} from "@/lib/listen/rate";
 import type { ContentUnit, UnitType } from "@/lib/listen/units";
 import { toggleUnitMark } from "@/lib/marks.actions";
 

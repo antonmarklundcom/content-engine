@@ -18,8 +18,7 @@ import { canonicalClipUrl, CLIP_URL_LIMIT, platformForUrl } from "./url";
 export type SaveClipInput = { url: string; note?: string | null };
 
 export type SaveClipResult =
-  | { ok: true; clip: Clip; created: boolean }
-  | { ok: false; error: string };
+  { ok: true; clip: Clip; created: boolean } | { ok: false; error: string };
 
 /** `clips.note` is text, but a "why I saved this" line is a line. */
 const NOTE_LIMIT = 500;
@@ -54,11 +53,7 @@ export async function saveClip(input: SaveClipInput): Promise<SaveClipResult> {
   // a second save of an Instagram clip is byte-identical to a first one, and
   // reporting "created" for it would tell the caller (and the Shortcut's
   // success message) something untrue.
-  const existing = await db
-    .select({ id: clips.id })
-    .from(clips)
-    .where(eq(clips.url, url))
-    .limit(1);
+  const existing = await db.select({ id: clips.id }).from(clips).where(eq(clips.url, url)).limit(1);
 
   const [row] = await db
     .insert(clips)
@@ -185,6 +180,9 @@ export async function processYouTubeClip(clip: Clip): Promise<Clip> {
       // the cap is raised, analyses fine. Keep the video link.
       return markFailed(clip.id, err.message);
     }
-    return markFailed(clip.id, err instanceof Error ? err.message : `Analysis of "${video.title}" failed.`);
+    return markFailed(
+      clip.id,
+      err instanceof Error ? err.message : `Analysis of "${video.title}" failed.`,
+    );
   }
 }

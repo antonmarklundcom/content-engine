@@ -15,7 +15,8 @@ export function readEnv(text: string): Record<string, string> {
     const m = LINE.exec(raw);
     if (!m) continue;
     let v = m[2].trim();
-    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
+    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'")))
+      v = v.slice(1, -1);
     out[m[1]] = v;
   }
   return out;

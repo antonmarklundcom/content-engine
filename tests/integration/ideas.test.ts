@@ -99,17 +99,32 @@ test("proposed → approved → posted round-trips, stamping posted_at", async (
 
 test("setIdeaStatus refuses an unknown status and a missing idea", async () => {
   const id = await seedIdea();
-  await assert.rejects(as(owner, () => setIdeaStatus(id, "scheduled" as schema.IdeaStatus)), /Unknown status/);
-  await assert.rejects(as(owner, () => setIdeaStatus(id + 1000, "approved")), /no longer exists/);
+  await assert.rejects(
+    as(owner, () => setIdeaStatus(id, "scheduled" as schema.IdeaStatus)),
+    /Unknown status/,
+  );
+  await assert.rejects(
+    as(owner, () => setIdeaStatus(id + 1000, "approved")),
+    /no longer exists/,
+  );
   assert.equal((await getIdea(id))?.status, "proposed");
 });
 
 test("signed out, every action is refused", async () => {
   const id = await seedIdea("rejected");
   // requireUser redirects; the test harness's redirect() throws.
-  await assert.rejects(as("", () => setIdeaStatus(id, "approved")), /redirect/);
-  await assert.rejects(as("", () => saveIdeaEdits(id, { title: "x" })), /redirect/);
-  await assert.rejects(as("", () => deleteIdea(id)), /redirect/);
+  await assert.rejects(
+    as("", () => setIdeaStatus(id, "approved")),
+    /redirect/,
+  );
+  await assert.rejects(
+    as("", () => saveIdeaEdits(id, { title: "x" })),
+    /redirect/,
+  );
+  await assert.rejects(
+    as("", () => deleteIdea(id)),
+    /redirect/,
+  );
   assert.ok(await getIdea(id));
 });
 
@@ -122,22 +137,34 @@ test("saveIdeaEdits saves title/angle/caption and leaves status alone", async ()
   assert.equal(saved.angle, "New angle");
   assert.equal(saved.draftCopy, "New caption");
   assert.equal(saved.status, "approved");
-  await assert.rejects(as(employee, () => saveIdeaEdits(id, { title: "   " })), /cannot be empty/);
+  await assert.rejects(
+    as(employee, () => saveIdeaEdits(id, { title: "   " })),
+    /cannot be empty/,
+  );
 });
 
 test("deleteIdea: owner only, and only a rejected idea", async () => {
   const rejected = await seedIdea("rejected");
   const approved = await seedIdea("approved");
 
-  await assert.rejects(as(employee, () => deleteIdea(rejected)), { name: "ForbiddenError" });
+  await assert.rejects(
+    as(employee, () => deleteIdea(rejected)),
+    { name: "ForbiddenError" },
+  );
   assert.ok(await getIdea(rejected), "an employee cannot delete");
 
-  await assert.rejects(as(owner, () => deleteIdea(approved)), /Only a rejected idea/);
+  await assert.rejects(
+    as(owner, () => deleteIdea(approved)),
+    /Only a rejected idea/,
+  );
   assert.ok(await getIdea(approved), "a non-rejected idea stays");
 
   await as(owner, () => deleteIdea(rejected));
   assert.equal(await getIdea(rejected), null);
-  await assert.rejects(as(owner, () => deleteIdea(rejected)), /no longer exists/);
+  await assert.rejects(
+    as(owner, () => deleteIdea(rejected)),
+    /no longer exists/,
+  );
 });
 
 test("filtering by status: listIdeas, counts and GET ?status=", async () => {
@@ -152,18 +179,35 @@ test("filtering by status: listIdeas, counts and GET ?status=", async () => {
   assert.ok(approved.ideas.every((i) => i.status === "approved" && i.brandId === BRAND));
   assert.equal((await listIdeas({ brandId: BRAND })).total, 4);
 
-  assert.deepEqual(await ideaCountsByStatus(BRAND), { proposed: 1, approved: 2, rejected: 0, posted: 1 });
+  assert.deepEqual(await ideaCountsByStatus(BRAND), {
+    proposed: 1,
+    approved: 2,
+    rejected: 0,
+    posted: 1,
+  });
 
   await as(owner, () => setIdeaStatus(a, "approved"));
   await as(owner, () => setIdeaStatus(b, "posted"));
-  assert.deepEqual(await ideaCountsByStatus(BRAND), { proposed: 0, approved: 2, rejected: 0, posted: 2 });
+  assert.deepEqual(await ideaCountsByStatus(BRAND), {
+    proposed: 0,
+    approved: 2,
+    rejected: 0,
+    posted: 2,
+  });
 
-  const response = await GET(new Request(`http://localhost/api/ideas?brandId=${BRAND}&status=posted`));
+  const response = await GET(
+    new Request(`http://localhost/api/ideas?brandId=${BRAND}&status=posted`),
+  );
   const body = (await response.json()) as { id: number; status: string }[];
   assert.equal(body.length, 2);
   assert.ok(body.every((i) => i.status === "posted"));
 
-  const all = (await (await GET(new Request(`http://localhost/api/ideas?brandId=${BRAND}`))).json()) as unknown[];
+  const all = (await (
+    await GET(new Request(`http://localhost/api/ideas?brandId=${BRAND}`))
+  ).json()) as unknown[];
   assert.equal(all.length, 4, "without ?page the list is unpaged, as before");
-  assert.equal((await GET(new Request(`http://localhost/api/ideas?brandId=${BRAND}&status=nope`))).status, 400);
+  assert.equal(
+    (await GET(new Request(`http://localhost/api/ideas?brandId=${BRAND}&status=nope`))).status,
+    400,
+  );
 });

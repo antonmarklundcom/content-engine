@@ -17,7 +17,10 @@ import { listThumbnails, thumbnailDir } from "@/lib/studio/media";
  * name is checked against the listing, never joined into a path as given.
  * Returns the stored path.
  */
-export async function chooseThumbnail(scriptId: number, name: string | null): Promise<string | null> {
+export async function chooseThumbnail(
+  scriptId: number,
+  name: string | null,
+): Promise<string | null> {
   await requireOwner("choose a thumbnail");
   if (!Number.isInteger(scriptId) || scriptId <= 0) throw new Error("That is not a script id.");
   let file: string | null = null;

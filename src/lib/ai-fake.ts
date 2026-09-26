@@ -58,13 +58,7 @@ import {
  * module back at half the app for no gain.
  */
 export type FakeResponseKind =
-  | "ideas"
-  | "adapt"
-  | "analysis"
-  | "screening"
-  | "outline"
-  | "titles"
-  | "script";
+  "ideas" | "adapt" | "analysis" | "screening" | "outline" | "titles" | "script";
 
 type JsonObject = Record<string, unknown>;
 
@@ -113,7 +107,9 @@ export function classifySchema(schema: unknown): FakeResponseKind {
  */
 export function validate(value: unknown, schema: unknown, path = "$"): void {
   const fail = (why: string): never => {
-    throw new Error(`ai-fake: canned response is not valid against the caller's schema at ${path}: ${why}`);
+    throw new Error(
+      `ai-fake: canned response is not valid against the caller's schema at ${path}: ${why}`,
+    );
   };
   if (typeof schema !== "object" || schema === null) return;
   const s = schema as JsonObject;
@@ -121,7 +117,9 @@ export function validate(value: unknown, schema: unknown, path = "$"): void {
   const type = s["type"];
   if (type === "object") {
     if (typeof value !== "object" || value === null || Array.isArray(value)) {
-      return void fail(`expected an object, got ${Array.isArray(value) ? "an array" : typeof value}`);
+      return void fail(
+        `expected an object, got ${Array.isArray(value) ? "an array" : typeof value}`,
+      );
     }
     const object = value as JsonObject;
     const properties = (s["properties"] ?? {}) as JsonObject;
@@ -144,8 +142,10 @@ export function validate(value: unknown, schema: unknown, path = "$"): void {
     if (!Array.isArray(value)) return void fail(`expected an array, got ${typeof value}`);
     const min = s["minItems"];
     const max = s["maxItems"];
-    if (typeof min === "number" && value.length < min) fail(`${value.length} items, minimum ${min}`);
-    if (typeof max === "number" && value.length > max) fail(`${value.length} items, maximum ${max}`);
+    if (typeof min === "number" && value.length < min)
+      fail(`${value.length} items, minimum ${min}`);
+    if (typeof max === "number" && value.length > max)
+      fail(`${value.length} items, maximum ${max}`);
     value.forEach((item, i) => validate(item, s["items"], `${path}[${i}]`));
     return;
   }
@@ -155,15 +155,18 @@ export function validate(value: unknown, schema: unknown, path = "$"): void {
     fail(`${JSON.stringify(value)} is not one of ${JSON.stringify(enumeration)}`);
   }
 
-  if (type === "string" && typeof value !== "string") fail(`expected a string, got ${typeof value}`);
+  if (type === "string" && typeof value !== "string")
+    fail(`expected a string, got ${typeof value}`);
 
   if (type === "integer" || type === "number") {
     if (typeof value !== "number") return void fail(`expected a number, got ${typeof value}`);
     if (type === "integer" && !Number.isInteger(value)) fail(`${value} is not an integer`);
     const minimum = s["minimum"];
     const maximum = s["maximum"];
-    if (typeof minimum === "number" && value < minimum) fail(`${value} is below minimum ${minimum}`);
-    if (typeof maximum === "number" && value > maximum) fail(`${value} is above maximum ${maximum}`);
+    if (typeof minimum === "number" && value < minimum)
+      fail(`${value} is below minimum ${minimum}`);
+    if (typeof maximum === "number" && value > maximum)
+      fail(`${value} is above maximum ${maximum}`);
   }
 }
 
@@ -187,7 +190,10 @@ export const PAYLOADS: Record<FakeResponseKind, unknown> = {
         topic: "Residency paperwork timelines",
         summary:
           "Processing times published by the migraciones office moved from 90 to 45 days for complete applications.",
-        sources: ["https://example.gov.py/migraciones/plazos", "https://example.com/py-residency-2026"],
+        sources: [
+          "https://example.gov.py/migraciones/plazos",
+          "https://example.com/py-residency-2026",
+        ],
         relatedBrandIds: [],
       },
     ],
@@ -203,13 +209,17 @@ export const PAYLOADS: Record<FakeResponseKind, unknown> = {
         citations: [
           {
             claim: "Complete applications are now processed in 45 days.",
-            sources: ["https://example.gov.py/migraciones/plazos", "https://example.com/py-residency-2026"],
+            sources: [
+              "https://example.gov.py/migraciones/plazos",
+              "https://example.com/py-residency-2026",
+            ],
           },
         ],
       },
       {
         title: "What 'complete' actually means",
-        angle: "The timeline only holds for a complete file; name the four documents people forget.",
+        angle:
+          "The timeline only holds for a complete file; name the four documents people forget.",
         format: "reel",
         platform: "instagram",
         draftCopy:
@@ -229,7 +239,8 @@ export const PAYLOADS: Record<FakeResponseKind, unknown> = {
         angle: "A certificate that expires mid-process is the most common restart.",
         format: "story",
         platform: "instagram",
-        draftCopy: "Tu certificado de antecedentes vence. Revisá la fecha antes de presentar. #residencia",
+        draftCopy:
+          "Tu certificado de antecedentes vence. Revisá la fecha antes de presentar. #residencia",
       },
       {
         title: "Cost breakdown, line by line",
@@ -262,12 +273,22 @@ export const PAYLOADS: Record<FakeResponseKind, unknown> = {
     ],
     hook: {
       technique: "Contradiction of a widely repeated number",
-      first_30s: "Opens by stating that the 90-day figure everyone quotes has been wrong since the rule change.",
-      why_it_works: "The viewer's existing plan is suddenly suspect, so the rest of the video is about their own file.",
+      first_30s:
+        "Opens by stating that the 90-day figure everyone quotes has been wrong since the rule change.",
+      why_it_works:
+        "The viewer's existing plan is suddenly suspect, so the rest of the video is about their own file.",
     },
     timeline: [
-      { ts: "00:00", topic: "The 90-day myth", beat: "States the current figure and cites the source." },
-      { ts: "02:15", topic: "Document checklist", beat: "Walks the four documents applicants forget." },
+      {
+        ts: "00:00",
+        topic: "The 90-day myth",
+        beat: "States the current figure and cites the source.",
+      },
+      {
+        ts: "02:15",
+        topic: "Document checklist",
+        beat: "Walks the four documents applicants forget.",
+      },
       { ts: "07:40", topic: "Apostille", beat: "Explains why it cannot be done locally." },
       { ts: "12:05", topic: "Costs", beat: "Breaks the total into fee, translation and gestoría." },
     ],
@@ -319,16 +340,46 @@ export const PAYLOADS: Record<FakeResponseKind, unknown> = {
 
   titles: {
     titles: [
-      { title: "Paraguay residency in 45 days: the real timeline", angle: "Replaces the 90-day figure everyone still quotes." },
-      { title: "The 4 documents that restart your residency file", angle: "Names the mistake before the viewer makes it." },
-      { title: "Why your apostille must happen before you fly", angle: "The one step that cannot be fixed on arrival." },
-      { title: "I checked the migraciones timeline so you don't have to", angle: "Saves the viewer the research." },
-      { title: "Paraguay residency: what 'complete file' actually means", angle: "The condition hidden behind the headline number." },
-      { title: "Your police certificate expires. Here's when.", angle: "A deadline most applicants discover too late." },
-      { title: "The full cost of Paraguay residency, line by line", angle: "The fee is not the total, and viewers budget wrong." },
-      { title: "90 days or 45? Paraguay residency, 2026", angle: "A direct contradiction the viewer wants settled." },
-      { title: "Moving to Paraguay: do this before you book a flight", angle: "Ordering advice the viewer can act on today." },
-      { title: "Paraguay residency mistakes that cost you months", angle: "Loss aversion, with specifics." },
+      {
+        title: "Paraguay residency in 45 days: the real timeline",
+        angle: "Replaces the 90-day figure everyone still quotes.",
+      },
+      {
+        title: "The 4 documents that restart your residency file",
+        angle: "Names the mistake before the viewer makes it.",
+      },
+      {
+        title: "Why your apostille must happen before you fly",
+        angle: "The one step that cannot be fixed on arrival.",
+      },
+      {
+        title: "I checked the migraciones timeline so you don't have to",
+        angle: "Saves the viewer the research.",
+      },
+      {
+        title: "Paraguay residency: what 'complete file' actually means",
+        angle: "The condition hidden behind the headline number.",
+      },
+      {
+        title: "Your police certificate expires. Here's when.",
+        angle: "A deadline most applicants discover too late.",
+      },
+      {
+        title: "The full cost of Paraguay residency, line by line",
+        angle: "The fee is not the total, and viewers budget wrong.",
+      },
+      {
+        title: "90 days or 45? Paraguay residency, 2026",
+        angle: "A direct contradiction the viewer wants settled.",
+      },
+      {
+        title: "Moving to Paraguay: do this before you book a flight",
+        angle: "Ordering advice the viewer can act on today.",
+      },
+      {
+        title: "Paraguay residency mistakes that cost you months",
+        angle: "Loss aversion, with specifics.",
+      },
     ],
   },
 
@@ -340,25 +391,37 @@ export const PAYLOADS: Record<FakeResponseKind, unknown> = {
   // even though the model said false.
   script: {
     titleOptions: [
-      { title: "Paraguay residency in 45 days: the real timeline", angle: "Replaces the 90-day figure." },
-      { title: "The 4 documents that restart your residency file", angle: "Names the mistake first." },
-      { title: "90 days or 45? Paraguay residency, 2026", angle: "A contradiction the viewer wants settled." },
+      {
+        title: "Paraguay residency in 45 days: the real timeline",
+        angle: "Replaces the 90-day figure.",
+      },
+      {
+        title: "The 4 documents that restart your residency file",
+        angle: "Names the mistake first.",
+      },
+      {
+        title: "90 days or 45? Paraguay residency, 2026",
+        angle: "A contradiction the viewer wants settled.",
+      },
     ],
     thumbnailConcepts: [
       {
         description: "Calendar with 90 crossed out and 45 circled",
         textOverlay: "45 DAYS",
-        imagePrompt: "Close-up of a paper wall calendar, the number 90 crossed out in red marker, soft daylight, shallow depth of field",
+        imagePrompt:
+          "Close-up of a paper wall calendar, the number 90 crossed out in red marker, soft daylight, shallow depth of field",
       },
       {
         description: "Four documents fanned out on a wooden desk",
         textOverlay: "",
-        imagePrompt: "Overhead shot of four official-looking blank documents fanned on a warm wooden desk, natural window light",
+        imagePrompt:
+          "Overhead shot of four official-looking blank documents fanned on a warm wooden desk, natural window light",
       },
       {
         description: "Passport next to a stamped folder",
         textOverlay: "DO THIS FIRST",
-        imagePrompt: "A closed passport beside a manila folder with a generic stamp, top-down, clean studio light",
+        imagePrompt:
+          "A closed passport beside a manila folder with a generic stamp, top-down, clean studio light",
       },
     ],
     hook: {
@@ -392,7 +455,8 @@ export const PAYLOADS: Record<FakeResponseKind, unknown> = {
           {
             spokenLine: "A complete application now takes about forty-five days.",
             description: "Stopwatch on a stack of forms",
-            imagePrompt: "Analog stopwatch resting on a neat stack of blank forms, soft side light, photographic",
+            imagePrompt:
+              "Analog stopwatch resting on a neat stack of blank forms, soft side light, photographic",
             videoPrompt: "",
             aspectRatio: "16:9",
           },
@@ -412,7 +476,8 @@ export const PAYLOADS: Record<FakeResponseKind, unknown> = {
           {
             spokenLine: "Translations and apostilles add up.",
             description: "Receipts spread on a table",
-            imagePrompt: "Several blank paper receipts spread on a table next to a calculator, top-down, natural light",
+            imagePrompt:
+              "Several blank paper receipts spread on a table next to a calculator, top-down, natural light",
             videoPrompt: "Slow pan across the receipts from left to right",
             aspectRatio: "9:16",
           },
@@ -669,10 +734,15 @@ export class FakeGemini {
   private readonly submitted = new Map<string, InlinedRequest[]>();
 
   readonly models = {
-    generateContent: async (params: GenerateContentParameters): Promise<GenerateContentResponse> => {
+    generateContent: async (
+      params: GenerateContentParameters,
+    ): Promise<GenerateContentResponse> => {
       const kind = this.record(params);
       if (isVideoUrlRequest(params)) {
-        return sdkResponse({ text: JSON.stringify(FALLBACK_PAYLOAD), usageMetadata: FALLBACK_USAGE });
+        return sdkResponse({
+          text: JSON.stringify(FALLBACK_PAYLOAD),
+          usageMetadata: FALLBACK_USAGE,
+        });
       }
       return sdkResponse({
         text: textOf(kind),
@@ -768,7 +838,8 @@ export class FakeGemini {
       const inlinedResponses: InlinedResponse[] = requests.map((request) => {
         const metadata = request.metadata ?? {};
         const customId = metadata["custom_id"];
-        const failure = customId === undefined ? undefined : this.controls.batchEntryErrors.get(customId);
+        const failure =
+          customId === undefined ? undefined : this.controls.batchEntryErrors.get(customId);
         if (failure) return { metadata, error: failure };
 
         const kind = classifySchema(request.config?.responseJsonSchema);
@@ -781,7 +852,9 @@ export class FakeGemini {
         // reading that as an empty answer would fail every analysis in the batch
         // while still billing for it.
         const response = JSON.parse(
-          JSON.stringify(sdkResponse({ text: JSON.stringify(payload), usageMetadata: USAGE[kind] })),
+          JSON.stringify(
+            sdkResponse({ text: JSON.stringify(payload), usageMetadata: USAGE[kind] }),
+          ),
         ) as GenerateContentResponse;
 
         return { metadata, response };

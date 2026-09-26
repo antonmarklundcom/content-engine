@@ -11,7 +11,15 @@ export default async function TeleprompterPage({ params }: { params: Promise<{ i
   const { row, body, valid } = await loadScript((await params).id);
   if (!valid) {
     const t = translator(await getLocale());
-    return <p className="p-10 text-sm text-[var(--color-danger)]">{t("studio.editor.unreadable")}</p>;
+    return (
+      <p className="p-10 text-sm text-[var(--color-danger)]">{t("studio.editor.unreadable")}</p>
+    );
   }
-  return <StudioTeleprompter title={row.title} blocks={teleprompterBlocks(body)} backHref={`/studio/${row.id}`} />;
+  return (
+    <StudioTeleprompter
+      title={row.title}
+      blocks={teleprompterBlocks(body)}
+      backHref={`/studio/${row.id}`}
+    />
+  );
 }

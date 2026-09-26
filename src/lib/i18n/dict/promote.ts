@@ -8,7 +8,8 @@ export const en = {
   "promote.format": "Format",
   "promote.platform": "Platform",
   "promote.adapt": "Adapt copy to the brand's voice",
-  "promote.adaptHint": "Spends a small amount on one model call. Off promotes the text verbatim, for free.",
+  "promote.adaptHint":
+    "Spends a small amount on one model call. Off promotes the text verbatim, for free.",
   "promote.submit": "Promote",
   "promote.submitting": "Promoting…",
   "promote.success": "Promoted.",
@@ -37,7 +38,8 @@ export const sv: Record<keyof typeof en, string> = {
   "promote.format": "Format",
   "promote.platform": "Plattform",
   "promote.adapt": "Anpassa texten till varumärkets röst",
-  "promote.adaptHint": "Kostar en liten summa för ett modellanrop. Av befordrar texten ordagrant, gratis.",
+  "promote.adaptHint":
+    "Kostar en liten summa för ett modellanrop. Av befordrar texten ordagrant, gratis.",
   "promote.submit": "Befordra",
   "promote.submitting": "Befordrar…",
   "promote.success": "Befordrad.",

@@ -193,8 +193,6 @@ const EMPTY_USAGE: TokenUsage = {
   cacheWriteTokens: 0,
 };
 
-
-
 export async function insertAnalysis(input: {
   videoId: number;
   model: AnalysisModel;

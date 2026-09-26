@@ -55,8 +55,5 @@ export async function POST(request: Request): Promise<Response> {
     clip = await processYouTubeClip(clip);
   }
 
-  return NextResponse.json(
-    { clip, created: saved.created },
-    { status: saved.created ? 201 : 200 },
-  );
+  return NextResponse.json({ clip, created: saved.created }, { status: saved.created ? 201 : 200 });
 }

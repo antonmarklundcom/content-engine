@@ -31,7 +31,9 @@ export default async function SettingsPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
-      <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-muted)]">{t("settings.eyebrow")}</p>
+      <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-muted)]">
+        {t("settings.eyebrow")}
+      </p>
       <h1 className="mt-1 text-2xl font-semibold text-[var(--color-ink)]">{t("settings.title")}</h1>
       <p className="mt-2 text-sm text-[var(--color-muted)]">{t("settings.intro")}</p>
 
@@ -45,7 +47,9 @@ export default async function SettingsPage() {
 
       <section className="surface-card mt-8 p-4 text-sm">
         <h2 className="font-semibold text-[var(--color-ink)]">{t("settings.database")}</h2>
-        <p className="mt-1 font-mono text-xs">{maskValue(valueOf("DATABASE_URL")) || t("settings.notSet")}</p>
+        <p className="mt-1 font-mono text-xs">
+          {maskValue(valueOf("DATABASE_URL")) || t("settings.notSet")}
+        </p>
         <p className="mt-1 text-[var(--color-muted)]">{t("settings.databaseNote")}</p>
       </section>
     </main>

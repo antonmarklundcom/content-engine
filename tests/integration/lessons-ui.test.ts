@@ -57,7 +57,13 @@ let employee = "";
 async function video(durationSeconds: number | null = 20 * 60) {
   const [row] = await db
     .insert(schema.videos)
-    .values({ youtubeId: "vid00000001", title: "The 45-day timeline", channelTitle: "Expat Desk", durationSeconds, captionStatus: "none" })
+    .values({
+      youtubeId: "vid00000001",
+      title: "The 45-day timeline",
+      channelTitle: "Expat Desk",
+      durationSeconds,
+      captionStatus: "none",
+    })
     .returning();
   return row;
 }
@@ -84,7 +90,13 @@ after(async () => {
 test("saveLessonAction saves for any signed-in user, with brand, video and timestamp", async () => {
   const v = await video();
   const res = await as(employee, () =>
-    saveLessonAction({ text: "  Open with the date.  ", kind: "hook", brandId: BRAND, videoId: v.id, timestampSec: 83.7 }),
+    saveLessonAction({
+      text: "  Open with the date.  ",
+      kind: "hook",
+      brandId: BRAND,
+      videoId: v.id,
+      timestampSec: 83.7,
+    }),
   );
   assert.ok(res.ok);
   const [row] = await listLessons();
@@ -95,11 +107,15 @@ test("saveLessonAction saves for any signed-in user, with brand, video and times
   assert.equal(row.videoId, v.id);
   assert.equal(row.timestampSec, 83);
 
-  const plain = await as(owner, () => saveLessonAction({ text: "Portfolio-wide", kind: "fact", brandId: "" }));
+  const plain = await as(owner, () =>
+    saveLessonAction({ text: "Portfolio-wide", kind: "fact", brandId: "" }),
+  );
   assert.ok(plain.ok);
   assert.equal((await listLessons({ brandId: null }))[0]?.text, "Portfolio-wide");
 
-  assert.deepEqual(await as(employee, () => lessonBrandOptionsAction()), [{ id: BRAND, name: "Residency Guide" }]);
+  assert.deepEqual(await as(employee, () => lessonBrandOptionsAction()), [
+    { id: BRAND, name: "Residency Guide" },
+  ]);
 });
 
 test("saveLessonAction refuses bad input without writing", async () => {
@@ -115,7 +131,10 @@ test("saveLessonAction refuses bad input without writing", async () => {
     assert.equal(res.ok, false, JSON.stringify(input));
   }
   assert.equal((await listLessons()).length, 0);
-  await assert.rejects(as("", () => saveLessonAction({ text: "x", kind: "lesson" })), /redirect/);
+  await assert.rejects(
+    as("", () => saveLessonAction({ text: "x", kind: "lesson" })),
+    /redirect/,
+  );
 });
 
 test("deleteLessonAction removes one lesson and reports a missing one", async () => {
@@ -129,20 +148,44 @@ test("deleteLessonAction removes one lesson and reports a missing one", async ()
 
 test("the export route returns Markdown grouped by kind, video linked at &t=", async () => {
   const v = await video();
-  await as(owner, () => saveLessonAction({ text: "Say the date first", kind: "hook", brandId: BRAND, videoId: v.id, timestampSec: 95 }));
-  await as(owner, () => saveLessonAction({ text: "45 days, not 90", kind: "fact", brandId: BRAND, videoId: v.id }));
+  await as(owner, () =>
+    saveLessonAction({
+      text: "Say the date first",
+      kind: "hook",
+      brandId: BRAND,
+      videoId: v.id,
+      timestampSec: 95,
+    }),
+  );
+  await as(owner, () =>
+    saveLessonAction({ text: "45 days, not 90", kind: "fact", brandId: BRAND, videoId: v.id }),
+  );
   await as(owner, () => saveLessonAction({ text: "Unbranded lesson", kind: "lesson" }));
 
-  const res = await callRoute(exportLessons, new Request(`http://localhost/lessons/export?brand=${BRAND}`, { headers: { cookie: owner } }));
+  const res = await callRoute(
+    exportLessons,
+    new Request(`http://localhost/lessons/export?brand=${BRAND}`, { headers: { cookie: owner } }),
+  );
   assert.equal(res.status, 200);
   assert.match(res.headers.get("content-type") ?? "", /text\/markdown/);
   const md = await res.text();
-  assert.match(md, /## Hooks\n\n- Say the date first — \[The 45-day timeline @ 1:35\]\(https:\/\/www\.youtube\.com\/watch\?v=vid00000001&t=95s\)/);
-  assert.match(md, /## Facts\n\n- 45 days, not 90 — \[The 45-day timeline\]\(https:\/\/www\.youtube\.com\/watch\?v=vid00000001\)/);
+  assert.match(
+    md,
+    /## Hooks\n\n- Say the date first — \[The 45-day timeline @ 1:35\]\(https:\/\/www\.youtube\.com\/watch\?v=vid00000001&t=95s\)/,
+  );
+  assert.match(
+    md,
+    /## Facts\n\n- 45 days, not 90 — \[The 45-day timeline\]\(https:\/\/www\.youtube\.com\/watch\?v=vid00000001\)/,
+  );
   assert.ok(md.indexOf("## Hooks") < md.indexOf("## Facts"), "kinds in their fixed order");
   assert.doesNotMatch(md, /Unbranded lesson/, "the brand filter applies");
 
-  const kindOnly = await (await callRoute(exportLessons, new Request("http://localhost/lessons/export?kind=lesson", { headers: { cookie: owner } }))).text();
+  const kindOnly = await (
+    await callRoute(
+      exportLessons,
+      new Request("http://localhost/lessons/export?kind=lesson", { headers: { cookie: owner } }),
+    )
+  ).text();
   assert.match(kindOnly, /Unbranded lesson/);
   assert.doesNotMatch(kindOnly, /Say the date first/);
 

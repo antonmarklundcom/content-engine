@@ -14,9 +14,21 @@ export function sampleScriptBody(): ScriptBodyV1 {
       { title: "90 days or 45?", angle: "A contradiction." },
     ],
     thumbnailConcepts: [
-      { description: "Calendar, 90 crossed out", textOverlay: "45 DAYS", imagePrompt: "Paper calendar close-up" },
-      { description: "Four documents on a desk", textOverlay: "", imagePrompt: "Four blank documents, top-down" },
-      { description: "Passport and folder", textOverlay: "FIRST", imagePrompt: "Passport beside a folder" },
+      {
+        description: "Calendar, 90 crossed out",
+        textOverlay: "45 DAYS",
+        imagePrompt: "Paper calendar close-up",
+      },
+      {
+        description: "Four documents on a desk",
+        textOverlay: "",
+        imagePrompt: "Four blank documents, top-down",
+      },
+      {
+        description: "Passport and folder",
+        textOverlay: "FIRST",
+        imagePrompt: "Passport beside a folder",
+      },
     ],
     hook: {
       spokenLines: ["Everyone still says ninety days.", "That changed."],

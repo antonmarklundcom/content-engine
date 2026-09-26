@@ -16,11 +16,7 @@ function parseKind(value: string): "topic" | "entity" | null {
   return value === "topic" || value === "entity" ? value : null;
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<Params>;
-}): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { kind, slug } = await params;
   const parsed = parseKind(kind);
   if (!parsed) return {};

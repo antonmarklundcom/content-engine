@@ -87,7 +87,9 @@ export async function buildCompetitorReport(brandId: string, days = 7): Promise<
   try {
     raw = JSON.parse(text);
   } catch {
-    throw new Error(`The model didn't return a parseable report (finish reason: ${finishReason ?? "unknown"}). Try again.`);
+    throw new Error(
+      `The model didn't return a parseable report (finish reason: ${finishReason ?? "unknown"}). Try again.`,
+    );
   }
   const body = validateCompetitorReport(raw, videos);
   const report = await saveCompetitorReport({ brandId, periodDays: window, body, costUsd });

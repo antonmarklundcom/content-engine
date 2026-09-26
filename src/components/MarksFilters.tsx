@@ -19,15 +19,7 @@ const FIELD =
  * search behaviour changes, and this page is the feed's sibling, not a new
  * kind of thing.
  */
-export function MarksFilters({
-  q,
-  type,
-  locale,
-}: {
-  q: string;
-  type: string;
-  locale: Locale;
-}) {
+export function MarksFilters({ q, type, locale }: { q: string; type: string; locale: Locale }) {
   const t = translator(locale);
 
   return (

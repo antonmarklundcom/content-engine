@@ -11,10 +11,7 @@ import type { CaptionFailureReason, StrategyName, StrategyOutcome } from "./type
  * YouTube and belongs to `npm run yt:probe-captions`, not to the test suite.
  */
 
-function fail(
-  strategy: StrategyName,
-  reason: CaptionFailureReason = "blocked",
-): StrategyOutcome {
+function fail(strategy: StrategyName, reason: CaptionFailureReason = "blocked"): StrategyOutcome {
   return { ok: false, strategy, reason, stage: "list", error: reason, ms: 1, trackCount: 0 };
 }
 

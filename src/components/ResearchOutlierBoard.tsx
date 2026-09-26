@@ -24,7 +24,9 @@ export function ResearchOutlierBoard({
   const t = translator(locale);
 
   if (outliers.length === 0) {
-    return <p className="mt-4 text-sm text-[var(--color-ink-muted)]">{t("research.outliersEmpty")}</p>;
+    return (
+      <p className="mt-4 text-sm text-[var(--color-ink-muted)]">{t("research.outliersEmpty")}</p>
+    );
   }
 
   return (
@@ -32,7 +34,10 @@ export function ResearchOutlierBoard({
       {outliers.map((video) => {
         const reference = `/studio/new?${new URLSearchParams({ brand: brandId, ref: String(video.videoId) })}`;
         return (
-          <li key={video.videoId} className="surface-border surface-card flex flex-col gap-3 p-4 sm:flex-row">
+          <li
+            key={video.videoId}
+            className="surface-border surface-card flex flex-col gap-3 p-4 sm:flex-row"
+          >
             {video.thumbnailUrl && (
               // A remote YouTube thumbnail; next/image would need the host allow-listed.
               // eslint-disable-next-line @next/next/no-img-element
@@ -51,7 +56,8 @@ export function ResearchOutlierBoard({
                 </span>
               </div>
               <p className="text-xs text-[var(--color-ink-muted)]">
-                {video.sourceTitle} · {t("research.views", { views: formatCompactNumber(video.viewCount, locale) })}
+                {video.sourceTitle} ·{" "}
+                {t("research.views", { views: formatCompactNumber(video.viewCount, locale) })}
                 {video.publishedAt ? ` · ${formatDate(video.publishedAt, locale)}` : ""}
               </p>
               <p className="text-sm text-[var(--color-ink-muted)] leading-relaxed">

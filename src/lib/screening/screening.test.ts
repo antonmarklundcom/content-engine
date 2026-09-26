@@ -41,7 +41,9 @@ test("strips fences and salvages an object wrapped in prose", () => {
   assert.ok(fenced.ok);
   assert.equal(fenced.payload.score, 10);
 
-  const wrapped = parseScreeningResponse('Sure!\n{"score":80,"reason":"named method"}\nHope that helps.');
+  const wrapped = parseScreeningResponse(
+    'Sure!\n{"score":80,"reason":"named method"}\nHope that helps.',
+  );
   assert.ok(wrapped.ok);
   assert.equal(wrapped.payload.score, 80);
 });
@@ -182,7 +184,10 @@ test("a link-farm description is truncated to a bounded cost", () => {
 
 test("interests are appended only when there are some", () => {
   assert.doesNotMatch(buildScreeningPrompt(SUBJECT), /The researcher describes/);
-  assert.doesNotMatch(buildScreeningPrompt(SUBJECT, { interests: "   " }), /The researcher describes/);
+  assert.doesNotMatch(
+    buildScreeningPrompt(SUBJECT, { interests: "   " }),
+    /The researcher describes/,
+  );
   const withInterests = buildScreeningPrompt(SUBJECT, { interests: "local SEO in Sweden" });
   assert.match(withInterests, /local SEO in Sweden/);
   // The statement goes last, where a model weights it most — same reasoning as

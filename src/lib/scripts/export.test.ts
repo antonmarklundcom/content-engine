@@ -19,7 +19,12 @@ test("the shot list numbers hook shots first, names files per script, and only m
   assert.deepEqual(
     list.shots.map((s) => [s.number, s.section, s.files.image, s.files.video]),
     [
-      [1, "Hook", "media/42/01-calendar-pages-flipping.png", "media/42/01-calendar-pages-flipping.mp4"],
+      [
+        1,
+        "Hook",
+        "media/42/01-calendar-pages-flipping.png",
+        "media/42/01-calendar-pages-flipping.mp4",
+      ],
       [2, "The real timeline", "media/42/02-stopwatch-on-forms.png", null],
     ],
   );
@@ -41,7 +46,10 @@ test("the teleprompter puts spoken lines on their own lines and flags sources to
   assert.match(md, /\nEveryone still says ninety days\.\n\nThat changed\.\n/);
   assert.match(md, /> ⚠ VERIFY BEFORE RECORDING: s1\n\nIt takes about forty-five days\./);
   assert.match(md, /> ON SCREEN: ~45 days/);
-  assert.match(md, /- \*\*s1\*\* .*\(https:\/\/example\.gov\.py\/migraciones\/plazos\) — ⚠ verify before recording/);
+  assert.match(
+    md,
+    /- \*\*s1\*\* .*\(https:\/\/example\.gov\.py\/migraciones\/plazos\) — ⚠ verify before recording/,
+  );
 });
 
 test("residency and real estate default to English; Spanish brands to es-PY", () => {

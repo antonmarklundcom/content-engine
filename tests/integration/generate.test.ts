@@ -67,9 +67,16 @@ after(async () => {
 test("a grounded run inserts ideas, research notes, and one priced spend row", async () => {
   await seedBrand();
 
-  const response = await callRoute(generate, jsonPost("/api/generate", { brandId: BRAND.id }, owner));
+  const response = await callRoute(
+    generate,
+    jsonPost("/api/generate", { brandId: BRAND.id }, owner),
+  );
   assert.equal(response.status, 200);
-  const body = (await response.json()) as { ideas: unknown[]; researchNotesAdded: number; costUsd: number };
+  const body = (await response.json()) as {
+    ideas: unknown[];
+    researchNotesAdded: number;
+    costUsd: number;
+  };
 
   // The plan the fake returned, all the way into the database.
   const canned = PAYLOADS.ideas as { ideas: unknown[]; researchNotes: unknown[] };
@@ -143,7 +150,11 @@ test("an analysisId seeds the prompt and is recorded on every idea", async () =>
 
   const [video] = await db
     .insert(schema.videos)
-    .values({ youtubeId: "vid00000001", title: "How residency actually works", channelTitle: "Expat Desk" })
+    .values({
+      youtubeId: "vid00000001",
+      title: "How residency actually works",
+      channelTitle: "Expat Desk",
+    })
     .returning();
   const [analysis] = await db
     .insert(schema.analyses)
@@ -154,7 +165,9 @@ test("an analysisId seeds the prompt and is recorded on every idea", async () =>
       summary: "A walkthrough of the residency process.",
       takeaways: ["Bring apostilled documents."],
       topics: ["residency"],
-      ideas: [{ title: "The 45-day timeline", premise: "Walk it end to end.", why_now: "Rule change." }],
+      ideas: [
+        { title: "The 45-day timeline", premise: "Walk it end to end.", why_now: "Rule change." },
+      ],
     })
     .returning();
 
@@ -190,7 +203,11 @@ test("an unknown analysisId is 404 and spends nothing", async () => {
   );
 
   assert.equal(response.status, 404);
-  assert.equal(fake.calls.length, 0, "the model is never called for a request that cannot be built");
+  assert.equal(
+    fake.calls.length,
+    0,
+    "the model is never called for a request that cannot be built",
+  );
   assert.equal(await monthToDateUsd(), 0);
 });
 
@@ -199,7 +216,10 @@ test("a cap of 0 answers 429 before the model is called", async () => {
   await seedBrand();
   const fake = fakeGeminiClient();
 
-  const response = await callRoute(generate, jsonPost("/api/generate", { brandId: BRAND.id }, owner));
+  const response = await callRoute(
+    generate,
+    jsonPost("/api/generate", { brandId: BRAND.id }, owner),
+  );
 
   assert.equal(response.status, 429, "the cap is its own status code, not a 500 (§1.10)");
   const body = (await response.json()) as { error: string; spend: { capUsd: number } };
@@ -221,12 +241,18 @@ test("a cap that cannot cover the reservation refuses even when the real cost wo
   // been affordable" is still refused — which is the safe direction (§1.10).
   const estimate = estimateContentPlanCostUsd();
   const actual = expectedGenerateCostUsd();
-  assert.ok(actual < estimate, "the fake's usage is inside the reservation, as a real call should be");
+  assert.ok(
+    actual < estimate,
+    "the fake's usage is inside the reservation, as a real call should be",
+  );
 
   process.env.MONTHLY_SPEND_CAP_USD = ((actual + estimate) / 2).toFixed(6);
   await seedBrand();
 
-  const response = await callRoute(generate, jsonPost("/api/generate", { brandId: BRAND.id }, owner));
+  const response = await callRoute(
+    generate,
+    jsonPost("/api/generate", { brandId: BRAND.id }, owner),
+  );
   assert.equal(response.status, 429);
   assert.equal(await monthToDateUsd(), 0);
 });
@@ -260,7 +286,10 @@ test("existing research for the brand is offered back to the model", async () =>
 test("an unknown brandId is 400 and never reaches the model", async () => {
   const fake = fakeGeminiClient();
 
-  const response = await callRoute(generate, jsonPost("/api/generate", { brandId: "no-such-brand" }, owner));
+  const response = await callRoute(
+    generate,
+    jsonPost("/api/generate", { brandId: "no-such-brand" }, owner),
+  );
 
   assert.equal(response.status, 400);
   assert.equal(fake.calls.length, 0);
@@ -297,11 +326,18 @@ test("an employee is 403 with promote's adapt shape, and spends nothing", async 
   const fake = fakeGeminiClient();
   const employee = { cookie: (await signIn("employee")).cookie };
 
-  const response = await callRoute(generate, jsonPost("/api/generate", { brandId: BRAND.id }, employee));
+  const response = await callRoute(
+    generate,
+    jsonPost("/api/generate", { brandId: BRAND.id }, employee),
+  );
 
   assert.equal(response.status, 403);
   const body = (await response.json()) as { error: string };
-  assert.deepEqual(Object.keys(body), ["error"], "same { error } body promote's adapt gate returns");
+  assert.deepEqual(
+    Object.keys(body),
+    ["error"],
+    "same { error } body promote's adapt gate returns",
+  );
   assert.match(body.error, /owner/);
   assert.equal(fake.calls.length, 0);
   assert.equal(await monthToDateUsd(), 0);
@@ -317,7 +353,10 @@ async function generateWithNotes(notes: Array<{ topic: string; relatedBrandIds: 
     sources: ["https://example.com/note"],
   }));
   try {
-    const response = await callRoute(generate, jsonPost("/api/generate", { brandId: BRAND.id }, owner));
+    const response = await callRoute(
+      generate,
+      jsonPost("/api/generate", { brandId: BRAND.id }, owner),
+    );
     assert.equal(response.status, 200);
   } finally {
     canned.researchNotes = original;

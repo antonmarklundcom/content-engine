@@ -17,13 +17,35 @@ test("the thumbnail list numbers the three concepts, 16:9, two variants each und
   assert.deepEqual(
     list.thumbnails.map((t) => [t.number, t.aspectRatio, t.file, t.variants]),
     [
-      [1, "16:9", "media/42/thumbnails/1.png", ["media/42/thumbnails/1.png", "media/42/thumbnails/1-2.png"]],
-      [2, "16:9", "media/42/thumbnails/2.png", ["media/42/thumbnails/2.png", "media/42/thumbnails/2-2.png"]],
-      [3, "16:9", "media/42/thumbnails/3.png", ["media/42/thumbnails/3.png", "media/42/thumbnails/3-2.png"]],
+      [
+        1,
+        "16:9",
+        "media/42/thumbnails/1.png",
+        ["media/42/thumbnails/1.png", "media/42/thumbnails/1-2.png"],
+      ],
+      [
+        2,
+        "16:9",
+        "media/42/thumbnails/2.png",
+        ["media/42/thumbnails/2.png", "media/42/thumbnails/2-2.png"],
+      ],
+      [
+        3,
+        "16:9",
+        "media/42/thumbnails/3.png",
+        ["media/42/thumbnails/3.png", "media/42/thumbnails/3-2.png"],
+      ],
     ],
   );
-  assert.match(list.thumbnails[0].prompt, /^Paper calendar close-up\. 16:9 YouTube thumbnail.*text overlay reading "45 DAYS"/);
-  assert.match(list.thumbnails[1].prompt, /no text in the image/, "an empty overlay asks for no text");
+  assert.match(
+    list.thumbnails[0].prompt,
+    /^Paper calendar close-up\. 16:9 YouTube thumbnail.*text overlay reading "45 DAYS"/,
+  );
+  assert.match(
+    list.thumbnails[1].prompt,
+    /no text in the image/,
+    "an empty overlay asks for no text",
+  );
 });
 
 test("the Markdown carries each prompt, its overlay and files, and the same list as fenced JSON", () => {

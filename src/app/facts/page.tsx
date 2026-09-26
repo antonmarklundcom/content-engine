@@ -24,8 +24,17 @@ const CHIP_OFF = `${CHIP} surface-border text-[var(--color-ink)] hover:border-[v
  * stale badge past 90 days, and the posted videos a changed fact may have made
  * wrong. `?brand=` picks the brand. Anyone signed in reads; the owner writes.
  */
-export default async function FactsPage({ searchParams }: { searchParams: Promise<{ brand?: string }> }) {
-  const [params, user, brands, locale] = await Promise.all([searchParams, requireUser(), listBrands(), getLocale()]);
+export default async function FactsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ brand?: string }>;
+}) {
+  const [params, user, brands, locale] = await Promise.all([
+    searchParams,
+    requireUser(),
+    listBrands(),
+    getLocale(),
+  ]);
   const t = translator(locale);
   const brand = brands.find((b) => b.id === params.brand) ?? brands[0];
   const canEdit = isOwner(user);
@@ -38,9 +47,13 @@ export default async function FactsPage({ searchParams }: { searchParams: Promis
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
-      <p className="text-xs font-medium tracking-widest text-[var(--color-accent)] uppercase">{t("facts.eyebrow")}</p>
+      <p className="text-xs font-medium tracking-widest text-[var(--color-accent)] uppercase">
+        {t("facts.eyebrow")}
+      </p>
       <h1 className="mt-1 text-2xl font-semibold text-[var(--color-ink)]">{t("facts.title")}</h1>
-      <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">{t("facts.intro")}</p>
+      <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+        {t("facts.intro")}
+      </p>
 
       {!brand ? (
         <p className="mt-8 text-sm text-[var(--color-ink-muted)]">{t("facts.noBrands")}</p>
@@ -60,8 +73,12 @@ export default async function FactsPage({ searchParams }: { searchParams: Promis
           </nav>
 
           <section className="mt-8">
-            <h2 className="text-lg font-semibold text-[var(--color-ink)]">{t("facts.corrections")}</h2>
-            <p className="mt-1 text-xs text-[var(--color-ink-muted)]">{t("facts.correctionsNote")}</p>
+            <h2 className="text-lg font-semibold text-[var(--color-ink)]">
+              {t("facts.corrections")}
+            </h2>
+            <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
+              {t("facts.correctionsNote")}
+            </p>
             <FactCorrections flagged={flagged} locale={locale} />
           </section>
 
