@@ -1,83 +1,113 @@
 # Content Engine
 
-A web app: pick a brand, hit "Generate ideas", get back researched content
-ideas with full ready-to-post captions for Instagram/Facebook (and other
-platforms per brand). That's the whole product — research, ideas, and copy.
-No media generation, no scheduling, no posting integration.
+A private research studio for Anton's brands, run on his own PC:
 
-## Stack
+- **Competitors** — link YouTube channels to a brand, rank their videos by outlier score.
+- **Digests** — captions pulled from YouTube, analysed by Gemini into summaries and key points.
+- **Lessons** — hooks, facts and title patterns saved by hand from a digest.
+- **Titles and scripts** — 10 title ideas, then an on-camera script (teleprompter lines, b-roll shots).
+- **Higgsfield hand-off** — a script's shot list, exported for a Claude Code session to generate.
+- **Ideas** — researched post ideas with ready-to-post captions, per brand.
+- **Inbox** — links saved from your phone, waiting to be used.
 
-- **Next.js** (App Router) — UI + API routes, deployable to Vercel
-- **Neon Postgres** — via `drizzle-orm`
-- **Gemini API** (`gemini-3.7-flash` by default) — does the actual research
-  (Grounding with Google Search) and writes the ideas + captions, called
-  server-side from `/api/generate`
+## Run it locally (start here)
 
-## How it works
+Follow **[docs/LOCAL-SETUP.md](docs/LOCAL-SETUP.md)**. It is written for Windows,
+step by step, and takes about 20 minutes. In short:
 
-1. You open a brand's page and click **Generate ideas**.
-2. `/api/generate` calls Gemini with the brand's niche/voice/market and
-   Search grounding. It researches current, real topics and returns 5-10
-   ideas, each with a title, an angle, and a **full ready-to-post caption**
-   in the brand's language and voice — not a placeholder.
-3. If a research finding is relevant to more than one brand (e.g. Paraguay
-   real-estate/development news relevant to both `residency-guide` and
-   `propia`), it's saved once as a shared `research_notes` row tagged with
-   every relevant brand, so a later run for another brand can reuse it
-   instead of researching the same thing again.
-4. Ideas are saved to Postgres and shown in the UI. You edit the copy inline
-   if you want, then Approve or Reject each one. That's the end of the loop
-   — there's nothing downstream to run.
+```bash
+npm install
+npm run db:migrate      # create/upgrade the tables
+npm run db:seed         # insert the brands (insert-only, safe to re-run)
+npm run yt:seed-owner   # create the owner login from ADMIN_EMAIL / ADMIN_PASSWORD
+npm run dev             # http://localhost:3000
+```
 
-## Setup
+After that, `start.bat` in the repo root builds once and starts the app.
+To update: `git pull`, `npm install`, `npm run db:migrate`.
 
-1. **Neon**: create a project at [neon.tech](https://neon.tech), copy its
-   connection string into `DATABASE_URL`.
-2. **Gemini**: create an API key at
-   [aistudio.google.com/apikey](https://aistudio.google.com/apikey) on a
-   billed project, put it in `GEMINI_API_KEY`. Search grounding and the Batch
-   API both need billing enabled.
-3. Copy `.env.example` to `.env` and fill in both.
-4. Install and set up the database:
-   ```bash
-   npm install
-   npm run db:generate   # generate SQL migrations from src/db/schema.ts
-   npm run db:migrate    # apply them to your Neon database
-   npm run db:seed       # insert the initial brands from src/db/seed.ts
-   ```
-5. Run it:
-   ```bash
-   npm run dev
-   ```
+## Login and roles
 
-**Running against a local Postgres.** `DATABASE_URL` does not have to be Neon.
-The app reads the hostname and picks its driver from it: `*.neon.tech` gets
-Neon's HTTP driver, anything else gets plain `node-postgres` (set `DB_DRIVER`
-to `neon` or `pg` to override). So a local server needs nothing but a
-connection string — `postgres://postgres:postgres@localhost:5432/content_engine_test`
-— and that is what `npm run test:db` expects: the integration tests in `tests/`
-run real SQL against a throwaway database, and refuse to start against a Neon
-URL because they truncate every table between files. `npm run verify` is the
-whole gate in one command (typecheck, unit tests, integration tests, build),
-and it is what CI runs on every PR. On Vercel, `vercel-build` applies migrations
-and re-seeds before `next build`; the seed is insert-only, so a deploy never
-overwrites a brand edited in the app.
+Every page is behind a login (`/youtube/login`). There are two roles:
 
-## Deploying
+- **owner** — the only role that can spend money (generate ideas, titles,
+  scripts, analyses) or delete things. Created by `npm run yt:seed-owner`.
+- **employee** — can read everything and edit ideas; never spends.
 
-Deploy to Vercel (`vercel deploy` or via the dashboard, importing this repo).
-Set `DATABASE_URL` and `GEMINI_API_KEY` as Vercel project environment
-variables — same values as your local `.env`. Neon and Vercel are a standard
-pairing; no extra config needed beyond the env vars.
+`SESSION_SECRET` signs the login cookie. Changing it signs everyone out.
+
+## Environment variables
+
+Copy `.env.example` to `.env`. Each variable is explained there in full.
+
+| Variable | Needed | What it is |
+|---|---|---|
+| `DATABASE_URL` | yes | Postgres connection string (a free Neon database). |
+| `DB_DRIVER` | yes, locally | Set to `pg`. Neon's HTTP driver cannot run transactions. |
+| `SESSION_SECRET` | yes | 32+ random characters; signs the login cookie. |
+| `GEMINI_API_KEY` | yes | From aistudio.google.com/apikey, on a billed project. |
+| `YOUTUBE_API_KEY` | yes | Google Cloud, YouTube Data API v3. Free quota. |
+| `ADMIN_EMAIL` | once | Owner login, read by `npm run yt:seed-owner`. |
+| `ADMIN_PASSWORD` | once | Owner password (12+ chars), same script. |
+| `MONTHLY_SPEND_CAP_USD` | no | Hard monthly cap across every paid call. Default 25. |
+| `GEMINI_MODEL` | no | Override the ideas model. |
+| `GEMINI_PROMOTE_MODEL` | no | Override the model that adapts a promoted idea. |
+| `GEMINI_FAKE` | no | `1` = canned Gemini answers. Tests only. |
+| `CLIP_TOKEN` | no | Bearer token for saving clips from a phone Shortcut. |
+| `CRON_SECRET` | no | Enables `/api/cron/poll`. Leave unset locally. |
+| `YOUTUBE_QUOTA_BUDGET` | no | Per-run guard on YouTube API units. |
+| `CAPTION_STRATEGIES` | no | Allowlist/order of caption strategies. |
+| `CAPTION_FAILURE_THRESHOLD` | no | Failures before a caption strategy is dropped for a run. |
+| `CAPTION_PROXY_URL` | no | Proxy for caption fetches only. Not needed from a home IP. |
+| `CAPTION_LANGUAGES` | no | Preferred caption languages. Default `en`. |
+| `CAPTION_DELAY_MS` | no | Pause between videos in a batch. |
+| `SCREEN_MIN_SCORE` | no | Bar (0–100) a video must pass before paid analysis. |
+| `SCREENING_ENABLED` | no | `0` switches screening off. |
+| `SCREEN_INTERESTS` | no | What you are working on, for the screening model. |
+
+## Checking it works
+
+- `npm run verify` — typecheck, unit tests, integration tests, build. Needs a
+  local, non-Neon Postgres in `DATABASE_URL` (the tests wipe every table). CI
+  runs the same thing on every PR.
+- `npm run smoke -- <brandId> --dry-run` — what a live run would do and cost.
+- `npm run smoke -- <brandId>` — one real call per paid path against your
+  real database and Gemini key; costs about $0.10.
+
+What each proves, and what neither can: [docs/VERIFY.md](docs/VERIFY.md).
+
+## Other commands
+
+| Command | What it does |
+|---|---|
+| `npm run build` / `npm run start` | Production build and server. |
+| `npm run db:check` | Test the database connection. |
+| `npm run db:generate` | Write a migration after a schema change (developers). |
+| `npm run yt:poll` | Poll channels, screen and analyse new videos (Task Scheduler runs it hourly). |
+| `npm run yt:ingest`, `yt:analyze`, `yt:backfill`, `yt:screen`, `yt:uploads` | One-off YouTube pipeline steps. |
+| `npm run yt:spend` | This month's spend. |
+| `npm run yt:probe-captions` | Check caption fetching works from this machine. |
+
+## Phone capture
+
+Save links from your phone into the inbox: [docs/CAPTURE.md](docs/CAPTURE.md).
+
+## Optional: deploy to Vercel
+
+The app still deploys to Vercel: import the repo, set the same env vars in the
+project settings. The `vercel-build` script migrates and seeds before
+`next build`. Two caveats: set `DB_DRIVER=pg`, and captions may be blocked from
+Vercel's datacenter IPs — see
+[docs/CAPTION-FETCH-RESILIENCE.md](docs/CAPTION-FETCH-RESILIENCE.md).
+
+## How this repo is built
+
+`PLAN.md` is the build plan: decisions, phases, and a build log index.
+Each phase is one Claude Code session run from a file in `prompts/`, one PR each.
+How to contribute inside that system: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Brands
 
-The `brands` table is the source of truth — the app reads it, nothing else.
-`src/db/seed.ts` holds the initial rows (Paraguay Residency Guide, propia,
-contador, negocio, obra, viaje, visas, pozo, clientes, sitiosweb, contenido).
-
-Add a new business by adding an entry there and re-running `npm run db:seed`:
-the run inserts what is missing and leaves existing rows exactly as they are,
-so a brand whose voice was tuned in the database is never clobbered by a
-re-seed. To push edits from the file back over the stored rows on purpose,
-run `npm run db:seed -- --overwrite`.
+The `brands` table is the source of truth. `src/db/seed.ts` holds the initial
+rows; `npm run db:seed` inserts the missing ones and never overwrites an edited
+brand (`npm run db:seed -- --overwrite` does, on purpose).
