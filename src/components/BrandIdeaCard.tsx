@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { translator, type Locale } from "@/lib/i18n";
-import { CopyTextButton } from "./CopyTextButton";
+import { saveIdeaEdits } from "@/lib/ideas.actions";
+import { IdeaActions } from "./IdeaActions";
 import { BUTTON_SECONDARY } from "./BrandStyles";
 
 export type BrandIdea = {
@@ -16,7 +18,8 @@ export type BrandIdea = {
   // Model-written JSON: `sources` is typed as an array but is not guaranteed one.
   citations: { claim: string; sources?: string[] | null }[] | null;
   status: "proposed" | "approved" | "rejected" | "posted";
-  createdAt: string;
+  createdAt: Date | string;
+  postedAt?: Date | string | null;
 };
 
 const TAG = "surface-border inline-block rounded-full px-2 py-0.5 text-[11px] tracking-wide uppercase";
@@ -28,21 +31,22 @@ const STATUS_TAG: Record<BrandIdea["status"], string> = {
   posted: "border-[var(--color-accent)] text-[var(--color-accent)]",
 };
 
-/** One idea: editable caption, copy, approve/reject. Same actions as before the port. */
+/** One idea: editable caption, then S6's `IdeaActions` (status moves, copy, delete). */
 export function BrandIdeaCard({
   idea,
   locale,
-  onStatus,
-  onSaveCopy,
+  canDelete,
 }: {
   idea: BrandIdea;
   locale: Locale;
-  onStatus: (id: number, status: BrandIdea["status"]) => void;
-  onSaveCopy: (id: number, draftCopy: string) => void;
+  canDelete: boolean;
 }) {
   const t = translator(locale);
+  const router = useRouter();
   const [copy, setCopy] = useState(idea.draftCopy);
   const [dirty, setDirty] = useState(false);
+  const [saving, startSaving] = useTransition();
+  const [saveFailed, setSaveFailed] = useState(false);
 
   return (
     <article className="surface-border surface-card p-5">
@@ -83,36 +87,40 @@ export function BrandIdeaCard({
         </details>
       )}
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
         {dirty && (
           <button
             type="button"
             className={BUTTON_SECONDARY}
+            disabled={saving}
             onClick={() => {
-              onSaveCopy(idea.id, copy);
-              setDirty(false);
+              setSaveFailed(false);
+              startSaving(async () => {
+                try {
+                  await saveIdeaEdits(idea.id, { draftCopy: copy });
+                  setDirty(false);
+                  router.refresh();
+                } catch {
+                  setSaveFailed(true);
+                }
+              });
             }}
           >
             {t("brands.saveCopy")}
           </button>
         )}
-        <CopyTextButton text={copy} label={t("brands.copyCaption")} />
-        <button
-          type="button"
-          className={`${BUTTON_SECONDARY} text-[var(--color-accent)]`}
-          onClick={() => onStatus(idea.id, "approved")}
-          disabled={idea.status === "approved"}
-        >
-          {t("brands.approve")}
-        </button>
-        <button
-          type="button"
-          className={`${BUTTON_SECONDARY} text-[var(--color-danger)] hover:border-[var(--color-danger)]`}
-          onClick={() => onStatus(idea.id, "rejected")}
-          disabled={idea.status === "rejected"}
-        >
-          {t("brands.reject")}
-        </button>
+        {saveFailed && (
+          <span role="alert" className="text-xs text-[var(--color-danger)]">
+            {t("ideas.action.failed")}
+          </span>
+        )}
+        <IdeaActions
+          ideaId={idea.id}
+          status={idea.status}
+          draftCopy={copy}
+          canDelete={canDelete}
+          postedAt={idea.postedAt}
+        />
       </div>
     </article>
   );

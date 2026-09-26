@@ -24,6 +24,8 @@ import { PromoteButton } from "@/components/PromoteButton";
 import { UnitMarkButton } from "@/components/UnitMarkButton";
 import { VideoReadControls } from "@/components/VideoReadControls";
 import { CaptionBadge } from "@/components/CaptionBadge";
+import { FallbackAnalyzeButton } from "@/components/FallbackAnalyzeButton";
+import { SaveLessonButton } from "@/components/SaveLessonButton";
 import { CopyAnalysisButton } from "@/components/CopyAnalysisButton";
 import { CopyTextButton } from "@/components/CopyTextButton";
 import { IdeaOutline } from "@/components/IdeaOutline";
@@ -264,6 +266,8 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
               locale={locale}
             />
           )}
+          {/* [S11] No transcript: the click-only URL fallback (§1.35). Owner only. */}
+          {!transcript && <FallbackAnalyzeButton videoId={video.id} isOwner={canSpend} />}
         </div>
       )}
 
@@ -360,7 +364,10 @@ export default async function VideoPage({ params }: { params: Promise<{ id: stri
                   {analysis.takeaways.map((takeaway, i) => (
                     <li key={i} className="flex items-start gap-2">
                       {star("takeaway", i) ?? <span className="w-6 shrink-0" />}
-                      <span>{takeaway}</span>
+                      <div className="flex flex-col items-start gap-1">
+                        <span>{takeaway}</span>
+                        <SaveLessonButton videoId={video.id} text={takeaway} />
+                      </div>
                     </li>
                   ))}
                 </ul>
