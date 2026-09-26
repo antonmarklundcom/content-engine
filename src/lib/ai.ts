@@ -44,6 +44,11 @@ import { aiProvider, runCliJson } from "@/lib/ai-cli";
  */
 let cachedClient: GoogleGenAI | undefined;
 
+/** Drops the cached client so a key saved on the Settings page takes effect without a restart. */
+export function resetGeminiClient(): void {
+  cachedClient = undefined;
+}
+
 export function geminiClient(): GoogleGenAI {
   // The test-double seam (PLAN.md §1.16, §5.O5.1). This is the ONLY thing in
   // this module that knows a fake exists — every helper below, and every caller
