@@ -584,7 +584,7 @@ One line per phase; detail in `docs/log/<id>.md`.
 | O6 | #18 | `docs/log/o6.md` | merged |
 | S5 | | `docs/log/s5.md` | not started |
 | S6 | | `docs/log/s6.md` | not started |
-| O7 | | `docs/log/o7.md` | in review |
+| O7 | #20 | `docs/log/o7.md` | merged |
 | O8 | | `docs/log/o8.md` | not started |
 | S7 | — | — | dropped (§1.28) |
 | S10 | | `docs/log/s10.md` | not started |
