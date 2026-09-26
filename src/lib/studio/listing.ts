@@ -314,6 +314,7 @@ export function parseListingHtml(html: string, pageUrl: string): ListingFields {
 export const LISTING_FETCH_TIMEOUT_MS = 10_000;
 /** A listing page is well under this; anything bigger is not one. */
 const MAX_PAGE_BYTES = 3_000_000;
+const MAX_REDIRECTS = 5;
 
 export class ListingFetchError extends Error {
   constructor(message: string) {
@@ -362,34 +363,41 @@ export async function fetchListing(
   fetchImpl: typeof fetch = fetch,
   timeoutMs = LISTING_FETCH_TIMEOUT_MS,
 ): Promise<ListingFields> {
-  const url = checkListingUrl(rawUrl);
+  let url = checkListingUrl(rawUrl);
+  const signal = AbortSignal.timeout(timeoutMs);
   let response: Response;
-  try {
-    response = await fetchImpl(url, {
-      signal: AbortSignal.timeout(timeoutMs),
-      redirect: "follow",
-      headers: {
-        accept: "text/html,application/xhtml+xml",
-        "user-agent": "Mozilla/5.0 (compatible; content-engine listing reader)",
-      },
-    });
-  } catch (error) {
-    const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
-    throw new ListingFetchError(
-      timedOut
-        ? `The page did not answer within ${Math.round(timeoutMs / 1000)} seconds. Fill the form by hand instead.`
-        : "The page could not be reached. Fill the form by hand instead.",
-    );
+  // Redirects by hand, so every hop's host is checked before it is requested.
+  for (let hop = 0; ; hop++) {
+    try {
+      response = await fetchImpl(url, {
+        signal,
+        redirect: "manual",
+        headers: {
+          accept: "text/html,application/xhtml+xml",
+          "user-agent": "Mozilla/5.0 (compatible; content-engine listing reader)",
+        },
+      });
+    } catch (error) {
+      const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+      throw new ListingFetchError(
+        timedOut
+          ? `The page did not answer within ${Math.round(timeoutMs / 1000)} seconds. Fill the form by hand instead.`
+          : "The page could not be reached. Fill the form by hand instead.",
+      );
+    }
+    const location = response.headers.get("location");
+    if (response.status < 300 || response.status >= 400 || !location) break;
+    if (hop >= MAX_REDIRECTS) throw new ListingFetchError("The page redirects too many times.");
+    url = checkListingUrl(new URL(location, url).toString());
   }
   if (!response.ok) throw new ListingFetchError(`The page answered ${response.status}. Fill the form by hand instead.`);
-  if (response.url) checkListingUrl(response.url); // a redirect into the LAN is refused too
   const type = response.headers.get("content-type") ?? "";
   if (type && !/html|xml/i.test(type)) throw new ListingFetchError(`That is not a web page (${type.split(";")[0]}).`);
   const declared = Number(response.headers.get("content-length") ?? 0);
   if (declared > MAX_PAGE_BYTES) throw new ListingFetchError("That page is too large to be a listing.");
   const html = await response.text();
   if (html.length > MAX_PAGE_BYTES) throw new ListingFetchError("That page is too large to be a listing.");
-  return parseListingHtml(html, response.url || url.toString());
+  return parseListingHtml(html, url.toString());
 }
 
 /** Trim every field, keep only absolute http(s) images (deduped, capped) — for anything from a form. */

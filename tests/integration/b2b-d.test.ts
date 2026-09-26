@@ -13,6 +13,7 @@ import { readListing, writeListingScript } from "@/lib/listing.actions";
 import { validateScriptBody, type ScriptBodyV1 } from "@/lib/scripts/contract";
 import type { ThumbnailList } from "@/lib/scripts/export";
 import { LISTING_PHOTO_PREFIX, LISTING_SOURCE_ID } from "@/lib/studio/listing";
+import { listThumbnails } from "@/lib/studio/media";
 import { chooseThumbnail } from "@/lib/thumbnails.actions";
 
 import { callRoute, signIn } from "./route";
@@ -220,6 +221,7 @@ test("“Use this one” stores a file from the folder, refuses anything else, a
   const { id } = await draftFromListing();
   assert.equal(id, 7, "the script whose media folder the fixture made");
 
+  assert.deepEqual(await listThumbnails(id), ["1.png", "1-2.png"], "images only, no symlinks, first variant first");
   const stored = await as(owner, () => chooseThumbnail(id, "1-2.png"));
   assert.equal(stored, "media/7/thumbnails/1-2.png");
   assert.equal((await getScript(id))!.thumbnailFile, "media/7/thumbnails/1-2.png");

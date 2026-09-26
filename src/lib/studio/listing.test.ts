@@ -123,6 +123,25 @@ test("fetchListing parses the page it gets, and names a timeout as one", async (
 
   const pdf = (async () => new Response("%PDF", { headers: { "content-type": "application/pdf" } })) as unknown as typeof fetch;
   await assert.rejects(fetchListing("https://propia.com.py/a.pdf", pdf), /not a web page/);
+  const hops: string[] = [];
+  const redirecting = (async (url: URL) => {
+    hops.push(url.toString());
+    return url.pathname === "/old"
+      ? new Response(null, { status: 301, headers: { location: "/propiedad/1" } })
+      : new Response(PROPIA_HTML, { headers: { "content-type": "text/html" } });
+  }) as unknown as typeof fetch;
+  const moved = await fetchListing("https://propia.com.py/old", redirecting);
+  assert.equal(moved.url, "https://propia.com.py/propiedad/1", "the final URL is the listing's");
+  assert.deepEqual(hops, ["https://propia.com.py/old", "https://propia.com.py/propiedad/1"]);
+
+  hops.length = 0;
+  const intoLan = (async (url: URL) => {
+    hops.push(url.toString());
+    return new Response(null, { status: 302, headers: { location: "http://127.0.0.1:3000/api/media/1/x.png" } });
+  }) as unknown as typeof fetch;
+  await assert.rejects(fetchListing("https://evil.test/", intoLan), /on this computer/);
+  assert.deepEqual(hops, ["https://evil.test/"], "the LAN address is never requested");
+
   const gone = (async () => new Response("", { status: 404 })) as unknown as typeof fetch;
   await assert.rejects(fetchListing("https://propia.com.py/gone", gone), /answered 404/);
 });

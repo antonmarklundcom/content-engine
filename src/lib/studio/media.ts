@@ -94,5 +94,7 @@ export async function listThumbnails(scriptId: number): Promise<string[]> {
     const info = await lstat(path.join(dir, name)).catch(() => null);
     if (info?.isFile()) files.push(name);
   }
-  return files.sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
+  // Compared without the extension, so "1.png" (the first variant) sorts before "1-2.png".
+  const stem = (name: string) => name.slice(0, name.length - path.extname(name).length);
+  return files.sort((a, b) => stem(a).localeCompare(stem(b), "en", { numeric: true }) || a.localeCompare(b));
 }
