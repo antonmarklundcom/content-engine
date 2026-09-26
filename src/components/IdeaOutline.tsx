@@ -123,7 +123,9 @@ function FailureDetails({ failure }: { failure: OutlineFailure }) {
         {t("outline.failed")}
       </summary>
       <div className="mt-2 flex flex-col items-start gap-2">
-        <p className="text-[var(--color-ink-muted)]">{failure.error ?? t("outline.failedNoMessage")}</p>
+        <p className="text-[var(--color-ink-muted)]">
+          {failure.error ?? t("outline.failedNoMessage")}
+        </p>
         {failure.rawResponse && (
           <>
             <pre className="surface-border max-h-48 w-full overflow-auto rounded-[var(--radius-sm)] bg-[var(--color-surface)] p-2 text-[var(--color-ink-muted)]">

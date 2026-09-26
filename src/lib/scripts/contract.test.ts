@@ -24,13 +24,19 @@ test("missing fields are each named by their path", () => {
   const body = sampleScriptBody() as Record<string, unknown>;
   delete body.hook;
   delete body.sources;
-  (body.sections as Record<string, unknown>[])[0].broll = [{ spokenLine: "x", description: "y", videoPrompt: null, aspectRatio: "16:9" }];
+  (body.sections as Record<string, unknown>[])[0].broll = [
+    { spokenLine: "x", description: "y", videoPrompt: null, aspectRatio: "16:9" },
+  ];
   const errors = errorsOf(body);
   assert.ok(errors.includes("body.hook is missing"), errors.join("\n"));
   assert.ok(errors.includes("body.sources is missing"));
   assert.ok(errors.includes("body.sections[0].broll[0].imagePrompt is missing"));
   // With no sources at all, a section citing one is also reported.
-  assert.ok(errors.includes('body.sections[0].sourceIds[0] refers to source "s1", which is not in body.sources'));
+  assert.ok(
+    errors.includes(
+      'body.sections[0].sourceIds[0] refers to source "s1", which is not in body.sources',
+    ),
+  );
 });
 
 test("extra fields are refused at every level, so a typo cannot be silently dropped", () => {
@@ -74,7 +80,10 @@ test("empty text and duplicate source ids are refused; an empty textOverlay and 
   body.sections[0].heading = "   ";
   body.sources.push({ ...body.sources[0] });
   const errors = errorsOf(body);
-  assert.deepEqual(errors.sort(), ['body.sections[0].heading must not be empty', 'body.sources[1].id "s1" is used by another source']);
+  assert.deepEqual(errors.sort(), [
+    "body.sections[0].heading must not be empty",
+    'body.sources[1].id "s1" is used by another source',
+  ]);
   assert.equal(sampleScriptBody().thumbnailConcepts[1].textOverlay, "");
   assert.equal(sampleScriptBody().sections[0].broll[0].videoPrompt, null);
 });

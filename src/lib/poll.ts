@@ -286,7 +286,11 @@ export async function pollSources(options: PollOptions = {}): Promise<PollResult
 
   if (dryRun) {
     // PLAN.md §1's reference video, since word counts aren't loaded until submit.
-    const estimatedUsd = estimateBatchCostUsd(pending.map(() => 5_000), model, { batch: true });
+    const estimatedUsd = estimateBatchCostUsd(
+      pending.map(() => 5_000),
+      model,
+      { batch: true },
+    );
     return finish({
       ...empty,
       collected,

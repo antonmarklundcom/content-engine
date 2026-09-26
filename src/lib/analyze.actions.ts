@@ -59,9 +59,8 @@ export async function analyzeVideoAction(
     // The cap is checked before the call, not after the bill (PR-07), and held
     // for the duration of the call so a concurrent request can't slip through
     // the same gap (see withSpendCap).
-    const result = await withSpendCap(
-      estimateAnalysisCostUsd(transcript.wordCount, model),
-      () => analyzeVideo(video, { model, force: options.force }),
+    const result = await withSpendCap(estimateAnalysisCostUsd(transcript.wordCount, model), () =>
+      analyzeVideo(video, { model, force: options.force }),
     );
 
     revalidatePath("/youtube");

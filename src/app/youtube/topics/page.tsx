@@ -53,9 +53,7 @@ export default async function TopicsPage({
       {empty ? (
         // First-class empty state (the database starts empty and stays that way
         // until an analysis has actually run — this is what day one looks like).
-        <p className="max-w-prose text-sm text-[var(--color-ink-muted)]">
-          {t("topics.empty")}
-        </p>
+        <p className="max-w-prose text-sm text-[var(--color-ink-muted)]">{t("topics.empty")}</p>
       ) : (
         <div className="flex flex-col gap-10">
           <TagSection

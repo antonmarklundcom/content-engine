@@ -3,9 +3,18 @@ import { translator, type Locale } from "@/lib/i18n";
 import type { ScriptNeedingCorrection } from "@/lib/studio/staleness";
 
 /** "Videos that may need a correction" (build 2b, idea 3), linking each to its script in the studio. */
-export function FactCorrections({ flagged, locale }: { flagged: ScriptNeedingCorrection[]; locale: Locale }) {
+export function FactCorrections({
+  flagged,
+  locale,
+}: {
+  flagged: ScriptNeedingCorrection[];
+  locale: Locale;
+}) {
   const t = translator(locale);
-  if (!flagged.length) return <p className="mt-3 text-sm text-[var(--color-ink-muted)]">{t("facts.correctionsEmpty")}</p>;
+  if (!flagged.length)
+    return (
+      <p className="mt-3 text-sm text-[var(--color-ink-muted)]">{t("facts.correctionsEmpty")}</p>
+    );
   return (
     <ul className="mt-3 flex flex-col gap-3">
       {flagged.map((script) => (
@@ -22,7 +31,10 @@ export function FactCorrections({ flagged, locale }: { flagged: ScriptNeedingCor
           <ul className="mt-2 flex flex-col gap-1 text-xs text-[var(--color-ink)]">
             {script.facts.map((fact) => (
               <li key={fact.id}>
-                {t("facts.changedFact", { date: formatDate(fact.updatedAt, locale), claim: fact.claim })}
+                {t("facts.changedFact", {
+                  date: formatDate(fact.updatedAt, locale),
+                  claim: fact.claim,
+                })}
               </li>
             ))}
           </ul>

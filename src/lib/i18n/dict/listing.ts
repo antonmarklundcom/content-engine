@@ -18,7 +18,8 @@ export const en = {
   "listing.field.bathrooms": "Bathrooms",
   "listing.field.area": "Floor area",
   "listing.field.images": "Photo URLs, one per line ({n})",
-  "listing.field.imagesHelp": "B-roll uses these photos first; Higgsfield only draws the shots beyond them.",
+  "listing.field.imagesHelp":
+    "B-roll uses these photos first; Higgsfield only draws the shots beyond them.",
   "listing.field.notes": "Your notes (fees, what is nearby, who it suits)",
   "listing.brand": "Brand",
   "listing.language": "Language",
@@ -27,7 +28,8 @@ export const en = {
   "listing.writeTour": "Write tour",
   "listing.writeTourHelp": "3–5 min, 16:9",
   "listing.writing": "Writing…",
-  "listing.spends": "Writing spends money (or a CLI run). Price and fees are flagged “verify before recording”.",
+  "listing.spends":
+    "Writing spends money (or a CLI run). Price and fees are flagged “verify before recording”.",
   "listing.ownerOnly": "Writing a script spends money, so only the owner can run it.",
   "listing.noBrands": "There are no brands yet. Add one to the brands table first.",
   "listing.error": "Something went wrong. Try again.",
@@ -68,7 +70,8 @@ export const sv: Record<keyof typeof en, string> = {
   "listing.field.bathrooms": "Badrum",
   "listing.field.area": "Boyta",
   "listing.field.images": "Bildlänkar, en per rad ({n})",
-  "listing.field.imagesHelp": "B-roll använder de här bilderna först; Higgsfield ritar bara klippen utöver dem.",
+  "listing.field.imagesHelp":
+    "B-roll använder de här bilderna först; Higgsfield ritar bara klippen utöver dem.",
   "listing.field.notes": "Dina anteckningar (avgifter, vad som finns nära, vem det passar)",
   "listing.brand": "Varumärke",
   "listing.language": "Språk",
@@ -77,7 +80,8 @@ export const sv: Record<keyof typeof en, string> = {
   "listing.writeTour": "Skriv visning",
   "listing.writeTourHelp": "3–5 min, 16:9",
   "listing.writing": "Skriver…",
-  "listing.spends": "Att skriva kostar pengar (eller en CLI-körning). Pris och avgifter märks ”kontrollera före inspelning”.",
+  "listing.spends":
+    "Att skriva kostar pengar (eller en CLI-körning). Pris och avgifter märks ”kontrollera före inspelning”.",
   "listing.ownerOnly": "Att skriva ett manus kostar pengar, så bara ägaren kan köra det.",
   "listing.noBrands": "Det finns inga varumärken än. Lägg till ett i tabellen brands först.",
   "listing.error": "Något gick fel. Försök igen.",

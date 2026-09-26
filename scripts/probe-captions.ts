@@ -19,7 +19,11 @@
 import { hostname } from "node:os";
 import { parseVideoId } from "../src/lib/youtube/url";
 import { STRATEGY_ORDER, tryStrategy } from "../src/lib/youtube/captions";
-import { configuredProxyUrl, proxiedFetch, redactProxyUrl } from "../src/lib/youtube/captions/proxy";
+import {
+  configuredProxyUrl,
+  proxiedFetch,
+  redactProxyUrl,
+} from "../src/lib/youtube/captions/proxy";
 import type { StrategyName, StrategyOutcome } from "../src/lib/youtube/captions/types";
 
 /**
@@ -88,7 +92,9 @@ async function main(): Promise<void> {
     if (!asJson && firstOk?.ok) {
       const { result } = firstOk;
       console.log();
-      console.log(`  Transcript via ${result.strategy} — ${result.languageCode} (${result.kind}), ${result.wordCount} words`);
+      console.log(
+        `  Transcript via ${result.strategy} — ${result.languageCode} (${result.kind}), ${result.wordCount} words`,
+      );
       console.log("  " + "-".repeat(66));
       const text = full ? result.text : result.text.slice(0, PREVIEW_CHARS);
       for (const line of wrap(text, 66)) console.log(`  ${line}`);

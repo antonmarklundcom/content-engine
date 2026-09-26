@@ -40,10 +40,14 @@ export default async function ResearchPage({
   const t = translator(locale);
   const brand = brands.find((b) => b.id === params.brand) ?? brands[0];
   const days = WINDOWS.find((d) => String(d) === params.days) ?? DEFAULT_WINDOW;
-  const href = (brandId: string, d: number) => `/research?${new URLSearchParams({ brand: brandId, days: String(d) })}`;
+  const href = (brandId: string, d: number) =>
+    `/research?${new URLSearchParams({ brand: brandId, days: String(d) })}`;
 
   const [channels, ranked] = brand
-    ? await Promise.all([listBrandCompetitors(brand.id), topOutliersForBrand(brand.id, { days, limit: 20 })])
+    ? await Promise.all([
+        listBrandCompetitors(brand.id),
+        topOutliersForBrand(brand.id, { days, limit: 20 }),
+      ])
     : [[], []];
   // An outlier beats its own channel's median; the rest of the ranking is noise here.
   const outliers = ranked.filter((v) => v.score > 1);
@@ -54,7 +58,9 @@ export default async function ResearchPage({
         {t("research.eyebrow")}
       </p>
       <h1 className="mt-1 text-2xl font-semibold text-[var(--color-ink)]">{t("research.title")}</h1>
-      <p className="mt-2 text-sm text-[var(--color-ink-muted)] leading-relaxed">{t("research.intro")}</p>
+      <p className="mt-2 text-sm text-[var(--color-ink-muted)] leading-relaxed">
+        {t("research.intro")}
+      </p>
 
       {!brand ? (
         <p className="mt-8 text-sm text-[var(--color-ink-muted)]">{t("research.noBrands")}</p>
@@ -74,7 +80,9 @@ export default async function ResearchPage({
           </nav>
 
           <section className="mt-8">
-            <h2 className="text-lg font-semibold text-[var(--color-ink)]">{t("research.channels")}</h2>
+            <h2 className="text-lg font-semibold text-[var(--color-ink)]">
+              {t("research.channels")}
+            </h2>
             <div className="surface-border surface-card mt-3 p-5">
               <ResearchAddChannelForm key={brand.id} brandId={brand.id} locale={locale} />
             </div>
@@ -84,8 +92,12 @@ export default async function ResearchPage({
           <section className="mt-10">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <h2 className="text-lg font-semibold text-[var(--color-ink)]">{t("research.outliers")}</h2>
-                <p className="mt-1 text-xs text-[var(--color-ink-muted)]">{t("research.outliersNote")}</p>
+                <h2 className="text-lg font-semibold text-[var(--color-ink)]">
+                  {t("research.outliers")}
+                </h2>
+                <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
+                  {t("research.outliersNote")}
+                </p>
               </div>
               <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--color-ink-muted)]">
                 <span>{t("research.window")}</span>
@@ -110,8 +122,12 @@ export default async function ResearchPage({
           </section>
 
           <section className="surface-border surface-card mt-10 p-5">
-            <h2 className="text-lg font-semibold text-[var(--color-ink)]">{t("research.titlePatterns")}</h2>
-            <p className="mt-1 text-xs text-[var(--color-ink-muted)]">{t("research.titlePatternsNote")}</p>
+            <h2 className="text-lg font-semibold text-[var(--color-ink)]">
+              {t("research.titlePatterns")}
+            </h2>
+            <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
+              {t("research.titlePatternsNote")}
+            </p>
             <ResearchTitlePatterns outliers={outliers.slice(0, 10)} locale={locale} />
           </section>
         </>

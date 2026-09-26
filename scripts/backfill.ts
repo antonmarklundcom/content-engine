@@ -31,9 +31,7 @@ async function main(): Promise<void> {
   const argv = process.argv.slice(2);
   const modelGiven = argv.includes("--model");
   const model: AnalysisModel =
-    argv[argv.indexOf("--model") + 1] === "flash" && modelGiven
-      ? UPGRADE_MODEL
-      : DEFAULT_MODEL;
+    argv[argv.indexOf("--model") + 1] === "flash" && modelGiven ? UPGRADE_MODEL : DEFAULT_MODEL;
 
   const collectIdx = argv.indexOf("--collect");
   if (collectIdx !== -1) {
@@ -153,9 +151,7 @@ async function report(outcome: BatchOutcome): Promise<void> {
   );
   console.log(`Actual cost: ${formatUsd(outcome.actualUsd)}`);
   const status = await spendStatus();
-  console.log(
-    `Spend this month: ${formatUsd(status.projectedUsd)} of ${formatUsd(status.capUsd)}`,
-  );
+  console.log(`Spend this month: ${formatUsd(status.projectedUsd)} of ${formatUsd(status.capUsd)}`);
 }
 
 function numericFlag(argv: string[], flag: string, fallback: number): number {

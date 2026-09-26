@@ -199,14 +199,25 @@ export function buildFilmingPlan(scripts: PlanScript[]): FilmingPlan {
   const broll: BrollItem[] = [];
   for (const item of items) {
     const { body } = byId.get(item.id)!;
-    const parts: { part: string; onScreenText: string[]; shots: ScriptBodyV1["hook"]["broll"] }[] = [
-      { part: "Hook", onScreenText: body.hook.onScreenText, shots: body.hook.broll },
-      ...body.sections.map((s) => ({ part: s.heading, onScreenText: s.onScreenText, shots: s.broll })),
-      { part: "CTA", onScreenText: body.cta.onScreenText, shots: [] },
-    ];
+    const parts: { part: string; onScreenText: string[]; shots: ScriptBodyV1["hook"]["broll"] }[] =
+      [
+        { part: "Hook", onScreenText: body.hook.onScreenText, shots: body.hook.broll },
+        ...body.sections.map((s) => ({
+          part: s.heading,
+          onScreenText: s.onScreenText,
+          shots: s.broll,
+        })),
+        { part: "CTA", onScreenText: body.cta.onScreenText, shots: [] },
+      ];
     for (const p of parts) {
       for (const text of p.onScreenText) {
-        if (text.trim()) onScreen.push({ scriptId: item.id, scriptTitle: item.title, part: p.part, text: text.trim() });
+        if (text.trim())
+          onScreen.push({
+            scriptId: item.id,
+            scriptTitle: item.title,
+            part: p.part,
+            text: text.trim(),
+          });
       }
       for (const shot of p.shots) {
         broll.push({

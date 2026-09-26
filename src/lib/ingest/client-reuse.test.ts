@@ -22,7 +22,12 @@ function stubClient(): { client: YouTubeDataClient; resolveCalls: number } {
     },
     quota: { summary: () => "0u spent of 10000u" },
   } as unknown as YouTubeDataClient;
-  return { client, get resolveCalls() { return state.resolveCalls; } };
+  return {
+    client,
+    get resolveCalls() {
+      return state.resolveCalls;
+    },
+  };
 }
 
 test("ingestRef uses the supplied client instead of building its own", async () => {

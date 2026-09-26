@@ -12,7 +12,10 @@ export async function ownerOnly(what: string): Promise<NextResponse | null> {
   const user = await getSession();
   if (!user) return NextResponse.json({ error: "Sign in first." }, { status: 401 });
   if (!isOwner(user)) {
-    return NextResponse.json({ error: `${what} spends money, which is the owner's to spend.` }, { status: 403 });
+    return NextResponse.json(
+      { error: `${what} spends money, which is the owner's to spend.` },
+      { status: 403 },
+    );
   }
   return null;
 }

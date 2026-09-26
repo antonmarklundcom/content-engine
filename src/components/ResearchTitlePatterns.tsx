@@ -3,11 +3,21 @@ import { translator, type Locale } from "@/lib/i18n";
 import { CopyTextButton } from "./CopyTextButton";
 
 /** The outliers' titles side by side, copyable as one block (PLAN.md §6.S10.3). */
-export function ResearchTitlePatterns({ outliers, locale }: { outliers: BrandOutlier[]; locale: Locale }) {
+export function ResearchTitlePatterns({
+  outliers,
+  locale,
+}: {
+  outliers: BrandOutlier[];
+  locale: Locale;
+}) {
   const t = translator(locale);
 
   if (outliers.length === 0) {
-    return <p className="mt-3 text-sm text-[var(--color-ink-muted)]">{t("research.titlePatternsEmpty")}</p>;
+    return (
+      <p className="mt-3 text-sm text-[var(--color-ink-muted)]">
+        {t("research.titlePatternsEmpty")}
+      </p>
+    );
   }
 
   const text = outliers.map((v) => `${v.title} (${v.score.toFixed(1)}×)`).join("\n");

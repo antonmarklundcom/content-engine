@@ -57,7 +57,11 @@ test("a propia-style page: og: title/description, JSON-LD price, address, rooms,
   assert.equal(l.description, "Luminoso, a 3 cuadras del Shopping Villa Morra.");
   assert.equal(l.price, "185000");
   assert.equal(l.currency, "USD");
-  assert.equal(l.address, "Senador Long 1234, Asunción, Paraguay", "the property's address, not the agency's");
+  assert.equal(
+    l.address,
+    "Senador Long 1234, Asunción, Paraguay",
+    "the property's address, not the agency's",
+  );
   assert.equal(l.rooms, "2");
   assert.equal(l.bathrooms, "2");
   assert.equal(l.area, "98 m²");
@@ -84,12 +88,18 @@ test("a Product page with an AggregateOffer and a plain-string address", () => {
 });
 
 test("a page with nothing structured falls back to <title> and leaves the rest empty", () => {
-  const l = parseListingHtml("<html><head><title> Casa  en venta </title></head></html>", "https://y.test/");
+  const l = parseListingHtml(
+    "<html><head><title> Casa  en venta </title></head></html>",
+    "https://y.test/",
+  );
   assert.deepEqual({ ...l, url: "" }, { ...emptyListing(), title: "Casa en venta" });
 });
 
 test("images: only http(s), deduped, capped at 12", () => {
-  const tags = Array.from({ length: 20 }, (_, i) => `<meta property="og:image" content="https://i.test/${i % 15}.jpg">`);
+  const tags = Array.from(
+    { length: 20 },
+    (_, i) => `<meta property="og:image" content="https://i.test/${i % 15}.jpg">`,
+  );
   const html = `<meta property="og:image" content="javascript:alert(1)"><meta property="og:image" content="data:image/png;base64,AA">${tags.join("")}`;
   const l = parseListingHtml(html, "https://i.test/");
   assert.equal(l.images.length, 12);
@@ -99,14 +109,24 @@ test("images: only http(s), deduped, capped at 12", () => {
 
 test("listing URLs: http(s) on a public host only", () => {
   assert.equal(checkListingUrl("https://propia.com.py/x").hostname, "propia.com.py");
-  for (const bad of ["ftp://a.test/", "not a url", "http://localhost:3000/", "http://127.0.0.1/", "http://192.168.1.4/", "http://10.0.0.1/", "http://[::1]/"]) {
+  for (const bad of [
+    "ftp://a.test/",
+    "not a url",
+    "http://localhost:3000/",
+    "http://127.0.0.1/",
+    "http://192.168.1.4/",
+    "http://10.0.0.1/",
+    "http://[::1]/",
+  ]) {
     assert.throws(() => checkListingUrl(bad), ListingFetchError, bad);
   }
 });
 
 test("fetchListing parses the page it gets, and names a timeout as one", async () => {
   const ok = (async () =>
-    new Response(PROPIA_HTML, { headers: { "content-type": "text/html; charset=utf-8" } })) as unknown as typeof fetch;
+    new Response(PROPIA_HTML, {
+      headers: { "content-type": "text/html; charset=utf-8" },
+    })) as unknown as typeof fetch;
   const l = await fetchListing("https://propia.com.py/propiedad/1", ok);
   assert.equal(l.currency, "USD");
 
@@ -119,9 +139,15 @@ test("fetchListing parses the page it gets, and names a timeout as one", async (
         reject(init.signal?.reason);
       });
     })) as unknown as typeof fetch;
-  await assert.rejects(fetchListing("https://propia.com.py/propiedad/1", slow, 20), /did not answer within/);
+  await assert.rejects(
+    fetchListing("https://propia.com.py/propiedad/1", slow, 20),
+    /did not answer within/,
+  );
 
-  const pdf = (async () => new Response("%PDF", { headers: { "content-type": "application/pdf" } })) as unknown as typeof fetch;
+  const pdf = (async () =>
+    new Response("%PDF", {
+      headers: { "content-type": "application/pdf" },
+    })) as unknown as typeof fetch;
   await assert.rejects(fetchListing("https://propia.com.py/a.pdf", pdf), /not a web page/);
   const hops: string[] = [];
   const redirecting = (async (url: URL) => {
@@ -137,7 +163,10 @@ test("fetchListing parses the page it gets, and names a timeout as one", async (
   hops.length = 0;
   const intoLan = (async (url: URL) => {
     hops.push(url.toString());
-    return new Response(null, { status: 302, headers: { location: "http://127.0.0.1:3000/api/media/1/x.png" } });
+    return new Response(null, {
+      status: 302,
+      headers: { location: "http://127.0.0.1:3000/api/media/1/x.png" },
+    });
   }) as unknown as typeof fetch;
   await assert.rejects(fetchListing("https://evil.test/", intoLan), /on this computer/);
   assert.deepEqual(hops, ["https://evil.test/"], "the LAN address is never requested");
@@ -147,7 +176,12 @@ test("fetchListing parses the page it gets, and names a timeout as one", async (
 });
 
 test("normalizeListing trims text and keeps only absolute http(s) images", () => {
-  const l = normalizeListing({ title: "  T ", price: 12, images: ["https://a.test/1.jpg", "/rel.jpg", "https://a.test/1.jpg", 3], url: "nope" });
+  const l = normalizeListing({
+    title: "  T ",
+    price: 12,
+    images: ["https://a.test/1.jpg", "/rel.jpg", "https://a.test/1.jpg", 3],
+    url: "nope",
+  });
   assert.equal(l.title, "T");
   assert.equal(l.price, "12");
   assert.deepEqual(l.images, ["https://a.test/1.jpg"]);
@@ -157,19 +191,48 @@ test("normalizeListing trims text and keeps only absolute http(s) images", () =>
 function modelBody() {
   const body = sampleScriptBody();
   body.hook.broll = [
-    { spokenLine: "Look at this light.", description: "Living room", imagePrompt: "PHOTO P2", videoPrompt: null, aspectRatio: "16:9" },
-    { spokenLine: "Look at this light.", description: "Asunción skyline", imagePrompt: "Skyline at dusk", videoPrompt: "Slow pan", aspectRatio: "16:9" },
+    {
+      spokenLine: "Look at this light.",
+      description: "Living room",
+      imagePrompt: "PHOTO P2",
+      videoPrompt: null,
+      aspectRatio: "16:9",
+    },
+    {
+      spokenLine: "Look at this light.",
+      description: "Asunción skyline",
+      imagePrompt: "Skyline at dusk",
+      videoPrompt: "Slow pan",
+      aspectRatio: "16:9",
+    },
   ];
   body.sections[0].spokenLines = ["It asks 185,000 USD.", "Two bedrooms."];
   body.sections[0].broll = [
-    { spokenLine: "Two bedrooms.", description: "Bedroom", imagePrompt: "PHOTO P9", videoPrompt: null, aspectRatio: "16:9" },
-    { spokenLine: "Two bedrooms.", description: "Street view", imagePrompt: "Leafy street", videoPrompt: null, aspectRatio: "16:9" },
+    {
+      spokenLine: "Two bedrooms.",
+      description: "Bedroom",
+      imagePrompt: "PHOTO P9",
+      videoPrompt: null,
+      aspectRatio: "16:9",
+    },
+    {
+      spokenLine: "Two bedrooms.",
+      description: "Street view",
+      imagePrompt: "Leafy street",
+      videoPrompt: null,
+      aspectRatio: "16:9",
+    },
   ];
   return body;
 }
 
 test("finishListingScript: listing photos first, bad references reassigned, the rest generated, one aspect ratio", () => {
-  const listing = { ...emptyListing(), url: "https://propia.com.py/p/1", title: "Depto", images: ["https://c.test/1.jpg", "https://c.test/2.jpg", "https://c.test/3.jpg"] };
+  const listing = {
+    ...emptyListing(),
+    url: "https://propia.com.py/p/1",
+    title: "Depto",
+    images: ["https://c.test/1.jpg", "https://c.test/2.jpg", "https://c.test/3.jpg"],
+  };
   const body = finishListingScript(modelBody(), listing, "short");
 
   const shots = [...body.hook.broll, ...body.sections.flatMap((s) => s.broll)];
@@ -182,14 +245,21 @@ test("finishListingScript: listing photos first, bad references reassigned, the 
       "Leafy street", // photos used up: Higgsfield
     ],
   );
-  assert.equal(shots[0].description, "Living room", "a photo the model chose keeps its description");
+  assert.equal(
+    shots[0].description,
+    "Living room",
+    "a photo the model chose keeps its description",
+  );
   assert.equal(shots[1].description, "Listing photo 1", "a reassigned shot says which photo it is");
   assert.ok(shots.every((s) => s.aspectRatio === "9:16"));
 
   const listingSource = body.sources.find((s) => s.id === LISTING_SOURCE_ID);
   assert.equal(listingSource?.verifyBeforeRecording, true);
   assert.equal(listingSource?.url, "https://propia.com.py/p/1");
-  assert.ok(body.sections[0].sourceIds.includes(LISTING_SOURCE_ID), "the section stating the price cites the listing");
+  assert.ok(
+    body.sections[0].sourceIds.includes(LISTING_SOURCE_ID),
+    "the section stating the price cites the listing",
+  );
   assert.deepEqual(validateScriptBody(body), { ok: true });
 });
 
@@ -199,6 +269,10 @@ test("finishListingScript without a listing URL: no source to cite, so price sec
   assert.ok(body.sections[0].talkingPoints.some((t) => t.startsWith("VERIFY BEFORE RECORDING")));
   const shots = [...body.hook.broll, ...body.sections.flatMap((s) => s.broll)];
   assert.ok(shots.every((s) => !s.imagePrompt.startsWith("PHOTO ") && s.aspectRatio === "16:9"));
-  assert.equal(shots[2].imagePrompt, "Bedroom", "a photo reference with no photos becomes a prompt from its description");
+  assert.equal(
+    shots[2].imagePrompt,
+    "Bedroom",
+    "a photo reference with no photos becomes a prompt from its description",
+  );
   assert.deepEqual(validateScriptBody(body), { ok: true });
 });

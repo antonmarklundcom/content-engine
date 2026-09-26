@@ -25,16 +25,24 @@ export async function POST(request: Request) {
   }
   if (!topic) return NextResponse.json({ error: "topic required" }, { status: 400 });
   if (body.language !== undefined && !isScriptLanguage(body.language)) {
-    return NextResponse.json({ error: "language must be one of en, es-PY, jopara" }, { status: 400 });
+    return NextResponse.json(
+      { error: "language must be one of en, es-PY, jopara" },
+      { status: 400 },
+    );
   }
   const lessonIds = idList(body.lessonIds);
-  if (!lessonIds) return NextResponse.json({ error: "lessonIds must be a list of lesson ids" }, { status: 400 });
+  if (!lessonIds)
+    return NextResponse.json({ error: "lessonIds must be a list of lesson ids" }, { status: 400 });
 
   const brand = await getBrand(body.brandId);
-  if (!brand) return NextResponse.json({ error: `unknown brandId "${body.brandId}"` }, { status: 400 });
+  if (!brand)
+    return NextResponse.json({ error: `unknown brandId "${body.brandId}"` }, { status: 400 });
 
   const language = body.language ?? defaultScriptLanguage(brand);
-  const lessons = await lessonsForPrompt(brand.id, lessonIds.length ? { ids: lessonIds } : { kinds: ["hook", "title_pattern"] });
+  const lessons = await lessonsForPrompt(
+    brand.id,
+    lessonIds.length ? { ids: lessonIds } : { kinds: ["hook", "title_pattern"] },
+  );
 
   try {
     const { titles, costUsd } = await generateTitles(brand, topic, lessons, {

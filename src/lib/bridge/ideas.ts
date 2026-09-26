@@ -28,7 +28,10 @@ export async function listIdeas(query: IdeasQuery): Promise<IdeasPage> {
     query.status ? eq(ideas.status, query.status) : undefined,
   );
 
-  const [count] = await db.select({ total: sql<number>`count(*)` }).from(ideas).where(where);
+  const [count] = await db
+    .select({ total: sql<number>`count(*)` })
+    .from(ideas)
+    .where(where);
   const total = Number(count?.total ?? 0);
   const totalPages = Math.max(1, Math.ceil(total / IDEAS_PAGE_SIZE));
   const page = Math.min(Math.max(1, query.page ?? 1), totalPages);

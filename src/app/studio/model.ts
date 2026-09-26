@@ -16,7 +16,8 @@ type SearchParams = Record<string, string | string[] | undefined>;
  * because a stale link should still open the form.
  */
 export function parseBriefParams(params: SearchParams): { brand: string | null; refs: number[] } {
-  const brand = typeof params.brand === "string" && params.brand.trim() ? params.brand.trim() : null;
+  const brand =
+    typeof params.brand === "string" && params.brand.trim() ? params.brand.trim() : null;
   const raw = params.ref === undefined ? [] : Array.isArray(params.ref) ? params.ref : [params.ref];
   const refs: number[] = [];
   for (const value of raw.flatMap((r) => r.split(","))) {
@@ -40,7 +41,11 @@ export function normalizeBody(body: ScriptBodyV1): ScriptBodyV1 {
   const b = structuredClone(body);
   const shots = (list: ScriptBodyV1["hook"]["broll"]) =>
     list.map((s) => ({ ...s, videoPrompt: s.videoPrompt?.trim() ? s.videoPrompt : null }));
-  b.hook = { spokenLines: lines(b.hook.spokenLines), onScreenText: lines(b.hook.onScreenText), broll: shots(b.hook.broll) };
+  b.hook = {
+    spokenLines: lines(b.hook.spokenLines),
+    onScreenText: lines(b.hook.onScreenText),
+    broll: shots(b.hook.broll),
+  };
   b.sections = b.sections.map((s) => ({
     ...s,
     spokenLines: lines(s.spokenLines),
@@ -58,7 +63,10 @@ export function flaggedSourceIds(body: Pick<ScriptBodyV1, "sources">): Set<strin
 }
 
 /** The flagged sources a section leans on — non-empty means it gets the badge. */
-export function sectionVerifyIds(section: Pick<ScriptSection, "sourceIds">, flagged: Set<string>): string[] {
+export function sectionVerifyIds(
+  section: Pick<ScriptSection, "sourceIds">,
+  flagged: Set<string>,
+): string[] {
   return section.sourceIds.filter((id) => flagged.has(id));
 }
 

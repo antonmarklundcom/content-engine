@@ -31,11 +31,7 @@ type SearchParams = {
   page?: string;
 };
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
+export default async function Home({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const params = await searchParams;
   // The feed shows *this* user's read state (PR-25), so it needs the row.
   const user = await requireUser();

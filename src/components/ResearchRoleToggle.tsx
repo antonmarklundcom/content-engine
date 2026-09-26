@@ -26,7 +26,11 @@ export function ResearchRoleToggle({
   const [pending, startTransition] = useTransition();
 
   return (
-    <div role="group" aria-label={t("research.roleLabel")} className="surface-border inline-flex overflow-hidden rounded-[var(--radius-sm)]">
+    <div
+      role="group"
+      aria-label={t("research.roleLabel")}
+      className="surface-border inline-flex overflow-hidden rounded-[var(--radius-sm)]"
+    >
       {ROLES.map((option) => {
         const active = option === role;
         return (

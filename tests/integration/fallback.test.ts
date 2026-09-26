@@ -69,7 +69,10 @@ test("analyses from the URL, stores like the caption path, bills the real usage"
     contents: { parts: { fileData?: { fileUri: string }; text?: string }[] }[];
     config: { mediaResolution: MediaResolution };
   };
-  assert.equal(params.contents[0].parts[0].fileData?.fileUri, "https://www.youtube.com/watch?v=nocaps00001");
+  assert.equal(
+    params.contents[0].parts[0].fileData?.fileUri,
+    "https://www.youtube.com/watch?v=nocaps00001",
+  );
   assert.equal(params.config.mediaResolution, MediaResolution.MEDIA_RESOLUTION_LOW);
   assert.match(params.contents[0].parts[1].text ?? "", /Residency, no captions/);
 
@@ -82,16 +85,25 @@ test("analyses from the URL, stores like the caption path, bills the real usage"
   assert.equal(rows[0].inputTokens, FALLBACK_USAGE.promptTokenCount);
 
   // Billed once, from usage, and under the reservation it held.
-  const billed = estimateCostUsd("gemini-3.1-flash-lite", readUsage({ usageMetadata: FALLBACK_USAGE } as never));
+  const billed = estimateCostUsd(
+    "gemini-3.1-flash-lite",
+    readUsage({ usageMetadata: FALLBACK_USAGE } as never),
+  );
   assert.ok(Math.abs((await monthToDateUsd()) - billed) < 1e-6, "billed exactly once");
-  assert.ok(billed < estimate.estimatedUsd, "the reservation covers what a real run of this length bills");
+  assert.ok(
+    billed < estimate.estimatedUsd,
+    "the reservation covers what a real run of this length bills",
+  );
   assert.equal(await reservedUsd(), 0, "reservation released");
 
   // Tags come from the same insert path.
   assert.ok((await db.select().from(schema.videoTopics)).length > 0);
 
   // Once analysed, a second click is free unless forced.
-  assert.deepEqual(await analyzeWithoutCaptions(v.id), { status: "skipped", why: "already-analysed" });
+  assert.deepEqual(await analyzeWithoutCaptions(v.id), {
+    status: "skipped",
+    why: "already-analysed",
+  });
   assert.equal((await analyzeWithoutCaptions(v.id, { force: true })).status, "ok");
 });
 
@@ -100,14 +112,22 @@ test("refuses unknown duration, over 90 minutes, a transcript, and a missing vid
   const long = await video(91 * 60, "nocaps00003");
   const edge = await video(90 * 60, "nocaps00004");
   const captioned = await video(600, "nocaps00005");
-  await db.insert(schema.transcripts).values({ videoId: captioned.id, content: "hello world", wordCount: 2 });
+  await db
+    .insert(schema.transcripts)
+    .values({ videoId: captioned.id, content: "hello world", wordCount: 2 });
 
-  await assert.rejects(analyzeWithoutCaptions(unknown.id), (e: unknown) =>
-    e instanceof FallbackRefusedError && /duration is unknown/.test(e.message));
-  await assert.rejects(analyzeWithoutCaptions(long.id), (e: unknown) =>
-    e instanceof FallbackRefusedError && /91 minutes/.test(e.message));
-  await assert.rejects(analyzeWithoutCaptions(captioned.id), (e: unknown) =>
-    e instanceof FallbackRefusedError && /has a transcript/.test(e.message));
+  await assert.rejects(
+    analyzeWithoutCaptions(unknown.id),
+    (e: unknown) => e instanceof FallbackRefusedError && /duration is unknown/.test(e.message),
+  );
+  await assert.rejects(
+    analyzeWithoutCaptions(long.id),
+    (e: unknown) => e instanceof FallbackRefusedError && /91 minutes/.test(e.message),
+  );
+  await assert.rejects(
+    analyzeWithoutCaptions(captioned.id),
+    (e: unknown) => e instanceof FallbackRefusedError && /has a transcript/.test(e.message),
+  );
   await assert.rejects(analyzeWithoutCaptions(9999), FallbackNotFoundError);
 
   assert.equal(fakeGeminiClient().calls.length, 0, "no refusal reached Gemini");
@@ -130,8 +150,16 @@ test("goes through the spend cap: over the cap, no call and no row", async () =>
 });
 
 test("never reachable from poll or batch (§1.35)", () => {
-  for (const file of ["src/lib/poll.ts", "src/lib/analysis/batch.ts", "scripts/poll-sources.ts", "scripts/backfill.ts"]) {
+  for (const file of [
+    "src/lib/poll.ts",
+    "src/lib/analysis/batch.ts",
+    "scripts/poll-sources.ts",
+    "scripts/backfill.ts",
+  ]) {
     const source = readFileSync(file, "utf8");
-    assert.ok(!/analysis\/fallback|analyzeVideoUrl|analyzeWithoutCaptions/.test(source), `${file} must not import the fallback`);
+    assert.ok(
+      !/analysis\/fallback|analyzeVideoUrl|analyzeWithoutCaptions/.test(source),
+      `${file} must not import the fallback`,
+    );
   }
 });

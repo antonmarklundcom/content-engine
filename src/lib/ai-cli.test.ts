@@ -52,33 +52,49 @@ test("commands: claude gets tools only with search; codex is read-only", () => {
   assert.equal(c.args.at(-1), "-");
 });
 
-test("runCliJson runs a fake claude and returns its JSON", { skip: process.platform === "win32" }, async () => {
-  const dir = await mkdtemp(path.join(tmpdir(), "fake-cli-"));
-  const bin = path.join(dir, "claude");
-  await writeFile(
-    bin,
-    `#!/usr/bin/env node
+test(
+  "runCliJson runs a fake claude and returns its JSON",
+  { skip: process.platform === "win32" },
+  async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), "fake-cli-"));
+    const bin = path.join(dir, "claude");
+    await writeFile(
+      bin,
+      `#!/usr/bin/env node
 let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{
 process.stdout.write(JSON.stringify({type:"result",result:"ok "+JSON.stringify({len:s.length>0})}));});`,
-  );
-  await chmod(bin, 0o755);
-  const prev = process.env.CLAUDE_CLI_BIN;
-  process.env.CLAUDE_CLI_BIN = bin;
-  try {
-    const out = await runCliJson({ provider: "claude-cli", system: "s", prompt: "p", schema: {}, webSearch: false });
-    assert.deepEqual(JSON.parse(out), { len: true });
-  } finally {
-    if (prev === undefined) delete process.env.CLAUDE_CLI_BIN;
-    else process.env.CLAUDE_CLI_BIN = prev;
-  }
-});
+    );
+    await chmod(bin, 0o755);
+    const prev = process.env.CLAUDE_CLI_BIN;
+    process.env.CLAUDE_CLI_BIN = bin;
+    try {
+      const out = await runCliJson({
+        provider: "claude-cli",
+        system: "s",
+        prompt: "p",
+        schema: {},
+        webSearch: false,
+      });
+      assert.deepEqual(JSON.parse(out), { len: true });
+    } finally {
+      if (prev === undefined) delete process.env.CLAUDE_CLI_BIN;
+      else process.env.CLAUDE_CLI_BIN = prev;
+    }
+  },
+);
 
 test("runCliJson explains a missing binary", async () => {
   const prev = process.env.CLAUDE_CLI_BIN;
   process.env.CLAUDE_CLI_BIN = "/nonexistent/claude-xyz";
   try {
     await assert.rejects(
-      runCliJson({ provider: "claude-cli", system: "s", prompt: "p", schema: {}, webSearch: false }),
+      runCliJson({
+        provider: "claude-cli",
+        system: "s",
+        prompt: "p",
+        schema: {},
+        webSearch: false,
+      }),
       /SUBSCRIPTION-MODE|exited|Could not start/,
     );
   } finally {

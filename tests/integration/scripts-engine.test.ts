@@ -54,14 +54,23 @@ function promptOf(call: { params: unknown }): { contents: string; system: string
 async function competitorVideo(): Promise<number> {
   const [video] = await db
     .insert(schema.videos)
-    .values({ youtubeId: "comp0000001", title: "Paraguay Residency FAST", channelTitle: "Rival Channel", durationSeconds: 900 })
+    .values({
+      youtubeId: "comp0000001",
+      title: "Paraguay Residency FAST",
+      channelTitle: "Rival Channel",
+      durationSeconds: 900,
+    })
     .returning();
   await db.insert(schema.analyses).values({
     videoId: video.id,
     model: "gemini-3.1-flash-lite",
     status: "ok",
     summary: "SECRET-SUMMARY-WORDING that must never reach the script prompt",
-    hookBreakdown: { technique: "Cold open on a rejection letter", first_30s: "…", why_it_works: "Fear of wasted months" },
+    hookBreakdown: {
+      technique: "Cold open on a rejection letter",
+      first_30s: "…",
+      why_it_works: "Fear of wasted months",
+    },
     timeline: [
       { ts: "00:00", topic: "Rejection story", beat: "…" },
       { ts: "03:10", topic: "Checklist", beat: "…" },
@@ -89,7 +98,11 @@ test("titles: ten options, the brand's saved patterns and style guide in the pro
     jsonPost("/api/scripts/titles", { brandId: BRAND.id, topic: "Residency timeline" }, owner),
   );
   assert.equal(response.status, 200);
-  const body = (await response.json()) as { titles: { title: string; angle: string }[]; language: string; costUsd: number };
+  const body = (await response.json()) as {
+    titles: { title: string; angle: string }[];
+    language: string;
+    costUsd: number;
+  };
   assert.equal(body.titles.length, TITLE_SUGGESTION_COUNT);
   assert.equal(body.language, "en", "residency defaults to English (§1.33)");
 
@@ -101,7 +114,11 @@ test("titles: ten options, the brand's saved patterns and style guide in the pro
   assert.match(contents, /Portfolio-wide hook lesson/);
   assert.doesNotMatch(contents, /Other brand's pattern/);
   assert.doesNotMatch(contents, /A fact, not for titles/);
-  assert.match(contents, /STYLE GUIDE[\s\S]*Style guide — English/, "content/style/en.md is in the prompt");
+  assert.match(
+    contents,
+    /STYLE GUIDE[\s\S]*Style guide — English/,
+    "content/style/en.md is in the prompt",
+  );
 
   const expected = messageCostUsd(readUsage({ usageMetadata: USAGE.titles } as never), 0);
   assert.equal(body.costUsd.toFixed(6), expected.toFixed(6));
@@ -150,7 +167,13 @@ async function writeOne(extra: Record<string, unknown> = {}) {
     writeScript,
     jsonPost(
       "/api/scripts",
-      { brandId: BRAND.id, topic: "Residency timeline", title: "Paraguay residency in 45 days", targetMinutes: 6, ...extra },
+      {
+        brandId: BRAND.id,
+        topic: "Residency timeline",
+        title: "Paraguay residency in 45 days",
+        targetMinutes: 6,
+        ...extra,
+      },
       owner,
     ),
   );
@@ -161,11 +184,20 @@ test("generate: grounded call, competitor structure without its wording, a valid
   const videoId = await competitorVideo();
   const [lesson] = await db
     .insert(schema.lessons)
-    .values({ text: "Migraciones publishes plazos monthly", kind: "fact", brandId: BRAND.id, sourceUrl: "https://example.gov.py" })
+    .values({
+      text: "Migraciones publishes plazos monthly",
+      kind: "fact",
+      brandId: BRAND.id,
+      sourceUrl: "https://example.gov.py",
+    })
     .returning();
   const fake = fakeGeminiClient();
 
-  const response = await writeOne({ competitorVideoIds: [videoId], lessonIds: [lesson.id], language: "es-PY" });
+  const response = await writeOne({
+    competitorVideoIds: [videoId],
+    lessonIds: [lesson.id],
+    language: "es-PY",
+  });
   assert.equal(response.status, 201);
   const { script, costUsd } = (await response.json()) as {
     script: { id: number; title: string; status: string; language: string; body: ScriptBodyV1 };
@@ -178,11 +210,25 @@ test("generate: grounded call, competitor structure without its wording, a valid
   assert.equal(call.groundingQueries, WEB_SEARCH_QUERIES.length, "Search grounding is on");
   const { contents, system } = promptOf(call);
   assert.match(contents, /STRUCTURE REFERENCES[\s\S]*Do NOT copy their wording/);
-  assert.match(contents, /Paraguay Residency FAST[\s\S]*Cold open on a rejection letter[\s\S]*00:00 Rejection story → 03:10 Checklist/);
+  assert.match(
+    contents,
+    /Paraguay Residency FAST[\s\S]*Cold open on a rejection letter[\s\S]*00:00 Rejection story → 03:10 Checklist/,
+  );
   assert.match(contents, /What it leaves out: Never mentions costs/);
-  assert.doesNotMatch(contents, /SECRET-SUMMARY-WORDING/, "the competitor's own words never reach the prompt");
-  assert.match(contents, /Migraciones publishes plazos monthly \(source: https:\/\/example\.gov\.py\)/);
-  assert.match(contents, /Guía de estilo — castellano paraguayo/, "content/style/es-PY.md is in the prompt");
+  assert.doesNotMatch(
+    contents,
+    /SECRET-SUMMARY-WORDING/,
+    "the competitor's own words never reach the prompt",
+  );
+  assert.match(
+    contents,
+    /Migraciones publishes plazos monthly \(source: https:\/\/example\.gov\.py\)/,
+  );
+  assert.match(
+    contents,
+    /Guía de estilo — castellano paraguayo/,
+    "content/style/es-PY.md is in the prompt",
+  );
   assert.match(contents, /about 840 spoken words/, "6 minutes at 140 wpm");
   assert.match(system, /sources" with the full URL/);
 
@@ -196,12 +242,25 @@ test("generate: grounded call, competitor structure without its wording, a valid
   const body = row.body as ScriptBodyV1;
   assert.equal(body.chosenTitle, "Paraguay residency in 45 days");
   assert.equal(body.targetMinutes, 6);
-  assert.ok(body.sources.every((s) => /^https?:\/\//.test(s.url)), "every source carries a URL");
-  assert.ok(body.sources.every((s) => s.verifyBeforeRecording), "residency and fee facts are flagged");
-  assert.equal(body.sources.length, (PAYLOADS.script as { sources: unknown[] }).sources.length - 1, "the URL-less source is dropped");
+  assert.ok(
+    body.sources.every((s) => /^https?:\/\//.test(s.url)),
+    "every source carries a URL",
+  );
+  assert.ok(
+    body.sources.every((s) => s.verifyBeforeRecording),
+    "residency and fee facts are flagged",
+  );
+  assert.equal(
+    body.sources.length,
+    (PAYLOADS.script as { sources: unknown[] }).sources.length - 1,
+    "the URL-less source is dropped",
+  );
 
   // The money: tokens plus three grounding queries.
-  const expected = messageCostUsd(readUsage({ usageMetadata: USAGE.script } as never), WEB_SEARCH_QUERIES.length);
+  const expected = messageCostUsd(
+    readUsage({ usageMetadata: USAGE.script } as never),
+    WEB_SEARCH_QUERIES.length,
+  );
   assert.equal(costUsd.toFixed(6), expected.toFixed(6));
   assert.equal((await monthToDateUsd()).toFixed(6), expected.toFixed(6));
   const [reservation] = await db.select().from(schema.spendReservation);
@@ -209,7 +268,10 @@ test("generate: grounded call, competitor structure without its wording, a valid
 });
 
 test("generate: an unknown or unanalysed competitor video is a 400 before anything is spent", async () => {
-  const [bare] = await db.insert(schema.videos).values({ youtubeId: "bare0000001", title: "No analysis" }).returning();
+  const [bare] = await db
+    .insert(schema.videos)
+    .values({ youtubeId: "bare0000001", title: "No analysis" })
+    .returning();
   const fake = fakeGeminiClient();
   for (const ids of [[999_999], [bare.id], ["x"]]) {
     const res = await writeOne({ competitorVideoIds: ids });
@@ -233,16 +295,25 @@ test("generate: over the cap is a 429 and nothing is saved", async () => {
 // exports
 // ---------------------------------------------------------------------------
 
-function exportRequest(id: number | string, query: string, headers: Record<string, string> = owner): Request {
+function exportRequest(
+  id: number | string,
+  query: string,
+  headers: Record<string, string> = owner,
+): Request {
   return new Request(`http://localhost/api/scripts/${id}/export?${query}`, { headers });
 }
 
 async function runExport(id: number | string, query: string, headers?: Record<string, string>) {
-  return callRoute((req) => exportScript(req, { params: Promise.resolve({ id: String(id) }) }), exportRequest(id, query, headers));
+  return callRoute(
+    (req) => exportScript(req, { params: Promise.resolve({ id: String(id) }) }),
+    exportRequest(id, query, headers),
+  );
 }
 
 test("exports: teleprompter md, raw json, and the shot list as Markdown + JSON", async () => {
-  const created = (await (await writeOne()).json()) as { script: { id: number; body: ScriptBodyV1 } };
+  const created = (await (await writeOne()).json()) as {
+    script: { id: number; body: ScriptBodyV1 };
+  };
   const id = created.script.id;
 
   const md = await runExport(id, "format=md");
@@ -256,7 +327,10 @@ test("exports: teleprompter md, raw json, and the shot list as Markdown + JSON",
 
   const json = await runExport(id, "format=json&download=1");
   assert.deepEqual(await json.json(), created.script.body);
-  assert.match(json.headers.get("content-disposition") ?? "", /attachment; filename="script-\d+-paraguay-residency-in-45-days\.json"/);
+  assert.match(
+    json.headers.get("content-disposition") ?? "",
+    /attachment; filename="script-\d+-paraguay-residency-in-45-days\.json"/,
+  );
 
   const shotsMd = await (await runExport(id, "format=shots")).text();
   assert.match(shotsMd, new RegExp(`media/${id}/01-calendar-pages-flipping\\.png`));
@@ -281,7 +355,11 @@ test("exports: signed-in only, 404 for no such script, 400 for a bad format or i
   const created = (await (await writeOne()).json()) as { script: { id: number } };
   assert.equal((await runExport(created.script.id, "format=md", {})).status, 401);
   const employee = { cookie: (await signIn("employee")).cookie };
-  assert.equal((await runExport(created.script.id, "format=md", employee)).status, 200, "reading is free, so not owner-gated");
+  assert.equal(
+    (await runExport(created.script.id, "format=md", employee)).status,
+    200,
+    "reading is free, so not owner-gated",
+  );
   assert.equal((await runExport(999_999, "format=md")).status, 404);
   assert.equal((await runExport(created.script.id, "format=pdf")).status, 400);
   assert.equal((await runExport("abc", "format=md")).status, 400);

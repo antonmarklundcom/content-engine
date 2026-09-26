@@ -46,7 +46,9 @@ export function QuickAddClipForm() {
   return (
     <form onSubmit={submit} className="flex flex-col gap-3">
       <label className="flex flex-col gap-1">
-        <span className="text-xs text-[var(--color-ink-muted)]">{t("inbox.quickAdd.urlLabel")}</span>
+        <span className="text-xs text-[var(--color-ink-muted)]">
+          {t("inbox.quickAdd.urlLabel")}
+        </span>
         <input
           type="url"
           required
@@ -58,7 +60,9 @@ export function QuickAddClipForm() {
         />
       </label>
       <label className="flex flex-col gap-1">
-        <span className="text-xs text-[var(--color-ink-muted)]">{t("inbox.quickAdd.noteLabel")}</span>
+        <span className="text-xs text-[var(--color-ink-muted)]">
+          {t("inbox.quickAdd.noteLabel")}
+        </span>
         <input
           type="text"
           value={note}

@@ -12,7 +12,12 @@ import {
 
 const day = (n: number) => new Date(Date.UTC(2026, 0, 1 + n));
 
-function row(id: number, viewCount: number | null, publishedDay: number | null, sourceId = 1): OutlierRow {
+function row(
+  id: number,
+  viewCount: number | null,
+  publishedDay: number | null,
+  sourceId = 1,
+): OutlierRow {
   return { id, sourceId, viewCount, publishedAt: publishedDay === null ? null : day(publishedDay) };
 }
 
@@ -48,7 +53,9 @@ test("ties: equal view counts give an exact median", () => {
 
 test("ties: equal publish dates break by the higher id, so the 30-video cut is stable", () => {
   // 31 videos on the same day: the lowest id is the one left out.
-  const rows = Array.from({ length: OUTLIER_BASELINE_SIZE + 1 }, (_, i) => row(i + 1, i === 0 ? 1_000_000 : 10, 5));
+  const rows = Array.from({ length: OUTLIER_BASELINE_SIZE + 1 }, (_, i) =>
+    row(i + 1, i === 0 ? 1_000_000 : 10, 5),
+  );
   const sample = baselineSample(rows);
   assert.equal(sample.length, OUTLIER_BASELINE_SIZE);
   assert.ok(!sample.includes(1_000_000), "id 1 is the oldest by tiebreak and falls outside");

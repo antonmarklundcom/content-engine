@@ -100,7 +100,11 @@ export function StudioTeleprompter({
   }, [toggleFullscreen]);
 
   return (
-    <div ref={root} className="fixed inset-0 z-50 flex flex-col bg-black text-white" data-teleprompter>
+    <div
+      ref={root}
+      className="fixed inset-0 z-50 flex flex-col bg-black text-white"
+      data-teleprompter
+    >
       <div className="flex flex-wrap items-center gap-3 border-b border-white/15 px-4 py-2 text-sm">
         <a href={backHref} className={CONTROL}>
           ← {t("studio.teleprompter.exit")}
@@ -133,12 +137,17 @@ export function StudioTeleprompter({
         <button type="button" className={CONTROL} onClick={toggleFullscreen}>
           {t("studio.teleprompter.fullscreen")}
         </button>
-        <span className="ml-auto hidden text-xs text-white/50 md:inline">{t("studio.teleprompter.keys")}</span>
+        <span className="ml-auto hidden text-xs text-white/50 md:inline">
+          {t("studio.teleprompter.keys")}
+        </span>
       </div>
 
       <div className="relative flex-1 overflow-hidden">
         {/* The reading line: the eye stays here while the text moves past it. */}
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-[33%] z-10 border-t border-white/20" />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-[33%] z-10 border-t border-white/20"
+        />
         <div ref={scroller} className="h-full overflow-y-auto" style={{ scrollbarWidth: "none" }}>
           <div
             className="mx-auto max-w-5xl px-8 pt-[33vh] pb-[80vh] font-semibold"

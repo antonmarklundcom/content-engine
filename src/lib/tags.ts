@@ -25,14 +25,16 @@ import { analyses, entities, topics, videoEntities, videoTopics, videos } from "
  * harder to notice than under-merging.
  */
 export function slugifyTag(name: string): string {
-  return name
-    .toLowerCase()
-    .normalize("NFKD")
-    // Strip combining marks so "café" and "cafe" agree.
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 128);
+  return (
+    name
+      .toLowerCase()
+      .normalize("NFKD")
+      // Strip combining marks so "café" and "cafe" agree.
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 128)
+  );
 }
 
 type TagTables =
@@ -66,12 +68,7 @@ export async function syncVideoTags(
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-async function syncOne(
-  tx: Tx,
-  tables: TagTables,
-  videoId: number,
-  names: string[],
-): Promise<void> {
+async function syncOne(tx: Tx, tables: TagTables, videoId: number, names: string[]): Promise<void> {
   const { lookup, link, linkKey } = tables;
 
   // Slug is the identity, so two spellings of one tag collapse here rather than
@@ -154,10 +151,7 @@ export function listEntities(options?: { minCount?: number; limit?: number }) {
 }
 
 /** Display name for one slug, so a grouping page can title itself. */
-export async function findTagName(
-  kind: "topic" | "entity",
-  slug: string,
-): Promise<string | null> {
+export async function findTagName(kind: "topic" | "entity", slug: string): Promise<string | null> {
   const lookup = kind === "topic" ? topics : entities;
   const [row] = await db
     .select({ name: lookup.name })
@@ -177,7 +171,9 @@ export async function findTagName(
  * "newest row per group" idiom — the equivalent of the MySQL
  * group_concat/substring_index trick this replaced.
  */
-export async function listContentTypes(): Promise<Array<{ contentType: string; videoCount: number }>> {
+export async function listContentTypes(): Promise<
+  Array<{ contentType: string; videoCount: number }>
+> {
   const distinctNewest = db
     .selectDistinctOn([analyses.videoId], {
       videoId: analyses.videoId,

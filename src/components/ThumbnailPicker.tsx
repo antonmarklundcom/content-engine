@@ -60,9 +60,16 @@ export function ThumbnailPicker({
               <div className="flex items-center justify-between gap-2 px-3 py-2">
                 <span className="truncate text-xs text-[var(--color-ink-muted)]">{name}</span>
                 {active ? (
-                  <span className="text-xs font-medium text-[var(--color-accent)]">{t("listing.thumbs.chosen")}</span>
+                  <span className="text-xs font-medium text-[var(--color-accent)]">
+                    {t("listing.thumbs.chosen")}
+                  </span>
                 ) : (
-                  <button type="button" className={STUDIO_PRIMARY} disabled={pending} onClick={() => pick(name)}>
+                  <button
+                    type="button"
+                    className={STUDIO_PRIMARY}
+                    disabled={pending}
+                    onClick={() => pick(name)}
+                  >
                     {t("listing.thumbs.use")}
                   </button>
                 )}
@@ -72,7 +79,12 @@ export function ThumbnailPicker({
         })}
       </ul>
       {(chosen || hasChoice) && (
-        <button type="button" className={`${STUDIO_BUTTON} self-start`} disabled={pending} onClick={() => pick(null)}>
+        <button
+          type="button"
+          className={`${STUDIO_BUTTON} self-start`}
+          disabled={pending}
+          onClick={() => pick(null)}
+        >
           {t("listing.thumbs.clear")}
         </button>
       )}

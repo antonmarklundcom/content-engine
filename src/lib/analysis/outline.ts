@@ -4,7 +4,11 @@ import { db } from "@/db";
 import { analyses, outlines, videos, type Outline } from "@/db/schema";
 import { gemini, readUsage, responseText, MAX_OUTPUT_TOKENS, THINKING_LEVEL } from "./run";
 import type { OutlinePayload } from "./contract";
-import { buildOutlineUserPrompt, OUTLINE_JSON_SCHEMA, OUTLINE_SYSTEM_PROMPT } from "./outline-prompt";
+import {
+  buildOutlineUserPrompt,
+  OUTLINE_JSON_SCHEMA,
+  OUTLINE_SYSTEM_PROMPT,
+} from "./outline-prompt";
 import { parseOutlineResponse } from "./outline-parse";
 import { DEFAULT_MODEL, estimateCostUsd, toCostString, type AnalysisModel } from "./pricing";
 import { recordSpend, withSpendCap } from "@/lib/spend";

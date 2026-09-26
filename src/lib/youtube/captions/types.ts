@@ -35,12 +35,7 @@ export type CaptionResult = {
  * Everything else is a property of the network path and is worth retrying.
  */
 export type CaptionFailureReason =
-  | "no_captions"
-  | "blocked"
-  | "unplayable"
-  | "network"
-  | "parse"
-  | "unavailable";
+  "no_captions" | "blocked" | "unplayable" | "network" | "parse" | "unavailable";
 
 export type StrategyName =
   | "innertube-android"

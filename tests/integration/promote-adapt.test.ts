@@ -34,7 +34,11 @@ const BRAND = {
 };
 
 const ANALYSIS_IDEAS = [
-  { title: "Residency in 90 days", premise: "Walk the timeline end to end.", why_now: "Rule change." },
+  {
+    title: "Residency in 90 days",
+    premise: "Walk the timeline end to end.",
+    why_now: "Rule change.",
+  },
 ];
 
 /** What the fake's adapt call must bill: tokens at the promote model, no grounding. */
@@ -95,7 +99,12 @@ test("an owner adapting gets rewritten copy and one priced spend row", async () 
   assert.equal(response.status, 201);
   const body = (await response.json()) as { idea: { id: number }; costUsd: number };
 
-  const canned = PAYLOADS.adapt as { title: string; angle: string; draftCopy: string; visualNotes: string };
+  const canned = PAYLOADS.adapt as {
+    title: string;
+    angle: string;
+    draftCopy: string;
+    visualNotes: string;
+  };
   const [idea] = await db.select().from(schema.ideas);
   assert.equal(idea.title, canned.title, "the adapted title replaces the source's");
   assert.equal(idea.angle, canned.angle);
@@ -115,7 +124,9 @@ test("an owner adapting gets rewritten copy and one priced spend row", async () 
   assert.equal(call.responseKind, "adapt");
   assert.equal(call.model, "gemini-3.1-flash-lite");
   assert.equal(call.groundingQueries, 0);
-  const params = call.params as { config: { tools?: unknown[]; thinkingConfig?: { thinkingLevel?: string } } };
+  const params = call.params as {
+    config: { tools?: unknown[]; thinkingConfig?: { thinkingLevel?: string } };
+  };
   assert.equal(params.config.tools, undefined, "promote never grounds");
   assert.equal(params.config.thinkingConfig?.thinkingLevel, "MINIMAL");
 
@@ -134,9 +145,17 @@ test("the source material and the brand's voice reach the model", async () => {
   );
 
   const params = fake.callsOf("generateContent")[0].params as { contents: string };
-  assert.match(params.contents, /Walk the timeline end to end\./, "the analysis idea is the source text");
+  assert.match(
+    params.contents,
+    /Walk the timeline end to end\./,
+    "the analysis idea is the source text",
+  );
   assert.match(params.contents, /How residency actually works/, "the video it came from is named");
-  assert.match(params.contents, /Trustworthy expat guide\./, "the brand's voice is passed, not inferred");
+  assert.match(
+    params.contents,
+    /Trustworthy expat guide\./,
+    "the brand's voice is passed, not inferred",
+  );
   assert.match(params.contents, /Language for copy: es/);
 });
 
@@ -152,7 +171,11 @@ test("an employee asking to adapt is refused and nothing is spent", async () => 
 
   assert.equal(response.status, 403, "spending is the owner's (§1.20)");
   assert.equal(fake.calls.length, 0);
-  assert.equal((await db.select().from(schema.ideas)).length, 0, "refused rather than quietly downgraded");
+  assert.equal(
+    (await db.select().from(schema.ideas)).length,
+    0,
+    "refused rather than quietly downgraded",
+  );
   assert.equal(await monthToDateUsd(), 0);
 });
 
@@ -207,12 +230,18 @@ test("promoting an inbox clip marks it promoted and links the idea", async () =>
 
   const [clip] = await db
     .insert(schema.clips)
-    .values({ url: "https://www.youtube.com/watch?v=vid00000001", platform: "youtube", status: "analyzed" })
+    .values({
+      url: "https://www.youtube.com/watch?v=vid00000001",
+      platform: "youtube",
+      status: "analyzed",
+    })
     .returning();
 
   const response = await callRoute(
     promote,
-    jsonPost("/api/ideas/promote", promoteBody(analysis.id, { adapt: true, clipId: clip.id }), { cookie }),
+    jsonPost("/api/ideas/promote", promoteBody(analysis.id, { adapt: true, clipId: clip.id }), {
+      cookie,
+    }),
   );
   assert.equal(response.status, 201);
 

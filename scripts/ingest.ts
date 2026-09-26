@@ -26,7 +26,9 @@ async function main(): Promise<void> {
   const input = argv.find((a, i) => !a.startsWith("--") && i !== limitIdx + 1);
 
   if (!input) {
-    console.error("Usage: npx tsx scripts/ingest.ts <youtube-url> [--limit N] [--skip-captions] [--force] [--retry-none]");
+    console.error(
+      "Usage: npx tsx scripts/ingest.ts <youtube-url> [--limit N] [--skip-captions] [--force] [--retry-none]",
+    );
     process.exit(2);
   }
 

@@ -63,7 +63,12 @@ export function FactRow({
       <li className="surface-border surface-card p-4">
         <FactForm
           action={updateFactAction.bind(null, fact.id)}
-          initial={{ topic: fact.topic, claim: fact.claim, sourceUrl: fact.sourceUrl ?? "", notes: fact.notes ?? "" }}
+          initial={{
+            topic: fact.topic,
+            claim: fact.claim,
+            sourceUrl: fact.sourceUrl ?? "",
+            notes: fact.notes ?? "",
+          }}
           topics={topics}
           locale={locale}
           idPrefix={`fact-${fact.id}`}
@@ -101,7 +106,9 @@ export function FactRow({
           </span>
         )}
       </div>
-      {fact.notes && <p className="text-xs text-[var(--color-ink-muted)] whitespace-pre-line">{fact.notes}</p>}
+      {fact.notes && (
+        <p className="text-xs text-[var(--color-ink-muted)] whitespace-pre-line">{fact.notes}</p>
+      )}
       {canEdit && (
         <div className="flex flex-wrap gap-2">
           <button

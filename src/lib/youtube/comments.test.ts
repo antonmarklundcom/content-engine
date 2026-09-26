@@ -8,13 +8,18 @@ function thread(id: string, text: string, likes = 0) {
     id,
     snippet: {
       totalReplyCount: 2,
-      topLevelComment: { id, snippet: { textDisplay: text, likeCount: likes, publishedAt: "2026-09-01T10:00:00Z" } },
+      topLevelComment: {
+        id,
+        snippet: { textDisplay: text, likeCount: likes, publishedAt: "2026-09-01T10:00:00Z" },
+      },
     },
   };
 }
 
 function errorBody(status: number, reason: string) {
-  return new Response(JSON.stringify({ error: { code: status, errors: [{ reason }] } }), { status });
+  return new Response(JSON.stringify({ error: { code: status, errors: [{ reason }] } }), {
+    status,
+  });
 }
 
 function client(responses: Array<() => Response>, opts: { quotaBudget?: number } = {}) {
@@ -35,7 +40,8 @@ function client(responses: Array<() => Response>, opts: { quotaBudget?: number }
 
 test("asks for one relevance-ordered plain-text page and parses the top-level comments", async () => {
   const { c, urls } = client([
-    () => Response.json({ items: [thread("a", " How deep? ", 5), thread("b", ""), { id: "junk" }] }),
+    () =>
+      Response.json({ items: [thread("a", " How deep? ", 5), thread("b", ""), { id: "junk" }] }),
   ]);
   const comments = await c.topComments("vid123");
   assert.equal(urls[0].pathname, "/youtube/v3/commentThreads");
@@ -56,7 +62,10 @@ test("comments disabled is an empty list, not an error", async () => {
 });
 
 test("quota exceeded throws at once, without retrying", async () => {
-  const { c, urls } = client([() => errorBody(403, "quotaExceeded"), () => Response.json({ items: [] })]);
+  const { c, urls } = client([
+    () => errorBody(403, "quotaExceeded"),
+    () => Response.json({ items: [] }),
+  ]);
   await assert.rejects(c.topComments("vid"), QuotaExhaustedError);
   assert.equal(urls.length, 1);
 });
@@ -69,9 +78,15 @@ test("the run budget is checked before calling", async () => {
 });
 
 test("transient errors are retried; a bad request is not", async () => {
-  const flaky = client([() => new Response("oops", { status: 503 }), () => Response.json({ items: [thread("a", "Why?")] })]);
+  const flaky = client([
+    () => new Response("oops", { status: 503 }),
+    () => Response.json({ items: [thread("a", "Why?")] }),
+  ]);
   assert.equal((await flaky.c.topComments("vid")).length, 1);
 
-  const bad = client([() => errorBody(400, "invalidParameter"), () => Response.json({ items: [] })]);
+  const bad = client([
+    () => errorBody(400, "invalidParameter"),
+    () => Response.json({ items: [] }),
+  ]);
   await assert.rejects(bad.c.topComments("vid"), YouTubeCommentsError);
 });

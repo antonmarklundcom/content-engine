@@ -34,7 +34,9 @@ export function ListingForm({
   const t = useTranslator();
   const router = useRouter();
   const [brandId, setBrandId] = useState(initialBrand);
-  const [language, setLanguage] = useState<ScriptLanguage>(brands.find((b) => b.id === initialBrand)?.language ?? "en");
+  const [language, setLanguage] = useState<ScriptLanguage>(
+    brands.find((b) => b.id === initialBrand)?.language ?? "en",
+  );
   const [url, setUrl] = useState("");
   const [fields, setFields] = useState<ListingFields>(emptyListing());
   const [imagesText, setImagesText] = useState("");
@@ -43,7 +45,8 @@ export function ListingForm({
   const [errors, setErrors] = useState<string[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const set = (key: keyof ListingFields, value: string) => setFields((f) => ({ ...f, [key]: value }));
+  const set = (key: keyof ListingFields, value: string) =>
+    setFields((f) => ({ ...f, [key]: value }));
   const images = imagesText
     .split("\n")
     .map((l) => l.trim())
@@ -92,7 +95,9 @@ export function ListingForm({
     }
   }
 
-  const canWrite = Boolean(fields.title.trim() || fields.description.trim() || fields.address.trim());
+  const canWrite = Boolean(
+    fields.title.trim() || fields.description.trim() || fields.address.trim(),
+  );
 
   return (
     <form className="mt-6 flex flex-col gap-6" onSubmit={(e) => e.preventDefault()}>
@@ -107,7 +112,12 @@ export function ListingForm({
             onChange={(e) => setUrl(e.target.value)}
           />
         </label>
-        <button type="button" className={STUDIO_BUTTON} disabled={!url.trim() || busy !== null} onClick={read}>
+        <button
+          type="button"
+          className={STUDIO_BUTTON}
+          disabled={!url.trim() || busy !== null}
+          onClick={read}
+        >
           {busy === "read" ? t("listing.reading") : t("listing.read")}
         </button>
       </div>
@@ -115,7 +125,11 @@ export function ListingForm({
 
       <label className="block">
         <span className={LABEL}>{t("listing.field.title")}</span>
-        <input className={STUDIO_INPUT} value={fields.title} onChange={(e) => set("title", e.target.value)} />
+        <input
+          className={STUDIO_INPUT}
+          value={fields.title}
+          onChange={(e) => set("title", e.target.value)}
+        />
       </label>
       <label className="block">
         <span className={LABEL}>{t("listing.field.description")}</span>
@@ -128,13 +142,21 @@ export function ListingForm({
       </label>
       <label className="block">
         <span className={LABEL}>{t("listing.field.address")}</span>
-        <input className={STUDIO_INPUT} value={fields.address} onChange={(e) => set("address", e.target.value)} />
+        <input
+          className={STUDIO_INPUT}
+          value={fields.address}
+          onChange={(e) => set("address", e.target.value)}
+        />
       </label>
       <div className="grid gap-4 sm:grid-cols-5">
         {SHORT_FIELDS.map(({ key, label }) => (
           <label key={key} className="block">
             <span className={LABEL}>{t(label)}</span>
-            <input className={STUDIO_INPUT} value={fields[key]} onChange={(e) => set(key, e.target.value)} />
+            <input
+              className={STUDIO_INPUT}
+              value={fields[key]}
+              onChange={(e) => set(key, e.target.value)}
+            />
           </label>
         ))}
       </div>
@@ -147,15 +169,28 @@ export function ListingForm({
           value={imagesText}
           onChange={(e) => setImagesText(e.target.value)}
         />
-        <span className="mt-1 block text-xs text-[var(--color-ink-muted)]">{t("listing.field.imagesHelp")}</span>
+        <span className="mt-1 block text-xs text-[var(--color-ink-muted)]">
+          {t("listing.field.imagesHelp")}
+        </span>
       </label>
       {images.length > 0 && (
         <ul className="grid grid-cols-3 gap-2 sm:grid-cols-6">
           {images.slice(0, 12).map((src, i) => (
-            <li key={src} className="surface-border relative overflow-hidden rounded-[var(--radius-sm)]">
+            <li
+              key={src}
+              className="surface-border relative overflow-hidden rounded-[var(--radius-sm)]"
+            >
               {/* eslint-disable-next-line @next/next/no-img-element -- remote listing photos, any host */}
-              <img src={src} alt="" loading="lazy" referrerPolicy="no-referrer" className="aspect-video w-full object-cover" />
-              <span className="absolute top-1 left-1 rounded bg-black/60 px-1 text-xs text-white">P{i + 1}</span>
+              <img
+                src={src}
+                alt=""
+                loading="lazy"
+                referrerPolicy="no-referrer"
+                className="aspect-video w-full object-cover"
+              />
+              <span className="absolute top-1 left-1 rounded bg-black/60 px-1 text-xs text-white">
+                P{i + 1}
+              </span>
             </li>
           ))}
         </ul>
@@ -163,7 +198,12 @@ export function ListingForm({
 
       <label className="block">
         <span className={LABEL}>{t("listing.field.notes")}</span>
-        <textarea rows={3} className={STUDIO_INPUT} value={fields.notes} onChange={(e) => set("notes", e.target.value)} />
+        <textarea
+          rows={3}
+          className={STUDIO_INPUT}
+          value={fields.notes}
+          onChange={(e) => set("notes", e.target.value)}
+        />
       </label>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -178,15 +218,23 @@ export function ListingForm({
             }}
           >
             {brands.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
             ))}
           </select>
         </label>
         <label className="block">
           <span className={LABEL}>{t("listing.language")}</span>
-          <select className={STUDIO_INPUT} value={language} onChange={(e) => setLanguage(e.target.value as ScriptLanguage)}>
+          <select
+            className={STUDIO_INPUT}
+            value={language}
+            onChange={(e) => setLanguage(e.target.value as ScriptLanguage)}
+          >
             {SCRIPT_LANGUAGES.map((l) => (
-              <option key={l} value={l}>{l}</option>
+              <option key={l} value={l}>
+                {l}
+              </option>
             ))}
           </select>
         </label>
@@ -206,11 +254,21 @@ export function ListingForm({
       )}
 
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" className={STUDIO_PRIMARY} disabled={!canWrite || busy !== null} onClick={() => write("short")}>
+        <button
+          type="button"
+          className={STUDIO_PRIMARY}
+          disabled={!canWrite || busy !== null}
+          onClick={() => write("short")}
+        >
           {busy === "short" ? t("listing.writing") : t("listing.writeShort")}
           <span className="ml-2 text-xs opacity-80">{t("listing.writeShortHelp")}</span>
         </button>
-        <button type="button" className={STUDIO_PRIMARY} disabled={!canWrite || busy !== null} onClick={() => write("tour")}>
+        <button
+          type="button"
+          className={STUDIO_PRIMARY}
+          disabled={!canWrite || busy !== null}
+          onClick={() => write("tour")}
+        >
           {busy === "tour" ? t("listing.writing") : t("listing.writeTour")}
           <span className="ml-2 text-xs opacity-80">{t("listing.writeTourHelp")}</span>
         </button>

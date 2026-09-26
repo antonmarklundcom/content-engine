@@ -86,7 +86,10 @@ export type ScreenOptions = {
   interests?: string;
 };
 
-export async function screenVideo(video: Video, options: ScreenOptions = {}): Promise<ScreenResult> {
+export async function screenVideo(
+  video: Video,
+  options: ScreenOptions = {},
+): Promise<ScreenResult> {
   const model = options.model ?? DEFAULT_MODEL;
   const interests = options.interests ?? screenInterests();
 

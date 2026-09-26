@@ -51,11 +51,17 @@ export default async function SourcesPage() {
                 <div className="min-w-0">
                   <SourceTitleForm id={source.id} title={source.title} locale={locale} />
                   <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
-                    {t(source.kind === "channel" ? "sources.kind.channel" : "sources.kind.playlist")}{" "}
+                    {t(
+                      source.kind === "channel" ? "sources.kind.channel" : "sources.kind.playlist",
+                    )}{" "}
                     · {t(source.active ? "sources.active" : "sources.paused")} · {source.videoCount}{" "}
-                    {t(source.videoCount === 1 ? "sources.videoCountOne" : "sources.videoCountMany")}{" "}
+                    {t(
+                      source.videoCount === 1 ? "sources.videoCountOne" : "sources.videoCountMany",
+                    )}{" "}
                     · {t("sources.lastPolled")}{" "}
-                    {source.lastPolledAt ? formatDate(source.lastPolledAt, locale) : t("sources.never")}
+                    {source.lastPolledAt
+                      ? formatDate(source.lastPolledAt, locale)
+                      : t("sources.never")}
                   </p>
                 </div>
                 <div className="flex shrink-0 gap-2">

@@ -46,7 +46,9 @@ export function FallbackAnalyzeButton({ videoId, isOwner }: { videoId: number; i
         </button>
       ) : (
         <>
-          <p className="text-sm text-[var(--color-ink-muted)]">{t("fallback.explain", { cost: estimate })}</p>
+          <p className="text-sm text-[var(--color-ink-muted)]">
+            {t("fallback.explain", { cost: estimate })}
+          </p>
           <div className="flex items-center gap-3">
             <button
               type="button"

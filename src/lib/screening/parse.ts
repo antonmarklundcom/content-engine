@@ -14,8 +14,7 @@ import type { ScreeningPayload } from "./contract";
  */
 
 export type ScreeningParseResult =
-  | { ok: true; payload: ScreeningPayload }
-  | { ok: false; error: string };
+  { ok: true; payload: ScreeningPayload } | { ok: false; error: string };
 
 /** Reason is stored in a varchar(512); longer than that is padding, not signal. */
 export const MAX_REASON_CHARS = 512;

@@ -62,7 +62,10 @@ export async function POST(request: Request): Promise<Response> {
 
   const format = body.format;
   if (!isFormat(format)) {
-    return NextResponse.json({ error: `format must be one of the four post formats` }, { status: 400 });
+    return NextResponse.json(
+      { error: `format must be one of the four post formats` },
+      { status: 400 },
+    );
   }
 
   const platform = String(body.platform ?? "").trim();
@@ -77,7 +80,10 @@ export async function POST(request: Request): Promise<Response> {
   // than saying no.
   if (adapt && !isOwner(user)) {
     return NextResponse.json(
-      { error: "Adapting copy spends money, which is the owner's to spend. Promote verbatim instead." },
+      {
+        error:
+          "Adapting copy spends money, which is the owner's to spend. Promote verbatim instead.",
+      },
       { status: 403 },
     );
   }

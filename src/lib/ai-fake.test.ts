@@ -28,7 +28,15 @@ import { SCREENING_JSON_SCHEMA } from "./screening/prompt";
  * Pure: no database, no client, no environment beyond the one env test below.
  */
 
-const KINDS: FakeResponseKind[] = ["ideas", "adapt", "analysis", "screening", "outline", "titles", "script"];
+const KINDS: FakeResponseKind[] = [
+  "ideas",
+  "adapt",
+  "analysis",
+  "screening",
+  "outline",
+  "titles",
+  "script",
+];
 
 test("every canned payload validates against the schema it answers", () => {
   // The same check the fake runs per call, but against the repo's real schemas
@@ -135,8 +143,14 @@ test("the validator catches the mistakes a hand-written payload actually makes",
   assert.throws(() => validate({ score: -1, tags: ["a", "b"] }, schema), /below minimum/);
   assert.throws(() => validate({ score: 1, tags: ["a"] }, schema), /minimum 2/);
   assert.throws(() => validate({ score: 1, tags: [1, 2] }, schema), /expected a string/);
-  assert.throws(() => validate({ score: 1, tags: ["a", "b"], format: "essay" }, schema), /is not one of/);
-  assert.throws(() => validate({ score: 1, tags: ["a", "b"], extra: 1 }, schema), /not in the schema/);
+  assert.throws(
+    () => validate({ score: 1, tags: ["a", "b"], format: "essay" }, schema),
+    /is not one of/,
+  );
+  assert.throws(
+    () => validate({ score: 1, tags: ["a", "b"], extra: 1 }, schema),
+    /not in the schema/,
+  );
   assert.throws(() => validate({ score: 1, tags: "a,b" }, schema), /expected an array/);
 });
 
@@ -145,7 +159,15 @@ test("the validator names where it failed", () => {
     () =>
       validate(
         { ideas: [{ title: "ok" }, { title: 7 }] },
-        { type: "object", properties: { ideas: { type: "array", items: { type: "object", properties: { title: { type: "string" } } } } } },
+        {
+          type: "object",
+          properties: {
+            ideas: {
+              type: "array",
+              items: { type: "object", properties: { title: { type: "string" } } },
+            },
+          },
+        },
       ),
     /\$\.ideas\[1\]\.title/,
   );
@@ -179,7 +201,11 @@ test("the usage figures exercise the arithmetic they were chosen for", () => {
 test("a grounded call reports three distinct search queries", () => {
   // Three is a price, not a decoration: $14/1,000 per query, on top of tokens.
   assert.equal(WEB_SEARCH_QUERIES.length, 3);
-  assert.equal(new Set(WEB_SEARCH_QUERIES).size, 3, "duplicates would make the union assertion vacuous");
+  assert.equal(
+    new Set(WEB_SEARCH_QUERIES).size,
+    3,
+    "duplicates would make the union assertion vacuous",
+  );
 });
 
 test("the fake is enabled by the flag, or by a keyless test run", () => {
@@ -205,7 +231,7 @@ test("the fake is enabled by the flag, or by a keyless test run", () => {
     assert.equal(fakeGeminiEnabled(), true, "the flag is explicit and wins");
 
     process.env.GEMINI_FAKE = "0";
-    assert.equal(fakeGeminiEnabled(), false, "only \"1\" turns it on");
+    assert.equal(fakeGeminiEnabled(), false, 'only "1" turns it on');
   } finally {
     restore("GEMINI_FAKE", GEMINI_FAKE);
     restore("GEMINI_API_KEY", GEMINI_API_KEY);

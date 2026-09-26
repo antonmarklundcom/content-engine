@@ -8,7 +8,12 @@ import { analyzeVideo } from "@/lib/analysis/run";
 import { isOwner } from "@/lib/auth/roles";
 import { getSession } from "@/lib/auth/session";
 import { DEFAULT_MODEL } from "@/lib/analysis/pricing";
-import { estimateAnalysisCostUsd, formatUsd, SpendCapExceededError, withSpendCap } from "@/lib/spend";
+import {
+  estimateAnalysisCostUsd,
+  formatUsd,
+  SpendCapExceededError,
+  withSpendCap,
+} from "@/lib/spend";
 import { ingestUrl } from "@/lib/ingest";
 import { BULK_INGEST_LIMIT } from "@/lib/ingest/limits";
 import { upsertVideoFromMetadata } from "@/lib/ingest/store";
@@ -69,7 +74,13 @@ export async function submitIngest(
       const words = wordCount(transcriptText);
       await db
         .insert(transcripts)
-        .values({ videoId: video.id, language: null, source: "manual", wordCount: words, content: transcriptText })
+        .values({
+          videoId: video.id,
+          language: null,
+          source: "manual",
+          wordCount: words,
+          content: transcriptText,
+        })
         .onConflictDoUpdate({
           target: transcripts.videoId,
           set: { source: "manual", wordCount: words, content: transcriptText },

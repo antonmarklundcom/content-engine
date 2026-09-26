@@ -42,7 +42,7 @@ test("salvages one object out of surrounding prose", () => {
 });
 
 test("brace matching is not confused by braces inside strings", () => {
-  const tricky = { ...VALID, summary: 'It uses a } and a { in quotes' };
+  const tricky = { ...VALID, summary: "It uses a } and a { in quotes" };
   const r = parseAnalysisResponse(`prose ${JSON.stringify(tricky)} more prose`);
   assert.ok(r.ok);
   assert.equal(r.payload.summary, "It uses a } and a { in quotes");

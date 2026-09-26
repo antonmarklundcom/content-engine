@@ -112,7 +112,12 @@ test("a grounded call costs its tokens plus its queries", () => {
 });
 
 test("an unknown GEMINI_MODEL bills at the Pro rate rather than free", () => {
-  const usage = { inputTokens: 1_000, outputTokens: 1_000, cacheReadTokens: 0, cacheWriteTokens: 0 };
+  const usage = {
+    inputTokens: 1_000,
+    outputTokens: 1_000,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+  };
   assert.equal(
     messageCostUsd(usage, 0, "gemini-not-shipped-yet"),
     messageCostUsd(usage, 0, "gemini-3.1-pro-preview"),

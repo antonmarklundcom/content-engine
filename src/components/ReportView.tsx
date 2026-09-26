@@ -21,7 +21,10 @@ export function ReportView({ report, locale }: { report: SavedReport; locale: Lo
   return (
     <article className="mt-6 flex flex-col gap-8">
       <p className="text-xs text-[var(--color-ink-muted)]">
-        {t("report.createdAt", { date: formatDate(report.createdAt, locale), days: report.periodDays })}
+        {t("report.createdAt", {
+          date: formatDate(report.createdAt, locale),
+          days: report.periodDays,
+        })}
         {report.costUsd > 0 ? ` · ${t("report.cost", { cost: formatUsd(report.costUsd) })}` : ""}
       </p>
 
@@ -39,14 +42,19 @@ export function ReportView({ report, locale }: { report: SavedReport; locale: Lo
             {body.ideas.map((idea, i) => (
               <li key={i} className="surface-border surface-card flex flex-col gap-2 p-4">
                 <h3 className="font-medium leading-snug text-[var(--color-ink)]">{idea.title}</h3>
-                <p className="text-sm leading-relaxed text-[var(--color-ink-muted)]">{idea.angle}</p>
+                <p className="text-sm leading-relaxed text-[var(--color-ink-muted)]">
+                  {idea.angle}
+                </p>
                 {idea.basedOnVideoIds.length > 0 && (
                   <p className="text-xs text-[var(--color-ink-muted)]">
                     {t("report.basedOn")}:{" "}
                     {idea.basedOnVideoIds.map((id, n) => (
                       <span key={id}>
                         {n > 0 ? ", " : ""}
-                        <Link href={`/youtube/video/${id}`} className="underline hover:text-[var(--color-accent)]">
+                        <Link
+                          href={`/youtube/video/${id}`}
+                          className="underline hover:text-[var(--color-accent)]"
+                        >
                           {titles.get(id) ?? `#${id}`}
                         </Link>
                       </span>
@@ -54,7 +62,10 @@ export function ReportView({ report, locale }: { report: SavedReport; locale: Lo
                   </p>
                 )}
                 <div>
-                  <Link href={writeScriptHref(report.brandId, idea.title, idea.basedOnVideoIds)} className={LINK}>
+                  <Link
+                    href={writeScriptHref(report.brandId, idea.title, idea.basedOnVideoIds)}
+                    className={LINK}
+                  >
                     {t("report.writeScript")}
                   </Link>
                 </div>
@@ -79,7 +90,9 @@ export function ReportView({ report, locale }: { report: SavedReport; locale: Lo
                   </span>
                 </div>
                 <p className="text-xs text-[var(--color-ink-muted)]">{w.channel}</p>
-                <p className="text-sm leading-relaxed text-[var(--color-ink-muted)]">{w.whyItWorked}</p>
+                <p className="text-sm leading-relaxed text-[var(--color-ink-muted)]">
+                  {w.whyItWorked}
+                </p>
                 <div>
                   <Link href={`/youtube/video/${w.videoId}`} className={LINK}>
                     {t("report.openVideo")}

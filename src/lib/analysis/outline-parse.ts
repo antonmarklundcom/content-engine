@@ -7,8 +7,7 @@ import type { OutlinePayload } from "./contract";
  */
 
 export type OutlineParseResult =
-  | { ok: true; payload: OutlinePayload }
-  | { ok: false; error: string };
+  { ok: true; payload: OutlinePayload } | { ok: false; error: string };
 
 export function parseOutlineResponse(raw: string): OutlineParseResult {
   const text = stripFences(raw).trim();

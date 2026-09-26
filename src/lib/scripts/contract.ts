@@ -156,8 +156,10 @@ class Checker {
     if (min !== undefined && max !== undefined && min === max && value.length !== min) {
       this.fail(path, `must have exactly ${min} items, has ${value.length}`);
     } else {
-      if (min !== undefined && value.length < min) this.fail(path, `must have at least ${min} items, has ${value.length}`);
-      if (max !== undefined && value.length > max) this.fail(path, `must have at most ${max} items, has ${value.length}`);
+      if (min !== undefined && value.length < min)
+        this.fail(path, `must have at least ${min} items, has ${value.length}`);
+      if (max !== undefined && value.length > max)
+        this.fail(path, `must have at most ${max} items, has ${value.length}`);
     }
     value.forEach((item, i) => each(item, `${path}[${i}]`));
     return value;
@@ -170,7 +172,10 @@ class Checker {
   oneOf(value: unknown, path: string, allowed: readonly string[]): void {
     if (value === undefined) return;
     if (typeof value !== "string" || !allowed.includes(value)) {
-      this.fail(path, `must be one of ${allowed.map((a) => `"${a}"`).join(", ")}, got ${describe(value)}`);
+      this.fail(
+        path,
+        `must be one of ${allowed.map((a) => `"${a}"`).join(", ")}, got ${describe(value)}`,
+      );
     }
   }
 }
@@ -178,12 +183,19 @@ class Checker {
 function describe(value: unknown): string {
   if (value === null) return "null";
   if (Array.isArray(value)) return "a list";
-  if (typeof value === "string") return value.length > 40 ? `"${value.slice(0, 37)}..."` : `"${value}"`;
+  if (typeof value === "string")
+    return value.length > 40 ? `"${value.slice(0, 37)}..."` : `"${value}"`;
   if (typeof value === "object") return "an object";
   return `${typeof value} ${String(value)}`;
 }
 
-const BROLL_FIELDS = ["spokenLine", "description", "imagePrompt", "videoPrompt", "aspectRatio"] as const;
+const BROLL_FIELDS = [
+  "spokenLine",
+  "description",
+  "imagePrompt",
+  "videoPrompt",
+  "aspectRatio",
+] as const;
 
 function checkBroll(c: Checker, value: unknown, path: string): void {
   const shot = c.object(value, path, BROLL_FIELDS);
@@ -239,7 +251,10 @@ export function validateScriptBody(body: unknown): ValidationResult {
   if (root.targetMinutes !== undefined) {
     const m = root.targetMinutes;
     if (typeof m !== "number" || !Number.isFinite(m) || m <= 0 || m > 60) {
-      c.fail("body.targetMinutes", `must be a number of minutes between 0 and 60, got ${describe(m)}`);
+      c.fail(
+        "body.targetMinutes",
+        `must be a number of minutes between 0 and 60, got ${describe(m)}`,
+      );
     }
   }
 
@@ -288,10 +303,14 @@ export function validateScriptBody(body: unknown): ValidationResult {
       sourceIds.add(o.id);
     }
     c.text(o.claim, `${p}.claim`);
-    if (o.url !== undefined && !isHttpUrl(o.url)) c.fail(`${p}.url`, `must be an http(s) URL, got ${describe(o.url)}`);
+    if (o.url !== undefined && !isHttpUrl(o.url))
+      c.fail(`${p}.url`, `must be an http(s) URL, got ${describe(o.url)}`);
     c.text(o.title, `${p}.title`, { allowEmpty: true });
     if (o.verifyBeforeRecording !== undefined && typeof o.verifyBeforeRecording !== "boolean") {
-      c.fail(`${p}.verifyBeforeRecording`, `must be true or false, got ${describe(o.verifyBeforeRecording)}`);
+      c.fail(
+        `${p}.verifyBeforeRecording`,
+        `must be true or false, got ${describe(o.verifyBeforeRecording)}`,
+      );
     }
   });
 
@@ -299,7 +318,14 @@ export function validateScriptBody(body: unknown): ValidationResult {
     root.sections,
     "body.sections",
     (item, p) => {
-      const s = c.object(item, p, ["heading", "spokenLines", "talkingPoints", "onScreenText", "broll", "sourceIds"]);
+      const s = c.object(item, p, [
+        "heading",
+        "spokenLines",
+        "talkingPoints",
+        "onScreenText",
+        "broll",
+        "sourceIds",
+      ]);
       if (!s) return;
       c.text(s.heading, `${p}.heading`);
       c.texts(s.spokenLines, `${p}.spokenLines`, { min: 1 });

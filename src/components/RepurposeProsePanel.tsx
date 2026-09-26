@@ -36,7 +36,11 @@ export function RepurposeProsePanel({
           {current && (
             <>
               <PublishCopyButton text={current.content} />
-              <PublishDownloadButton text={current.content} filename={filename} label={t("publish.download")} />
+              <PublishDownloadButton
+                text={current.content}
+                filename={filename}
+                label={t("publish.download")}
+              />
             </>
           )}
           {canGenerate && (
@@ -51,10 +55,16 @@ export function RepurposeProsePanel({
                     const r = await makeProse(scriptId, kind);
                     if (r.ok) {
                       setCurrent({ content: r.content, writtenAt: new Date().toLocaleString() });
-                      setNote({ ok: true, text: t("publish.cost", { cost: r.costUsd.toFixed(4) }) });
+                      setNote({
+                        ok: true,
+                        text: t("publish.cost", { cost: r.costUsd.toFixed(4) }),
+                      });
                     } else setNote({ ok: false, text: r.error });
                   } catch (error) {
-                    setNote({ ok: false, text: error instanceof Error ? error.message : t("studio.error.generic") });
+                    setNote({
+                      ok: false,
+                      text: error instanceof Error ? error.message : t("studio.error.generic"),
+                    });
                   }
                 })
               }
@@ -64,16 +74,25 @@ export function RepurposeProsePanel({
           )}
         </div>
       </div>
-      {pending && <p className="text-xs text-[var(--color-ink-muted)]">{t("publish.generating")}</p>}
+      {pending && (
+        <p className="text-xs text-[var(--color-ink-muted)]">{t("publish.generating")}</p>
+      )}
       {note && (
-        <p role="status" className={`text-xs ${note.ok ? "text-[var(--color-ink-muted)]" : "text-[var(--color-danger)]"}`}>
+        <p
+          role="status"
+          className={`text-xs ${note.ok ? "text-[var(--color-ink-muted)]" : "text-[var(--color-danger)]"}`}
+        >
           {note.text}
         </p>
       )}
       {current ? (
         <>
-          <p className="text-xs text-[var(--color-ink-muted)]">{t("publish.repurpose.writtenAt", { date: current.writtenAt })}</p>
-          <pre className="max-h-[32rem] overflow-auto text-sm whitespace-pre-wrap text-[var(--color-ink)]">{current.content}</pre>
+          <p className="text-xs text-[var(--color-ink-muted)]">
+            {t("publish.repurpose.writtenAt", { date: current.writtenAt })}
+          </p>
+          <pre className="max-h-[32rem] overflow-auto text-sm whitespace-pre-wrap text-[var(--color-ink)]">
+            {current.content}
+          </pre>
         </>
       ) : (
         <p className="text-sm text-[var(--color-ink-muted)]">{t("publish.repurpose.none")}</p>

@@ -14,7 +14,13 @@ function isWebUrl(value: string): boolean {
 }
 
 /** An idea's citations: each claim, with its sources as links (PLAN.md §6.S6). */
-export function IdeaCitations({ citations, locale }: { citations: Citation[] | null; locale: Locale }) {
+export function IdeaCitations({
+  citations,
+  locale,
+}: {
+  citations: Citation[] | null;
+  locale: Locale;
+}) {
   if (!citations?.length) return null;
   const t = translator(locale);
   return (

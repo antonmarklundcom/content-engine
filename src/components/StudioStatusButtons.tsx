@@ -13,14 +13,24 @@ import { STUDIO_BUTTON } from "./StudioStyles";
  * Any move is allowed, backwards included; the bridge stamps and clears
  * `recorded_at` / `posted_at` to match.
  */
-export function StudioStatusButtons({ scriptId, status }: { scriptId: number; status: ScriptStatus }) {
+export function StudioStatusButtons({
+  scriptId,
+  status,
+}: {
+  scriptId: number;
+  status: ScriptStatus;
+}) {
   const t = useTranslator();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [failed, setFailed] = useState(false);
 
   return (
-    <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t("studio.filter.status")}>
+    <div
+      className="flex flex-wrap items-center gap-2"
+      role="group"
+      aria-label={t("studio.filter.status")}
+    >
       {STUDIO_STATUSES.map((s) => (
         <button
           key={s}
@@ -43,7 +53,9 @@ export function StudioStatusButtons({ scriptId, status }: { scriptId: number; st
           {t(STATUS_LABEL[s])}
         </button>
       ))}
-      {failed && <span className="text-xs text-[var(--color-danger)]">{t("studio.error.generic")}</span>}
+      {failed && (
+        <span className="text-xs text-[var(--color-danger)]">{t("studio.error.generic")}</span>
+      )}
     </div>
   );
 }

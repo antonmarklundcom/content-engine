@@ -65,8 +65,7 @@ export async function fetchTrack(
         errors.push(`${attempt.label}: empty body`);
         continue;
       }
-      const segments =
-        attempt.label === "json3" ? parseJson3(body) : parseTimedTextXml(body);
+      const segments = attempt.label === "json3" ? parseJson3(body) : parseTimedTextXml(body);
       if (segments.length > 0) return segments;
       errors.push(`${attempt.label}: parsed to 0 segments`);
     } catch (err) {

@@ -85,7 +85,10 @@ test("both brand lists come back name-ordered", async () => {
   await seedBrands();
 
   const names = (await listAllBrands()).map((b) => b.name);
-  assert.deepEqual(names, [...names].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)));
+  assert.deepEqual(
+    names,
+    [...names].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)),
+  );
 });
 
 test("getBrand returns null for a brand that does not exist", async () => {

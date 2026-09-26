@@ -18,7 +18,9 @@ export function ResearchChannelList({
   const t = translator(locale);
 
   if (channels.length === 0) {
-    return <p className="mt-4 text-sm text-[var(--color-ink-muted)]">{t("research.channelsEmpty")}</p>;
+    return (
+      <p className="mt-4 text-sm text-[var(--color-ink-muted)]">{t("research.channelsEmpty")}</p>
+    );
   }
 
   return (
@@ -38,7 +40,10 @@ export function ResearchChannelList({
               {channel.title}
             </a>
             <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
-              {t("research.channelStats", { videos: channel.videoCount, analysed: channel.analyzedCount })}{" "}
+              {t("research.channelStats", {
+                videos: channel.videoCount,
+                analysed: channel.analyzedCount,
+              })}{" "}
               ·{" "}
               {channel.medianViews === null
                 ? t("research.noMedian")

@@ -118,7 +118,9 @@ test("a real run submits a batch, collects it, and bills at the batch rate", asy
   assert.equal(result.skipped, null);
   const created = fake.callsOf("batches.create");
   assert.equal(created.length, 1, "one batch, not one call per video");
-  const submittedRequests = (created[0].params as { src: Array<{ metadata: Record<string, string> }> }).src;
+  const submittedRequests = (
+    created[0].params as { src: Array<{ metadata: Record<string, string> }> }
+  ).src;
   assert.deepEqual(
     submittedRequests.map((r) => r.metadata["custom_id"]).sort(),
     [`video-${first.id}`, `video-${second.id}`].sort(),
@@ -193,7 +195,11 @@ test("an open batch is counted against the cap before it is collected", async ()
   fake.controls.batchState = JobState.JOB_STATE_SUCCEEDED;
   const collected = await pollSources({ wait: false });
   assert.equal(collected.collected.length, 1);
-  assert.equal(collected.spend.after.committedUsd, 0, "collecting moves it from committed to billed");
+  assert.equal(
+    collected.spend.after.committedUsd,
+    0,
+    "collecting moves it from committed to billed",
+  );
   assert.ok((await monthToDateUsd()) > 0);
 });
 
@@ -217,7 +223,11 @@ test("re-collecting a batch writes nothing and charges nothing a second time", a
 
   assert.equal(again.collected[0]?.outcome.alreadyWritten, 1);
   assert.equal(again.collected[0]?.outcome.succeeded, 0);
-  assert.equal((await db.select().from(schema.analyses)).length, 1, "analyses are append-only — no duplicate");
+  assert.equal(
+    (await db.select().from(schema.analyses)).length,
+    1,
+    "analyses are append-only — no duplicate",
+  );
   assert.equal(await monthToDateUsd(), billedOnce, "and no second charge for one purchase");
   assert.equal(fake.callsOf("batches.create").length, 1);
 });

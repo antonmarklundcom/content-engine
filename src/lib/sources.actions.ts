@@ -56,7 +56,10 @@ export async function addSource(
 export async function renameSource(id: number, formData: FormData): Promise<void> {
   const title = String(formData.get("title") ?? "").trim();
   if (!title) return;
-  await db.update(sources).set({ title: title.slice(0, 512) }).where(eq(sources.id, id));
+  await db
+    .update(sources)
+    .set({ title: title.slice(0, 512) })
+    .where(eq(sources.id, id));
   revalidatePath("/youtube/sources");
 }
 

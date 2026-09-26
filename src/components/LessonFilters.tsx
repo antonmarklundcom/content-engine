@@ -55,7 +55,10 @@ export function LessonFilters({
         {t("lessons.filter.apply")}
       </button>
       {(brand || kind || q) && (
-        <a href="/lessons" className="px-2 py-2 text-sm text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]">
+        <a
+          href="/lessons"
+          className="px-2 py-2 text-sm text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+        >
           {t("lessons.filter.clear")}
         </a>
       )}

@@ -37,7 +37,8 @@ export const COMPETITOR_REPORT_JSON_SCHEMA = {
           videoId: { type: "integer", description: "The id given in the list, unchanged." },
           whyItWorked: {
             type: "string",
-            description: "One or two sentences: the hook, format or promise that made it beat its channel.",
+            description:
+              "One or two sentences: the hook, format or promise that made it beat its channel.",
           },
         },
         required: ["videoId", "whyItWorked"],
@@ -46,7 +47,10 @@ export const COMPETITOR_REPORT_JSON_SCHEMA = {
     patterns: {
       type: "array",
       maxItems: REPORT_MAX_PATTERNS,
-      items: { type: "string", description: "A pattern shared by several winners: hook, format or title shape." },
+      items: {
+        type: "string",
+        description: "A pattern shared by several winners: hook, format or title shape.",
+      },
     },
     ideas: {
       type: "array",
@@ -54,10 +58,14 @@ export const COMPETITOR_REPORT_JSON_SCHEMA = {
       items: {
         type: "object",
         properties: {
-          title: { type: "string", description: "A working title for Anton's own video, under 70 characters." },
+          title: {
+            type: "string",
+            description: "A working title for Anton's own video, under 70 characters.",
+          },
           angle: {
             type: "string",
-            description: "What Anton's video does that the competitors' did not: his own angle, one or two sentences.",
+            description:
+              "What Anton's video does that the competitors' did not: his own angle, one or two sentences.",
           },
           basedOnVideoIds: {
             type: "array",
@@ -125,8 +133,12 @@ const str = (v: unknown): string => (typeof v === "string" ? v.trim() : "");
  * punctuation) is dropped too — the report is for Anton's angles, not copies.
  * A report with no summary, or nothing left in either list, is refused.
  */
-export function validateCompetitorReport(raw: unknown, videos: ReportInputVideo[]): CompetitorReport {
-  if (typeof raw !== "object" || raw === null) throw new InvalidReportError("The report is not a JSON object.");
+export function validateCompetitorReport(
+  raw: unknown,
+  videos: ReportInputVideo[],
+): CompetitorReport {
+  if (typeof raw !== "object" || raw === null)
+    throw new InvalidReportError("The report is not a JSON object.");
   const r = raw as Record<string, unknown>;
   const byId = new Map(videos.map((v) => [v.videoId, v]));
   const theirTitles = new Set(videos.map((v) => fold(v.title)));

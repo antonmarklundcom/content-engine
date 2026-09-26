@@ -25,7 +25,15 @@ export function QuestionMineButton({ brandId }: { brandId: string }) {
             setResult(null);
             const res = await mineQuestionsAction(brandId);
             if (res.ok) {
-              setResult({ tone: "success", text: t("questions.mined", { comments: res.comments, videos: res.videos, inserted: res.inserted, updated: res.updated }) });
+              setResult({
+                tone: "success",
+                text: t("questions.mined", {
+                  comments: res.comments,
+                  videos: res.videos,
+                  inserted: res.inserted,
+                  updated: res.updated,
+                }),
+              });
               router.refresh();
             } else {
               setResult({ tone: "error", text: res.error });

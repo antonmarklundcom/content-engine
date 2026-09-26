@@ -50,7 +50,11 @@ export async function listCompetitorReports(brandId: string, limit = 20): Promis
 }
 
 export async function getCompetitorReport(id: number): Promise<SavedReport | null> {
-  const [row] = await db.select().from(competitorReports).where(eq(competitorReports.id, id)).limit(1);
+  const [row] = await db
+    .select()
+    .from(competitorReports)
+    .where(eq(competitorReports.id, id))
+    .limit(1);
   return row ? toSaved(row) : null;
 }
 

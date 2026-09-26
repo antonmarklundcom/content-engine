@@ -35,7 +35,9 @@ async function main(): Promise<void> {
   // Committed is the half of the picture spend_log cannot see (PR-26): batches
   // submitted and not yet collected. It is normally 0 outside a poll window.
   console.log(`  Committed  ${formatUsd(status.committedUsd)}   (open batches, not yet collected)`);
-  console.log(`  Projected  ${formatUsd(status.projectedUsd)}   (what the cap is measured against)`);
+  console.log(
+    `  Projected  ${formatUsd(status.projectedUsd)}   (what the cap is measured against)`,
+  );
   console.log(`  Cap        ${formatUsd(status.capUsd)}   (MONTHLY_SPEND_CAP_USD)`);
   console.log(`  Remaining  ${formatUsd(status.remainingUsd)}`);
   console.log(`  ${meter(status.fraction)} ${Math.round(status.fraction * 100)}%`);

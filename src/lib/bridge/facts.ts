@@ -39,7 +39,8 @@ function clean(input: FactInput): CleanFact {
   if (!claim) throw new InvalidFactError("A fact needs a claim.");
   const sourceUrl = input.sourceUrl?.trim() || null;
   if (sourceUrl) {
-    if (sourceUrl.length > 1024) throw new InvalidFactError("The source URL is longer than 1024 characters.");
+    if (sourceUrl.length > 1024)
+      throw new InvalidFactError("The source URL is longer than 1024 characters.");
     let protocol = "";
     try {
       protocol = new URL(sourceUrl).protocol;
@@ -111,7 +112,9 @@ export async function listFacts(brandId: string): Promise<Fact[]> {
 }
 
 /** `listFacts`, grouped by topic in topic order. */
-export async function listFactsByTopic(brandId: string): Promise<Array<{ topic: string; facts: Fact[] }>> {
+export async function listFactsByTopic(
+  brandId: string,
+): Promise<Array<{ topic: string; facts: Fact[] }>> {
   const groups: Array<{ topic: string; facts: Fact[] }> = [];
   for (const fact of await listFacts(brandId)) {
     const last = groups.at(-1);
@@ -126,7 +129,9 @@ export async function listFactsByTopic(brandId: string): Promise<Array<{ topic: 
  * they were posted. Two reads (the posted scripts' source URLs, the brand's
  * sourced facts), then the pure rule.
  */
-export async function brandScriptsNeedingCorrection(brandId: string): Promise<ScriptNeedingCorrection[]> {
+export async function brandScriptsNeedingCorrection(
+  brandId: string,
+): Promise<ScriptNeedingCorrection[]> {
   const [posted, sheet] = await Promise.all([
     db
       .select({
@@ -146,7 +151,12 @@ export async function brandScriptsNeedingCorrection(brandId: string): Promise<Sc
       .where(and(eq(scripts.brandId, brandId), eq(scripts.status, "posted")))
       .orderBy(desc(scripts.postedAt)),
     db
-      .select({ id: facts.id, claim: facts.claim, sourceUrl: facts.sourceUrl, updatedAt: facts.updatedAt })
+      .select({
+        id: facts.id,
+        claim: facts.claim,
+        sourceUrl: facts.sourceUrl,
+        updatedAt: facts.updatedAt,
+      })
       .from(facts)
       .where(and(eq(facts.brandId, brandId), sql`${facts.sourceUrl} is not null`)),
   ]);

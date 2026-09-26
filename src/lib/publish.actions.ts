@@ -50,20 +50,29 @@ function message(error: unknown): string {
 }
 
 /** The script, its valid body and its brand — or the reason there is none. */
-async function load(id: number): Promise<{ row: Script; input: RepurposeInput } | { error: string }> {
+async function load(
+  id: number,
+): Promise<{ row: Script; input: RepurposeInput } | { error: string }> {
   const row = await getScript(id);
   if (!row) return { error: "That script no longer exists." };
-  if (!validateScriptBody(row.body).ok) return { error: "This script's body does not match the contract; fix it in the editor first." };
+  if (!validateScriptBody(row.body).ok)
+    return { error: "This script's body does not match the contract; fix it in the editor first." };
   const brand = await getBrand(row.brandId);
   if (!brand) return { error: `The brand "${row.brandId}" no longer exists.` };
-  return { row, input: { brand, title: row.title, youtubeUrl: row.youtubeUrl, body: row.body as ScriptBodyV1 } };
+  return {
+    row,
+    input: { brand, title: row.title, youtubeUrl: row.youtubeUrl, body: row.body as ScriptBodyV1 },
+  };
 }
 
 /**
  * Save the published video's URL. A URL moves the script to `posted` (idea 6);
  * an empty one clears the URL and leaves the status alone.
  */
-export async function savePublishUrl(id: number, url: string): Promise<ActionResult<{ script: Script }>> {
+export async function savePublishUrl(
+  id: number,
+  url: string,
+): Promise<ActionResult<{ script: Script }>> {
   await requireUser();
   assertId(id);
   const trimmed = String(url ?? "").trim();
@@ -77,7 +86,9 @@ export async function savePublishUrl(id: number, url: string): Promise<ActionRes
 }
 
 /** Generate the post-recording pack and store it (replacing any earlier one). */
-export async function generatePack(id: number): Promise<ActionResult<{ pack: PublishPack; costUsd: number }>> {
+export async function generatePack(
+  id: number,
+): Promise<ActionResult<{ pack: PublishPack; costUsd: number }>> {
   await requireOwner("generate a publish pack");
   assertId(id);
   const loaded = await load(id);
@@ -93,7 +104,10 @@ export async function generatePack(id: number): Promise<ActionResult<{ pack: Pub
 }
 
 /** Save a pack edited on the page. Checked field by field; nothing is saved if any is wrong. */
-export async function savePublishPack(id: number, pack: unknown): Promise<ActionResult<{ pack: PublishPack }>> {
+export async function savePublishPack(
+  id: number,
+  pack: unknown,
+): Promise<ActionResult<{ pack: PublishPack }>> {
   await requireUser();
   assertId(id);
   const verdict = validatePublishPack(pack);
@@ -108,7 +122,9 @@ export async function savePublishPack(id: number, pack: unknown): Promise<Action
  * Cut 3–5 shorts from a script. Each is saved as a new draft script linked by
  * `parent_script_id`; shorts the contract rejected are counted, not saved.
  */
-export async function makeShorts(id: number): Promise<ActionResult<{ ids: number[]; rejected: number; costUsd: number }>> {
+export async function makeShorts(
+  id: number,
+): Promise<ActionResult<{ ids: number[]; rejected: number; costUsd: number }>> {
   await requireOwner("make shorts");
   assertId(id);
   const loaded = await load(id);
@@ -118,7 +134,13 @@ export async function makeShorts(id: number): Promise<ActionResult<{ ids: number
     const ids: number[] = [];
     for (const body of shorts) {
       const created = await createScript(
-        { brandId: loaded.row.brandId, ideaId: loaded.row.ideaId, title: body.chosenTitle, language: body.language, body },
+        {
+          brandId: loaded.row.brandId,
+          ideaId: loaded.row.ideaId,
+          title: body.chosenTitle,
+          language: body.language,
+          body,
+        },
         validateScriptBody,
       );
       await setScriptParent(created.id, id);
@@ -127,7 +149,10 @@ export async function makeShorts(id: number): Promise<ActionResult<{ ids: number
     revalidateFor(id);
     return { ok: true, ids, rejected: rejected.length, costUsd };
   } catch (error) {
-    const errors = error && typeof error === "object" && "errors" in error ? (error as { errors: string[] }).errors : undefined;
+    const errors =
+      error && typeof error === "object" && "errors" in error
+        ? (error as { errors: string[] }).errors
+        : undefined;
     return { ok: false, error: message(error), ...(errors?.length ? { errors } : {}) };
   }
 }
@@ -139,7 +164,8 @@ export async function makeProse(
 ): Promise<ActionResult<{ derivativeId: number; content: string; costUsd: number }>> {
   await requireOwner(kind === "blog" ? "write a blog post" : "write a newsletter blurb");
   assertId(id);
-  if (!(SCRIPT_DERIVATIVE_KINDS as readonly string[]).includes(kind)) return { ok: false, error: `Unknown kind "${String(kind)}".` };
+  if (!(SCRIPT_DERIVATIVE_KINDS as readonly string[]).includes(kind))
+    return { ok: false, error: `Unknown kind "${String(kind)}".` };
   const loaded = await load(id);
   if ("error" in loaded) return { ok: false, error: loaded.error };
   try {

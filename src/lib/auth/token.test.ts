@@ -1,11 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import {
-  createSessionToken,
-  SESSION_TTL_MS,
-  timingSafeEqual,
-  verifySessionToken,
-} from "./token";
+import { createSessionToken, SESSION_TTL_MS, timingSafeEqual, verifySessionToken } from "./token";
 
 const SECRET = "test-secret-value-long-enough";
 

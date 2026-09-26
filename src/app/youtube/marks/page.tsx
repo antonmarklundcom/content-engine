@@ -38,11 +38,7 @@ type SearchParams = { q?: string; type?: string; page?: string };
  * wording would be worse than one that is occasionally out of date. The link
  * goes to the video, where the current text and the star both live.
  */
-export default async function MarksPage({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
+export default async function MarksPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const params = await searchParams;
   const user = await requireUser();
   const locale = await getLocale();
@@ -94,7 +90,8 @@ export default async function MarksPage({
                     {mark.videoTitle}
                   </Link>
                   <span className="text-xs text-[var(--color-ink-muted)]">
-                    <span className="text-[var(--color-warn)]">★</span> {t(TYPE_LABEL[mark.unitType])}
+                    <span className="text-[var(--color-warn)]">★</span>{" "}
+                    {t(TYPE_LABEL[mark.unitType])}
                     {" · "}
                     {formatDate(mark.createdAt, locale)}
                   </span>
