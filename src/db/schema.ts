@@ -646,7 +646,11 @@ export const leases = pgTable("leases", {
 // brand_sources
 // ---------------------------------------------------------------------------
 
-export const BRAND_SOURCE_ROLES = ["competitor", "inspiration"] as const;
+/**
+ * `own` (build 2b, idea 4) marks Anton's own channel for a brand, so the
+ * compare page can put it next to the competitors with the same outlier math.
+ */
+export const BRAND_SOURCE_ROLES = ["competitor", "inspiration", "own"] as const;
 export type BrandSourceRole = (typeof BRAND_SOURCE_ROLES)[number];
 
 /**
@@ -760,6 +764,17 @@ export const scripts = pgTable(
     recordedAt: timestamp("recorded_at"),
     /** When it moved to `posted`. Cleared if it moves back — it describes the current status. */
     postedAt: timestamp("posted_at"),
+    /** The published video, pasted after upload (idea 6). Feeds the post-recording pack. */
+    youtubeUrl: varchar("youtube_url", { length: 512 }),
+    /**
+     * Description, chapters, tags, pinned comment and social captions generated
+     * after recording (idea 6). Shape: `PublishPack` in src/lib/studio/types.ts.
+     */
+    publishPack: jsonb("publish_pack"),
+    /** The thumbnail Anton picked, a path under `media/<id>/thumbnails/` (idea 10). */
+    thumbnailFile: varchar("thumbnail_file", { length: 512 }),
+    /** Soft link to the long script a short was cut from (idea 7). Null for originals. */
+    parentScriptId: integer("parent_script_id"),
   },
   (t) => [
     // The studio list: one brand, one status, most recently edited first.
@@ -911,3 +926,103 @@ export type NewScript = typeof scripts.$inferInsert;
 export type CaptionStatus = Video["captionStatus"];
 export type BatchStatus = Batch["status"];
 export type SourceKind = Source["kind"];
+
+// =============================================================================
+// Build 2b — studio extras (ideas 1–8, 10). Soft links only (§1.4).
+// =============================================================================
+
+/**
+ * Weekly competitor report (idea 1): what took off among a brand's
+ * competitors in a window, why, and ideas for Anton. Body shape:
+ * `CompetitorReport` in src/lib/studio/types.ts.
+ */
+export const competitorReports = pgTable(
+  "competitor_reports",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    brandId: text("brand_id").notNull(),
+    /** Length of the window the report looked at, in days. */
+    periodDays: integer("period_days").notNull(),
+    body: jsonb("body").notNull(),
+    /** What the report cost through the API; 0 in subscription mode (§1.38). */
+    costUsd: numeric("cost_usd", { precision: 10, scale: 6 }).notNull().default("0"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("competitor_reports_brand_idx").on(t.brandId, t.createdAt)],
+);
+
+export const AUDIENCE_QUESTION_STATUSES = ["new", "used", "dismissed"] as const;
+export type AudienceQuestionStatus = (typeof AUDIENCE_QUESTION_STATUSES)[number];
+
+/**
+ * Comment mining (idea 2): a question real viewers ask under competitor
+ * videos, clustered, with how often it came up. A cluster is a topic with
+ * proven demand.
+ */
+export const audienceQuestions = pgTable(
+  "audience_questions",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    brandId: text("brand_id").notNull(),
+    /** The question in one clean sentence, in the audience's language. */
+    question: text("question").notNull(),
+    /** How many comments asked it, across the mined videos. */
+    askCount: integer("ask_count").notNull().default(1),
+    /** Up to five verbatim comments, so the wording can be reused. */
+    examples: jsonb("examples").$type<string[]>().notNull().default([]),
+    /** Soft links to `videos.id` the comments came from. */
+    videoIds: jsonb("video_ids").$type<number[]>().notNull().default([]),
+    status: text("status", { enum: AUDIENCE_QUESTION_STATUSES }).notNull().default("new"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("audience_questions_brand_idx").on(t.brandId, t.status)],
+);
+
+/**
+ * Fact sheet (idea 3): one checked fact with its source and the date it was
+ * last checked. Scripts are given a brand's facts; a fact updated after a
+ * script was posted flags that script as possibly out of date.
+ */
+export const facts = pgTable(
+  "facts",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    brandId: text("brand_id").notNull(),
+    /** Grouping on the fact sheet, e.g. "permanent residency", "closing costs". */
+    topic: text("topic").notNull(),
+    /** The claim as it may be said on camera. */
+    claim: text("claim").notNull(),
+    sourceUrl: varchar("source_url", { length: 1024 }),
+    lastCheckedAt: timestamp("last_checked_at").notNull().defaultNow(),
+    notes: text("notes"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    /** Bumped when the claim or source changes — what the out-of-date check compares. */
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [index("facts_brand_topic_idx").on(t.brandId, t.topic)],
+);
+
+export const SCRIPT_DERIVATIVE_KINDS = ["blog", "newsletter"] as const;
+export type ScriptDerivativeKind = (typeof SCRIPT_DERIVATIVE_KINDS)[number];
+
+/**
+ * Repurposed text made from a script (idea 7). Shorts become their own
+ * `scripts` rows (with `parent_script_id`); prose lands here.
+ */
+export const scriptDerivatives = pgTable(
+  "script_derivatives",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    scriptId: integer("script_id").notNull(),
+    kind: text("kind", { enum: SCRIPT_DERIVATIVE_KINDS }).notNull(),
+    /** Markdown. */
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("script_derivatives_script_idx").on(t.scriptId)],
+);
+
+export type CompetitorReportRow = typeof competitorReports.$inferSelect;
+export type AudienceQuestion = typeof audienceQuestions.$inferSelect;
+export type Fact = typeof facts.$inferSelect;
+export type ScriptDerivative = typeof scriptDerivatives.$inferSelect;
