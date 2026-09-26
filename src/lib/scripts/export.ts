@@ -1,12 +1,13 @@
 import type { AspectRatio, BrollShot, ScriptBodyV1 } from "./contract";
 
 /**
- * The three exports of a script (PLAN.md §5.O8.4): teleprompter Markdown, raw
- * JSON (the body as stored), and the Higgsfield shot list (§1.34). Pure
+ * The exports of a script (PLAN.md §5.O8.4): teleprompter Markdown, raw JSON
+ * (the body as stored), the Higgsfield shot list (§1.34), and the thumbnail
+ * prompts (build 2b, idea 10). Pure
  * functions of the stored row, so the route is a lookup and a switch.
  */
 
-export const EXPORT_FORMATS = ["md", "json", "shots"] as const;
+export const EXPORT_FORMATS = ["md", "json", "shots", "thumbnails"] as const;
 export type ExportFormat = (typeof EXPORT_FORMATS)[number];
 
 export type ExportableScript = {
@@ -195,6 +196,91 @@ export function shotListMarkdown(list: ShotList): string {
       );
     }
     out.push("");
+  }
+  out.push("```json", JSON.stringify(list, null, 2), "```", "");
+  return out.join("\n");
+}
+
+// ---------------------------------------------------------------------------
+// thumbnails (build 2b, idea 10)
+// ---------------------------------------------------------------------------
+
+/** How many images `/higgsfield-thumbnails` makes per concept, so Anton has a choice. */
+export const THUMBNAIL_VARIANTS = 2;
+
+export type ThumbnailPrompt = {
+  /** 1-based, the concept's position in the script. */
+  number: number;
+  description: string;
+  /** The words on the thumbnail; empty for none. */
+  textOverlay: string;
+  /** The concept's background prompt, as written. */
+  imagePrompt: string;
+  /** What to send to Higgsfield: the background plus the text overlay, for a 16:9 thumbnail. */
+  prompt: string;
+  aspectRatio: "16:9";
+  /** The suggested file, `media/<id>/thumbnails/<n>.png`. */
+  file: string;
+  /** One path per variant; the first is `file`. */
+  variants: string[];
+};
+
+export type ThumbnailList = {
+  scriptId: number;
+  title: string;
+  /** Where every file is saved, relative to the repo running Claude Code. */
+  mediaDir: string;
+  variantsPerConcept: number;
+  thumbnails: ThumbnailPrompt[];
+};
+
+function thumbnailPrompt(imagePrompt: string, textOverlay: string): string {
+  const base = imagePrompt.trim().replace(/[.\s]+$/, "");
+  const text = textOverlay.trim();
+  return text
+    ? `${base}. 16:9 YouTube thumbnail, high contrast, one clear subject, large bold legible text overlay reading "${text}" with nothing else written.`
+    : `${base}. 16:9 YouTube thumbnail, high contrast, one clear subject, no text in the image.`;
+}
+
+export function thumbnailList(script: ExportableScript): ThumbnailList {
+  const mediaDir = `media/${script.id}/thumbnails`;
+  return {
+    scriptId: script.id,
+    title: script.body.chosenTitle,
+    mediaDir,
+    variantsPerConcept: THUMBNAIL_VARIANTS,
+    thumbnails: script.body.thumbnailConcepts.map((t, i) => {
+      const n = i + 1;
+      const variants = Array.from({ length: THUMBNAIL_VARIANTS }, (_, v) =>
+        v === 0 ? `${mediaDir}/${n}.png` : `${mediaDir}/${n}-${v + 1}.png`,
+      );
+      return {
+        number: n,
+        description: t.description,
+        textOverlay: t.textOverlay,
+        imagePrompt: t.imagePrompt,
+        prompt: thumbnailPrompt(t.imagePrompt, t.textOverlay),
+        aspectRatio: "16:9",
+        file: variants[0],
+        variants,
+      };
+    }),
+  };
+}
+
+/** The thumbnail prompts, numbered, with the same list as a fenced JSON block for Claude Code. */
+export function thumbnailListMarkdown(list: ThumbnailList): string {
+  const out: string[] = [
+    `# Thumbnails — ${list.title}`,
+    "",
+    `Script ${list.scriptId} · ${list.thumbnails.length} concepts × ${list.variantsPerConcept} variants · 16:9 · save to \`${list.mediaDir}/\``,
+    "",
+  ];
+  for (const t of list.thumbnails) {
+    out.push(`## ${t.number}. ${t.description}`, "");
+    out.push(`- **Text overlay:** ${t.textOverlay ? `"${t.textOverlay}"` : "_none_"}`);
+    out.push(`- **Prompt:** ${t.prompt}`);
+    out.push(`- **Files:** ${t.variants.map((v) => `\`${v}\``).join(", ")}`, "");
   }
   out.push("```json", JSON.stringify(list, null, 2), "```", "");
   return out.join("\n");

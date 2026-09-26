@@ -9,16 +9,21 @@ import {
   shotListMarkdown,
   slugify,
   teleprompterMarkdown,
+  thumbnailList,
+  thumbnailListMarkdown,
   type ExportFormat,
 } from "@/lib/scripts/export";
 
 /**
- * GET /api/scripts/[id]/export?format=md|json|shots (PLAN.md §5.O8.4, §1.34).
+ * GET /api/scripts/[id]/export?format=md|json|shots|thumbnails (PLAN.md §5.O8.4, §1.34).
  *
  * - `md` — teleprompter Markdown.
  * - `json` — the stored body, as is.
  * - `shots` — the Higgsfield shot list as Markdown with the same list as a
  *   fenced JSON block; `&as=json` returns just the JSON.
+ * - `thumbnails` — the three thumbnail concepts as numbered 16:9 prompts with
+ *   their text overlay and target files (build 2b, idea 10), for
+ *   `/higgsfield-thumbnails`; same Markdown + JSON shape, same `&as=json`.
  *
  * Signed-in only; free, so not owner-gated. `&download=1` adds a
  * Content-Disposition with a file name.
@@ -61,6 +66,15 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     }
     return new NextResponse(shotListMarkdown(list), {
       headers: { "content-type": "text/markdown; charset=utf-8", ...disposition(`${name}-shots.md`) },
+    });
+  }
+  if (format === "thumbnails") {
+    const list = thumbnailList(script);
+    if (url.searchParams.get("as") === "json") {
+      return NextResponse.json(list, { headers: disposition(`${name}-thumbnails.json`) });
+    }
+    return new NextResponse(thumbnailListMarkdown(list), {
+      headers: { "content-type": "text/markdown; charset=utf-8", ...disposition(`${name}-thumbnails.md`) },
     });
   }
   return new NextResponse(teleprompterMarkdown(script), {

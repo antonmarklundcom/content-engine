@@ -44,6 +44,9 @@ export default async function ScriptPage({ params }: { params: Promise<{ id: str
           <h2 className="text-sm font-semibold text-[var(--color-ink)]">{t("studio.export.title")}</h2>
           <StudioExports scriptId={row.id} />
           <p className="text-xs text-[var(--color-ink-muted)]">{t("studio.export.higgsfield")}</p>
+          <Link href={`/studio/${row.id}/thumbnails`} className={`${STUDIO_PRIMARY} self-start`}>
+            {t("listing.thumbs.link")}
+          </Link>
         </div>
       </div>
 
