@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Header } from "@/components/Header";
 import { getLocale } from "@/lib/i18n/server";
 import { translator } from "@/lib/i18n";
 
@@ -21,17 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 // build time on a machine with no DATABASE_URL.
 export const dynamic = "force-dynamic";
 
-export default async function YouTubeLayout({ children }: { children: React.ReactNode }) {
-  // lang must follow the chosen locale — it is what a screen reader uses to
-  // pick a pronunciation, and a Swedish UI announced in English is unusable.
-  // (The root layout owns the actual <html> tag; this only scopes the
-  // section's own styling and header.)
-  const locale = await getLocale();
-
-  return (
-    <div data-youtube-section lang={locale} className="min-h-screen antialiased">
-      <Header />
-      {children}
-    </div>
-  );
+export default function YouTubeLayout({ children }: { children: React.ReactNode }) {
+  // The header and <html lang> live in the root layout now (PLAN.md §1.22).
+  return children;
 }
