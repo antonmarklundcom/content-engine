@@ -61,3 +61,7 @@ $0.10, writes real rows (ideas, one analysis, one clip), and prints:
 Paste that output here. If any step says TOO LOW, raising the named constant
 in `src/lib/ai.ts` is the whole fix — they are ceilings for a reservation, and
 being wrong high only makes the cap trip early.
+
+## O8 (2026-09-26) — watcher Routine has no repo source and no connectors
+
+`create_trigger` takes no repository and passed no connectors, so `trig_01JhnXHVNNMNubyxqXc2Kqcj` may fire sessions without the content-engine checkout or the GitHub tools `prompts/_watcher.md` needs. **Ask:** in claude.ai → Routines, open "content-engine lane 2 watcher" and add the repo `antonmarklundcom/content-engine` plus the GitHub connector (model stays `claude-opus-5-5`). Until then S11, S12 and S9 need spawning by hand with `Read prompts/<file>.md in this repo and execute it.`
