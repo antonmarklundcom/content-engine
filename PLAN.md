@@ -584,14 +584,14 @@ One line per phase; detail in `docs/log/<id>.md`.
 | O5 | #15 | `docs/log/o5.md` | merged — live smoke handed off |
 | O6 | #18 | `docs/log/o6.md` | merged |
 | S5 | (open) | `docs/log/s5.md` | in PR |
-| S6 | (open) | `docs/log/s6.md` | in PR |
+| S6 | #25 | `docs/log/s6.md` | merged |
 | O7 | #20 | `docs/log/o7.md` | merged |
 | O8 | #22 | `docs/log/o8.md` | merged |
 | S7 | — | — | dropped (§1.28) |
-| S10 | | `docs/log/s10.md` | not started |
+| S10 | (open) | `docs/log/s10.md` | in PR |
 | S11 | | `docs/log/s11.md` | not started |
 | S12 | | `docs/log/s12.md` | not started |
-| S8 | (open) | `docs/log/s8.md` | in PR |
+| S8 | #24 | `docs/log/s8.md` | merged |
 | S9 | | `docs/log/s9.md` | not started |
 
 ## §10. Backlog

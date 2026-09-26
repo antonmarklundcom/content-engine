@@ -1,6 +1,7 @@
 import { translator, type Locale } from "@/lib/i18n";
 
-type Citation = { claim: string; sources: string[] };
+// Model-written JSON: `sources` is typed as an array but is not guaranteed one.
+type Citation = { claim: string; sources?: string[] | null };
 
 /** Only http(s) URLs become links; anything else a model wrote stays text. */
 function isWebUrl(value: string): boolean {
@@ -23,7 +24,7 @@ export function IdeaCitations({ citations, locale }: { citations: Citation[] | n
         {citations.map((citation, i) => (
           <li key={i}>
             <span>{citation.claim}</span>{" "}
-            {citation.sources.map((source, j) =>
+            {(citation.sources ?? []).map((source, j) =>
               isWebUrl(source) ? (
                 <a
                   key={j}
