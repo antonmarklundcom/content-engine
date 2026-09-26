@@ -11,7 +11,7 @@ type NavLink = { href: string; label: string };
 type NavItem = NavLink | { label: string; items: NavLink[] };
 
 const LINK =
-  "text-sm text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)] focus:outline-none focus-visible:text-[var(--color-ink)]";
+  "text-sm text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)] rounded-[var(--radius-sm)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]";
 
 export async function Header() {
   const [locale, user] = await Promise.all([getLocale(), getSession()]);

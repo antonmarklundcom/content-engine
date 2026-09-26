@@ -597,7 +597,7 @@ One line per phase; detail in `docs/log/<id>.md`.
 | S11 | #30 | `docs/log/s11.md` | merged |
 | S12 | #31 | `docs/log/s12.md` | merged |
 | S8 | #24 | `docs/log/s8.md` | merged |
-| S9 | (this PR) | `docs/log/s9.md` | merged |
+| S9 | #42 | `docs/log/s9.md` | merged |
 | B2b-A–D | #38, #37, #39 (+#41), #40 | `docs/log/b2b-{a,b,c,d}.md` | merged |
 
 ## §6b. Build 2b — studio extras (ideas 1–8, 10)
