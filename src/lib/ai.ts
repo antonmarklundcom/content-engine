@@ -29,6 +29,7 @@ import {
 } from "@/lib/scripts/contract";
 import { needsVerification } from "@/lib/scripts/language";
 import { recordSpend, withSpendCap } from "@/lib/spend";
+import { aiProvider, runCliJson } from "@/lib/ai-cli";
 
 /**
  * One Gemini client for the whole app — shared by the brand-ideation path
@@ -751,6 +752,58 @@ const TITLES_MAX_OUTPUT_TOKENS = 3_000;
 const TITLES_THINKING_TOKENS = 2_000;
 /** Brand, topic, style guide and up to a few dozen saved lessons. */
 const TITLES_PROMPT_OVERHEAD_TOKENS = 4_000;
+/**
+ * One structured-JSON request, routed by `AI_PROVIDER` (§1.38). "gemini" (the
+ * default) bills through the API under the spend cap; "claude-cli" and
+ * "codex-cli" run the logged-in CLI on this PC under Anton's subscription and
+ * cost the app nothing. Studio features (titles, scripts, reports, packs) use
+ * this; the YouTube batch pipeline stays on Gemini, where volume is.
+ */
+export async function structuredJson(opts: {
+  system: string;
+  prompt: string;
+  schema: unknown;
+  webSearch: boolean;
+  estimateUsd: number;
+  maxOutputTokens: number;
+  thinkingLow?: boolean;
+}): Promise<{ text: string; costUsd: number; groundingQueries: number; finishReason?: string }> {
+  const provider = aiProvider();
+  if (provider !== "gemini") {
+    const text = await runCliJson({
+      provider,
+      system: opts.system,
+      prompt: opts.prompt,
+      schema: opts.schema,
+      webSearch: opts.webSearch,
+    });
+    return { text, costUsd: 0, groundingQueries: 0, finishReason: provider };
+  }
+  return withSpendCap(opts.estimateUsd, async () => {
+    const response = await geminiClient().models.generateContent({
+      model: MODEL,
+      contents: opts.prompt,
+      config: {
+        systemInstruction: opts.system,
+        maxOutputTokens: opts.maxOutputTokens,
+        ...(opts.thinkingLow ? { thinkingConfig: { thinkingLevel: ThinkingLevel.LOW } } : {}),
+        ...(opts.webSearch ? { tools: [{ googleSearch: {} }] } : {}),
+        responseMimeType: "application/json",
+        responseJsonSchema: opts.schema,
+      },
+    });
+    const queries = groundingQueryCount(response);
+    const cost = messageCostUsd(readUsage(response), queries);
+    await recordSpend(cost);
+    return {
+      text: responseText(response),
+      costUsd: cost,
+      groundingQueries: queries,
+      finishReason: response.candidates?.[0]?.finishReason,
+    };
+  });
+}
+
 export const TITLE_SUGGESTION_COUNT = 10;
 
 /**
@@ -874,35 +927,26 @@ ${
 }
 Propose ${TITLE_SUGGESTION_COUNT} distinct titles, each with its angle. Vary the approach: a number, a mistake to avoid, a question, a before/after, a direct promise.`;
 
-  return withSpendCap(estimateTitlesCostUsd(), async () => {
-    const response = await geminiClient().models.generateContent({
-      model: MODEL,
-      contents: userPrompt,
-      config: {
-        systemInstruction: system,
-        maxOutputTokens: TITLES_MAX_OUTPUT_TOKENS,
-        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
-        responseMimeType: "application/json",
-        responseJsonSchema: TITLES_JSON_SCHEMA,
-      },
-    });
-    const costUsd = messageCostUsd(readUsage(response), groundingQueryCount(response));
-    await recordSpend(costUsd);
-
+  const { text, costUsd, finishReason } = await structuredJson({
+    system,
+    prompt: userPrompt,
+    schema: TITLES_JSON_SCHEMA,
+    webSearch: false,
+    estimateUsd: estimateTitlesCostUsd(),
+    maxOutputTokens: TITLES_MAX_OUTPUT_TOKENS,
+    thinkingLow: true,
+  });
+  {
     let parsed: { titles?: TitleSuggestion[] };
     try {
-      parsed = JSON.parse(responseText(response)) as typeof parsed;
+      parsed = JSON.parse(text) as typeof parsed;
     } catch {
-      throw new Error(
-        `Gemini didn't return parseable titles (finish reason: ${
-          response.candidates?.[0]?.finishReason ?? "unknown"
-        }). Try again.`,
-      );
+      throw new Error(`The model didn't return parseable titles (finish reason: ${finishReason ?? "unknown"}). Try again.`);
     }
     const titles = (parsed.titles ?? []).filter((t) => t?.title?.trim());
-    if (titles.length === 0) throw new Error("Gemini returned no titles. Try again.");
+    if (titles.length === 0) throw new Error("The model returned no titles. Try again.");
     return { titles, costUsd };
-  });
+  }
 }
 
 const BROLL_JSON_SCHEMA = {
@@ -1179,31 +1223,14 @@ Target length: ${brief.targetMinutes} minutes, about ${words} spoken words in to
 
 Write the script: a hook that earns the next 30 seconds, sections in a clear order, a call to action, three title options (the fixed title first), three thumbnail concepts, b-roll shots and sources.`;
 
-  const { text, costUsd, groundingQueries, finishReason } = await withSpendCap(
-    estimateScriptCostUsd(),
-    async () => {
-      const response = await geminiClient().models.generateContent({
-        model: MODEL,
-        contents: userPrompt,
-        config: {
-          systemInstruction: system,
-          maxOutputTokens: SCRIPT_MAX_OUTPUT_TOKENS,
-          tools: [{ googleSearch: {} }],
-          responseMimeType: "application/json",
-          responseJsonSchema: SCRIPT_JSON_SCHEMA,
-        },
-      });
-      const queries = groundingQueryCount(response);
-      const cost = messageCostUsd(readUsage(response), queries);
-      await recordSpend(cost);
-      return {
-        text: responseText(response),
-        costUsd: cost,
-        groundingQueries: queries,
-        finishReason: response.candidates?.[0]?.finishReason,
-      };
-    },
-  );
+  const { text, costUsd, groundingQueries, finishReason } = await structuredJson({
+    system,
+    prompt: userPrompt,
+    schema: SCRIPT_JSON_SCHEMA,
+    webSearch: true,
+    estimateUsd: estimateScriptCostUsd(),
+    maxOutputTokens: SCRIPT_MAX_OUTPUT_TOKENS,
+  });
 
   let raw: RawScript;
   try {
