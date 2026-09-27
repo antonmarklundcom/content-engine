@@ -174,7 +174,8 @@ export function briefMarkdown(brief: PostBrief): string {
     if (k.higgsfieldCharacterIds.length)
       lines.push(`- Higgsfield characters: ${k.higgsfieldCharacterIds.join(", ")}`);
     if (k.styleNotes.trim()) lines.push(`- Style: ${k.styleNotes.trim()}`);
-    if (k.colors.length) lines.push(`- Colors: ${k.colors.map((c) => `${c.name} ${c.hex}`).join(", ")}`);
+    if (k.colors.length)
+      lines.push(`- Colors: ${k.colors.map((c) => `${c.name} ${c.hex}`).join(", ")}`);
   }
   lines.push("", "## Visuals", "");
   for (const v of brief.visuals) {

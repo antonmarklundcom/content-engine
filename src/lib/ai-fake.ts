@@ -249,7 +249,10 @@ export const PAYLOADS: Record<FakeResponseKind, unknown> = {
         sticker: "quiz",
         visualPrompt: "Asunción street at golden hour, vertical 9:16",
       },
-      { text: "About 45 days — if your file is complete.", visualPrompt: "Stack of forms, vertical" },
+      {
+        text: "About 45 days — if your file is complete.",
+        visualPrompt: "Stack of forms, vertical",
+      },
     ],
     sources: [
       {
@@ -747,7 +750,6 @@ export function isVideoUrlRequest(params: GenerateContentParameters): boolean {
 // ---------------------------------------------------------------------------
 // building responses
 // ---------------------------------------------------------------------------
-
 
 /** Is this request asking for Search grounding? `/api/generate` and script generation do. */
 function isGrounded(params: GenerateContentParameters): boolean {

@@ -1380,8 +1380,14 @@ export const POST_DRAFT_JSON_SCHEMA = {
       maxItems: MAX_HASHTAGS,
       items: { type: "string", description: "One tag, without #." },
     },
-    firstComment: { type: "string", description: "Optional first comment (links, sources, keyword)." },
-    altText: { type: "string", description: "Alt text for the first image, in the target language." },
+    firstComment: {
+      type: "string",
+      description: "Optional first comment (links, sources, keyword).",
+    },
+    altText: {
+      type: "string",
+      description: "Alt text for the first image, in the target language.",
+    },
     engagement: {
       type: "object",
       properties: {
@@ -1403,9 +1409,13 @@ export const POST_DRAFT_JSON_SCHEMA = {
           body: { type: "string" },
           visualPrompt: {
             type: "string",
-            description: "Image prompt in English, photographic or illustrated, no text in the image.",
+            description:
+              "Image prompt in English, photographic or illustrated, no text in the image.",
           },
-          textOverlay: { type: "string", description: "The words set on the slide, target language." },
+          textOverlay: {
+            type: "string",
+            description: "The words set on the slide, target language.",
+          },
         },
         required: ["headline", "visualPrompt"],
       },
@@ -1530,7 +1540,9 @@ function kitBlock(kit: PromptKit | null): string {
   if (!kit) return "";
   const parts = [
     kit.ctas.length ? `CTAs the brand uses: ${kit.ctas.join(" | ")}` : "",
-    kit.hashtags.length ? `Brand hashtags (include the relevant ones): ${kit.hashtags.join(" ")}` : "",
+    kit.hashtags.length
+      ? `Brand hashtags (include the relevant ones): ${kit.hashtags.join(" ")}`
+      : "",
     kit.dos?.trim() ? `Do: ${kit.dos.trim()}` : "",
     kit.donts?.trim() ? `Don't: ${kit.donts.trim()}` : "",
     kit.styleNotes.trim() ? `Visual style for image prompts: ${kit.styleNotes.trim()}` : "",
@@ -1682,13 +1694,17 @@ export const TRANSCRIPT_JSON_SCHEMA = {
   properties: {
     transcript: {
       type: "string",
-      description: "Everything said, verbatim, in the language it is spoken. Empty if nothing is said.",
+      description:
+        "Everything said, verbatim, in the language it is spoken. Empty if nothing is said.",
     },
     postText: {
       type: "string",
       description: "The text shown on screen, in order, verbatim. Empty if none.",
     },
-    summary: { type: "string", description: "What the clip says and shows, 2-4 sentences, English." },
+    summary: {
+      type: "string",
+      description: "What the clip says and shows, 2-4 sentences, English.",
+    },
     claims: {
       type: "array",
       items: {
@@ -1737,7 +1753,8 @@ export function estimateTranscribeCostUsd(
   model: string = TRANSCRIBE_MODEL,
 ): number {
   const image = input.mime?.startsWith("image/");
-  const seconds = input.durationSec && input.durationSec > 0 ? input.durationSec : TRANSCRIBE_ASSUMED_SECONDS;
+  const seconds =
+    input.durationSec && input.durationSec > 0 ? input.durationSec : TRANSCRIBE_ASSUMED_SECONDS;
   return costUsdAtRates(ideationRates(model), {
     inputTokens:
       (image ? IMAGE_TOKENS : Math.ceil(seconds * MEDIA_TOKENS_PER_SECOND)) +
@@ -1759,14 +1776,17 @@ export function estimateTranscribeCostUsd(
 export async function transcribeClip(
   input: TranscribeInput,
 ): Promise<ClipTranscript & { costUsd: number }> {
-  if (!input.path && !input.url) throw new TranscribeRefusedError("Nothing to transcribe: no file and no URL.");
+  if (!input.path && !input.url)
+    throw new TranscribeRefusedError("Nothing to transcribe: no file and no URL.");
   if (input.durationSec && input.durationSec > TRANSCRIBE_MAX_SECONDS) {
     throw new TranscribeRefusedError(
       `This clip is ${Math.round(input.durationSec / 60)} minutes long; transcription stops at ${TRANSCRIBE_MAX_SECONDS / 60} minutes.`,
     );
   }
 
-  let media: { inlineData: { mimeType: string; data: string } } | { fileData: { fileUri: string; mimeType?: string } };
+  let media:
+    | { inlineData: { mimeType: string; data: string } }
+    | { fileData: { fileUri: string; mimeType?: string } };
   if (input.path) {
     const { readFile, stat } = await import("node:fs/promises");
     const size = (await stat(input.path)).size;

@@ -131,7 +131,10 @@ async function lessonsFor(account: AccountWithBrand): Promise<PromptLesson[]> {
 }
 
 /** Everything a post prompt for `account` needs besides the seed. */
-export async function postTarget(account: AccountWithBrand, format: PostFormat): Promise<PostTarget> {
+export async function postTarget(
+  account: AccountWithBrand,
+  format: PostFormat,
+): Promise<PostTarget> {
   const brand = await getBrand(account.brandId);
   if (!brand) throw new PostEngineError(`Account @${account.handle} has no brand on file.`, 409);
   const [kit, facts, promptLessons, playbook, styleGuide] = await Promise.all([
@@ -215,7 +218,9 @@ export async function createPostFromIdea(
     throw new PostEngineError(`format must be one of ${POST_FORMATS.join(", ")}`);
   }
   const format: PostFormat =
-    (input.format as PostFormat | null | undefined) ?? ideaFormat ?? defaultFormat(account.platform);
+    (input.format as PostFormat | null | undefined) ??
+    ideaFormat ??
+    defaultFormat(account.platform);
 
   const target = await postTarget(account, format);
   const { body, costUsd } = await draftPost(seed, target);
@@ -281,7 +286,10 @@ export async function regenerateSection(
   const next = mergeSection(current, fresh, section);
   const verdict = validatePostDraft(next);
   if (!verdict.ok) {
-    throw new PostGenerationError("The rewritten section does not fit the post contract.", verdict.errors);
+    throw new PostGenerationError(
+      "The rewritten section does not fit the post contract.",
+      verdict.errors,
+    );
   }
   const [saved] = await db
     .update(posts)
@@ -355,7 +363,11 @@ export async function adaptToFamily(postId: number): Promise<AdaptResult> {
     } catch (error) {
       if (error instanceof SpendCapExceededError && result.created.length === 0) throw error;
       if (error instanceof PostGenerationError || error instanceof SpendCapExceededError) {
-        result.skipped.push({ accountId: account.id, handle: account.handle, reason: error.message });
+        result.skipped.push({
+          accountId: account.id,
+          handle: account.handle,
+          reason: error.message,
+        });
         if (error instanceof SpendCapExceededError) break;
         continue;
       }
@@ -412,7 +424,8 @@ export async function updatePost(postId: number, patch: PostPatch): Promise<Post
   if (patch.title !== undefined) set.title = patch.title.trim();
   if (patch.body !== undefined) {
     const verdict = validatePostDraft(patch.body);
-    if (!verdict.ok) throw new PostEngineError("body does not match the post contract", 400, verdict.errors);
+    if (!verdict.ok)
+      throw new PostEngineError("body does not match the post contract", 400, verdict.errors);
     const body = patch.body as PostDraft;
     if (body.format !== post.format) {
       throw new PostEngineError(`body.format must stay "${post.format}"`);

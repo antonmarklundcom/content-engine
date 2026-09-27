@@ -53,7 +53,10 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     else {
       const date = typeof body.scheduledFor === "string" ? new Date(body.scheduledFor) : null;
       if (!date || Number.isNaN(date.getTime())) {
-        return NextResponse.json({ error: "scheduledFor must be an ISO date or null" }, { status: 400 });
+        return NextResponse.json(
+          { error: "scheduledFor must be an ISO date or null" },
+          { status: 400 },
+        );
       }
       patch.scheduledFor = date;
     }

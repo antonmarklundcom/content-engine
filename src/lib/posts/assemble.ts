@@ -157,27 +157,23 @@ export function assemblePostDraft(
     // An image post is one image; extra slides the model wrote are not a post.
     draft.slides = target.format === "image_post" ? slides.slice(0, 1) : slides;
   } else if (part === "shots") {
-    draft.shots = (raw.shots ?? []).map(
-      (s, i): PostShot => ({
-        n: i + 1,
-        seconds: Number(s.seconds),
-        onScreenText: String(s.onScreenText ?? "").trim(),
-        ...(optionalText(s.voiceover) ? { voiceover: optionalText(s.voiceover) } : {}),
-        visual: {
-          imagePrompt: String(s.imagePrompt ?? "").trim(),
-          videoPrompt: String(s.videoPrompt ?? "").trim(),
-        },
-      }),
-    );
+    draft.shots = (raw.shots ?? []).map((s, i): PostShot => ({
+      n: i + 1,
+      seconds: Number(s.seconds),
+      onScreenText: String(s.onScreenText ?? "").trim(),
+      ...(optionalText(s.voiceover) ? { voiceover: optionalText(s.voiceover) } : {}),
+      visual: {
+        imagePrompt: String(s.imagePrompt ?? "").trim(),
+        videoPrompt: String(s.videoPrompt ?? "").trim(),
+      },
+    }));
   } else if (part === "storyFrames") {
-    draft.storyFrames = (raw.storyFrames ?? []).map(
-      (f, i): PostStoryFrame => ({
-        n: i + 1,
-        text: String(f.text ?? "").trim(),
-        ...(f.sticker ? { sticker: f.sticker } : {}),
-        visual: { prompt: String(f.visualPrompt ?? "").trim() },
-      }),
-    );
+    draft.storyFrames = (raw.storyFrames ?? []).map((f, i): PostStoryFrame => ({
+      n: i + 1,
+      text: String(f.text ?? "").trim(),
+      ...(f.sticker ? { sticker: f.sticker } : {}),
+      visual: { prompt: String(f.visualPrompt ?? "").trim() },
+    }));
   }
   if (notes) draft.notes = notes;
   return draft;
@@ -207,7 +203,11 @@ export function isPostSection(value: unknown): value is PostSection {
  * fresh draft cites are added (a rewritten caption may cite a new page);
  * the current ones stay, since the rest of the post still leans on them.
  */
-export function mergeSection(current: PostDraft, fresh: PostDraft, section: PostSection): PostDraft {
+export function mergeSection(
+  current: PostDraft,
+  fresh: PostDraft,
+  section: PostSection,
+): PostDraft {
   const next: PostDraft = { ...current };
   const value = fresh[section];
   if (value === undefined) delete next[section];
