@@ -595,6 +595,7 @@ their archived plans.
 |---|---|---|---|
 | Plan v3 | #46, #47 | — | merged |
 | O9 Social schema + contracts | #48 | `docs/log/o9.md` | merged (seed filled by parent session) |
+| O10 Media storage | #49 | `docs/log/o10.md` | open |
 
 ## §10. Backlog
 

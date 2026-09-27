@@ -20,7 +20,9 @@ import { failure, type StorageDriver, type StorageFailure } from "./driver";
 export type HostingerConfig = { uploadUrl: string; token: string; publicBase: string };
 
 /** The endpoint's settings, or null when any is unset — a normal state until §7 item 6 is done. */
-export function hostingerConfig(env: NodeJS.ProcessEnv = process.env): HostingerConfig | null {
+export function hostingerConfig(
+  env: Record<string, string | undefined> = process.env,
+): HostingerConfig | null {
   const uploadUrl = env.MEDIA_UPLOAD_URL?.trim();
   const token = env.MEDIA_UPLOAD_TOKEN?.trim();
   const publicBase = env.MEDIA_PUBLIC_BASE?.trim().replace(/\/+$/, "");

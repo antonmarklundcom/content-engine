@@ -15,7 +15,7 @@ import { localDriver } from "@/lib/storage/local";
 
 export const DEFAULT_RETENTION_DAYS = 90;
 
-export function retentionDays(env: NodeJS.ProcessEnv = process.env): number {
+export function retentionDays(env: Record<string, string | undefined> = process.env): number {
   const days = Number.parseInt(env.MEDIA_PUBLIC_RETENTION_DAYS ?? "", 10);
   return Number.isInteger(days) && days > 0 ? days : DEFAULT_RETENTION_DAYS;
 }

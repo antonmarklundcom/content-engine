@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
@@ -130,6 +130,17 @@ test("the local driver answers missing for an absent root and never writes outsi
       const result = await driver.put(key, Buffer.from("x"));
       assert.equal(result.ok, false, key);
     }
+    assert.ok(!existsSync(path.join(outside, "x.png")), "nothing written through the symlink");
+    const nested = await driver.put("escape/newdir/x.png", Buffer.from("x"));
+    assert.equal(nested.ok, false);
+    assert.ok(!existsSync(path.join(outside, "newdir")), "no folder created through the symlink");
+    symlinkSync(path.join(outside, "target.png"), path.join(root, "link.png"));
+    const through = await driver.put("link.png", Buffer.from("x"), { overwrite: true });
+    assert.equal(!through.ok && through.reason, "rejected");
+    assert.ok(
+      !existsSync(path.join(outside, "target.png")),
+      "an overwrite never follows a symlink",
+    );
     writeFileSync(path.join(outside, "secret.png"), "secret");
     const leaked = await driver.get("escape/secret.png");
     assert.equal(!leaked.ok && leaked.reason, "not_found");

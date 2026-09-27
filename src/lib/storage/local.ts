@@ -1,5 +1,5 @@
 import { constants } from "node:fs";
-import { copyFile, mkdir, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
+import { copyFile, lstat, mkdir, readFile, realpath, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { failure, type StorageDriver } from "./driver";
@@ -25,11 +25,17 @@ export function localDriver(root: string = mediaRoot()): StorageDriver {
     if (!segments) return null;
     const candidate = path.resolve(root, ...segments);
     if (!inside(root, candidate)) return null;
-    // The parent folders may exist already as symlinks; the real parent must still be inside.
-    const parent = path.dirname(candidate);
-    await mkdir(parent, { recursive: true });
-    const [realRoot, realParent] = await Promise.all([realpath(root), realpath(parent)]);
-    if (realParent !== realRoot && !inside(realRoot, realParent)) return null;
+    // Folders along the way may already exist as symlinks: the deepest existing
+    // one must really be inside the root before anything is created under it,
+    // and the target itself may not be a symlink (an overwrite would follow it).
+    const realRoot = await realpath(root);
+    const contained = (real: string) => real === realRoot || inside(realRoot, real);
+    let existing = path.dirname(candidate);
+    while (!(await lstat(existing).catch(() => null))) existing = path.dirname(existing);
+    if (!contained(await realpath(existing))) return null;
+    await mkdir(path.dirname(candidate), { recursive: true });
+    if (!contained(await realpath(path.dirname(candidate)))) return null;
+    if ((await lstat(candidate).catch(() => null))?.isSymbolicLink()) return null;
     return candidate;
   }
 
