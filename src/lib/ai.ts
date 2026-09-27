@@ -4,7 +4,7 @@ import {
   ThinkingLevel,
   type GenerateContentResponse,
 } from "@google/genai";
-import type { Brand } from "@/db/schema";
+import type { Brand, PostFormat } from "@/db/schema";
 import { fakeGeminiClient, fakeGeminiEnabled } from "@/lib/ai-fake";
 import {
   costUsdAtRates,
@@ -28,6 +28,16 @@ import {
   type ScriptSource,
 } from "@/lib/scripts/contract";
 import { needsVerification } from "@/lib/scripts/language";
+import { assemblePostDraft, type RawPostDraft } from "@/lib/posts/assemble";
+import {
+  CAROUSEL_SLIDES,
+  ENGAGEMENT_MECHANICS,
+  MAX_HASHTAGS,
+  STORY_STICKERS,
+  validatePostDraft,
+  type PostDraft,
+} from "@/lib/posts/contract";
+import { languageName } from "@/lib/posts/guides";
 import { recordSpend, withSpendCap } from "@/lib/spend";
 import { aiProvider, runCliJson } from "@/lib/ai-cli";
 
@@ -357,6 +367,7 @@ export async function generateContentPlan(
   allBrands: Brand[],
   existingResearch: { topic: string; summary: string }[],
   grounding?: AnalysisGrounding | null,
+  options: { topic?: string | null } = {},
 ): Promise<GenerateResult> {
   const otherBrandList = allBrands
     .filter((b) => b.id !== brand.id)
@@ -385,6 +396,13 @@ ${grounding.summary ? `Summary: ${grounding.summary}\n` : ""}${
       }`
     : "";
 
+  // Topic-first research (PLAN.md §5.O11.4): the owner names what to research
+  // and every idea is about it. Still grounded the same way, still this brand.
+  const topic = options.topic?.trim();
+  const topicContext = topic
+    ? `\n\nTOPIC — the owner picked this topic. Research it for this brand's audience and market; every idea must be about it:\n${topic}`
+    : "";
+
   const system = `You are a social media researcher and copywriter for a portfolio of small businesses in Paraguay and abroad. Your job for each brand is to: (1) research current, real, relevant trends/news/topics for its niche and market using Google Search, (2) turn that research into concrete content ideas, and (3) write full, ready-to-post captions for each idea — not placeholders. Copy must be in the brand's own language and voice. Never invent facts, prices, laws, or statistics — verify anything checkable with at least 2 independent web sources and attach them as citations. If you can't verify a claim, drop it or write around it instead of guessing. If research surfaces something relevant to OTHER brands in the portfolio too, report it as a shared research note so it isn't re-researched per brand. Every search costs money: use at most ${MAX_GROUNDING_QUERIES} searches, and make them count. Answer with JSON matching the required schema and nothing else.`;
 
   const userPrompt = `Brand: ${brand.name} (id: ${brand.id})
@@ -396,9 +414,9 @@ Platforms: ${brand.platforms.join(", ")}
 
 Other brands in this portfolio (for cross-brand research notes only — do not write ideas for them):
 ${otherBrandList}
-${researchContext}${groundingContext}
+${researchContext}${groundingContext}${topicContext}
 
-Research current trends/news relevant to this brand's niche and market, then propose 5-10 concrete content ideas with full ready-to-post copy.`;
+${topic ? "Research this topic for this brand's niche and market" : "Research current trends/news relevant to this brand's niche and market"}, then propose 5-10 concrete content ideas with full ready-to-post copy.`;
 
   // The whole paid call sits inside the cap: the estimate is held against the
   // monthly budget before the request goes out, and the real figure is logged
@@ -1315,4 +1333,523 @@ Write the script: a hook that earns the next 30 seconds, sections in a clear ord
     );
   }
   return { body, costUsd, groundingQueries };
+}
+
+// ---------------------------------------------------------------------------
+// posts — drafting for engagement, adapting across a family (PLAN.md §1.46–§1.47, §5.O11)
+// ---------------------------------------------------------------------------
+
+/** A post is a caption plus up to 20 slides or a handful of shots — far short of a script. */
+const POST_MAX_OUTPUT_TOKENS = 8_000;
+const POST_THINKING_TOKENS = 4_000;
+/** Playbook + style guide + kit + facts + lessons (+ the source draft when adapting). */
+const POST_PROMPT_OVERHEAD_TOKENS = 10_000;
+/** A post from a bare topic researches it; from an idea or when adapting it does not. */
+const POST_MAX_GROUNDING_QUERIES = 5;
+
+export function estimatePostCostUsd(grounded: boolean, model: string = MODEL): number {
+  const tokens = costUsdAtRates(ideationRates(model), {
+    inputTokens: POST_PROMPT_OVERHEAD_TOKENS,
+    outputTokens: POST_MAX_OUTPUT_TOKENS + POST_THINKING_TOKENS,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+  });
+  return tokens + (grounded ? POST_MAX_GROUNDING_QUERIES * GROUNDING_USD_PER_QUERY : 0);
+}
+
+/**
+ * What the model fills in for a post (`RawPostDraft`). All three lists are
+ * optional here because a schema cannot tie them to the format; the prompt
+ * names the one to write and `assemblePostDraft` keeps only that one.
+ */
+export const POST_DRAFT_JSON_SCHEMA = {
+  type: "object",
+  properties: {
+    hook: {
+      type: "string",
+      description: "The first line / first second: what stops the scroll. Under 12 words.",
+    },
+    caption: {
+      type: "string",
+      description:
+        "The full caption as it is posted, in the target language: hook line, body, the call to action. No hashtags in it.",
+    },
+    cta: { type: "string", description: "The one action asked for, as it reads in the caption." },
+    hashtags: {
+      type: "array",
+      maxItems: MAX_HASHTAGS,
+      items: { type: "string", description: "One tag, without #." },
+    },
+    firstComment: {
+      type: "string",
+      description: "Optional first comment (links, sources, keyword).",
+    },
+    altText: {
+      type: "string",
+      description: "Alt text for the first image, in the target language.",
+    },
+    engagement: {
+      type: "object",
+      properties: {
+        mechanic: { type: "string", enum: [...ENGAGEMENT_MECHANICS] },
+        detail: {
+          type: "string",
+          description: "What exactly is asked: the question, the keyword, the poll options.",
+        },
+      },
+      required: ["mechanic", "detail"],
+    },
+    slides: {
+      type: "array",
+      maxItems: CAROUSEL_SLIDES.max,
+      items: {
+        type: "object",
+        properties: {
+          headline: { type: "string" },
+          body: { type: "string" },
+          visualPrompt: {
+            type: "string",
+            description:
+              "Image prompt in English, photographic or illustrated, no text in the image.",
+          },
+          textOverlay: {
+            type: "string",
+            description: "The words set on the slide, target language.",
+          },
+        },
+        required: ["headline", "visualPrompt"],
+      },
+    },
+    shots: {
+      type: "array",
+      maxItems: 20,
+      items: {
+        type: "object",
+        properties: {
+          seconds: { type: "number", minimum: 1, maximum: 60 },
+          onScreenText: { type: "string" },
+          voiceover: { type: "string" },
+          imagePrompt: { type: "string", description: "Vertical 9:16 still, English." },
+          videoPrompt: { type: "string", description: "Camera motion for the still, English." },
+        },
+        required: ["seconds", "imagePrompt", "videoPrompt"],
+      },
+    },
+    storyFrames: {
+      type: "array",
+      maxItems: 10,
+      items: {
+        type: "object",
+        properties: {
+          text: { type: "string" },
+          sticker: { type: "string", enum: [...STORY_STICKERS] },
+          visualPrompt: { type: "string", description: "Vertical 9:16 background, English." },
+        },
+        required: ["visualPrompt"],
+      },
+    },
+    sources: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          claim: { type: "string" },
+          url: { type: "string", description: "Full URL of a page that states the claim." },
+        },
+        required: ["claim", "url"],
+      },
+    },
+    notes: { type: "string", description: "Anything the owner must check before posting." },
+  },
+  required: ["hook", "caption", "cta", "hashtags", "engagement", "sources"],
+} as const;
+
+/** A fact handed to a post prompt. Unverified facts may only be said in their hedged wording (§1.48). */
+export type PromptPostFact = PromptFact & { verified: boolean };
+
+/** The brand kit fields a post prompt uses. */
+export type PromptKit = {
+  ctas: string[];
+  hashtags: string[];
+  dos: string | null;
+  donts: string | null;
+  styleNotes: string;
+};
+
+/** Where a post is going: one account, its brand, and the house rules for it. */
+export type PostTarget = {
+  brand: Brand;
+  platform: string;
+  handle: string;
+  /** The account's effective language tag. */
+  language: string;
+  format: PostFormat;
+  kit: PromptKit | null;
+  facts: PromptPostFact[];
+  lessons: PromptLesson[];
+  /** `content/playbooks/<platform>.md`, whole. */
+  playbook: string;
+  /** `content/style/<language>.md`, whole. */
+  styleGuide: string;
+};
+
+/** What a post is drafted from: an idea on file, or a bare topic. */
+export type PostSeed =
+  | {
+      idea: {
+        title: string;
+        angle: string;
+        draftCopy: string;
+        visualNotes?: string | null;
+        citations?: { claim: string; sources: string[] }[] | null;
+      };
+    }
+  | { topic: string };
+
+export class PostGenerationError extends Error {
+  constructor(
+    message: string,
+    readonly errors: string[] = [],
+  ) {
+    super(message);
+    this.name = "PostGenerationError";
+  }
+}
+
+const FORMAT_PARTS: Record<PostFormat, string> = {
+  carousel: `Write "slides": ${CAROUSEL_SLIDES.min}–10 slides (7–10 is the sweet spot) following the playbook's carousel arc. Leave "shots" and "storyFrames" empty.`,
+  image_post: `Write "slides" with exactly ONE slide: the image and its overlay. Leave "shots" and "storyFrames" empty.`,
+  reel: `Write "shots": 4–10 vertical shots, 15–45 seconds in total, the hook in the first shot. Leave "slides" and "storyFrames" empty.`,
+  video: `Write "shots": the video's shots in order. Leave "slides" and "storyFrames" empty.`,
+  story: `Write "storyFrames": 3–7 frames with the playbook's sticker sequence. Leave "slides" and "shots" empty.`,
+  text: `A text-only post: leave "slides", "shots" and "storyFrames" empty.`,
+};
+
+function postFactsBlock(facts: PromptPostFact[]): string {
+  if (!facts.length) return "";
+  const lines = facts.map(
+    (f) =>
+      `- [${f.topic}]${f.verified ? "" : " [UNVERIFIED — say it only in this hedged wording]"} ${f.claim}${
+        f.sourceUrl ? ` (source: ${f.sourceUrl})` : " (no source URL on file)"
+      }`,
+  );
+  return `\n\nFACTS — the checked fact sheet for this brand and its family. Use these as-is (do not change numbers, dates or names) and put their URL in "sources" when you use one. A fact marked UNVERIFIED may only be said in its hedged wording, never as certain. A claim not listed here needs its own source URL, or it is left out:\n${lines.join("\n")}`;
+}
+
+function kitBlock(kit: PromptKit | null): string {
+  if (!kit) return "";
+  const parts = [
+    kit.ctas.length ? `CTAs the brand uses: ${kit.ctas.join(" | ")}` : "",
+    kit.hashtags.length
+      ? `Brand hashtags (include the relevant ones): ${kit.hashtags.join(" ")}`
+      : "",
+    kit.dos?.trim() ? `Do: ${kit.dos.trim()}` : "",
+    kit.donts?.trim() ? `Don't: ${kit.donts.trim()}` : "",
+    kit.styleNotes.trim() ? `Visual style for image prompts: ${kit.styleNotes.trim()}` : "",
+  ].filter(Boolean);
+  return parts.length ? `\n\nBRAND KIT:\n${parts.join("\n")}` : "";
+}
+
+function targetBlock(t: PostTarget): string {
+  return `Brand: ${t.brand.name} (${t.brand.niche}), market: ${t.brand.market}
+Voice: ${t.brand.voice ?? "plain, concrete, no hype"}
+Account: @${t.handle} on ${t.platform}
+Language: ${languageName(t.language)} (tag ${t.language}). Every word the audience reads or hears is in this language; image and video prompts stay in English.
+Format: ${t.format}. ${FORMAT_PARTS[t.format]}${
+    t.styleGuide.trim() ? `\n\nSTYLE GUIDE — follow it:\n${t.styleGuide.trim()}` : ""
+  }${t.playbook.trim() ? `\n\nPLAYBOOK — the engagement patterns for ${t.platform}; follow it:\n${t.playbook.trim()}` : ""}${kitBlock(
+    t.kit,
+  )}${
+    t.lessons.length
+      ? `\n\nLESSONS the owner saved (hooks, CTAs, caption patterns that worked) — use the PATTERNS, never copy them word for word:\n${lessonLines(t.lessons)}`
+      : ""
+  }${postFactsBlock(t.facts)}`;
+}
+
+const POST_SYSTEM = `You write social media posts that earn engagement — saves, shares, comments — for small businesses. You follow the platform playbook and the style guide you are given. One post has one hook, one engagement mechanic and one call to action.
+
+Facts: never invent a law, price, fee, deadline, statistic or program name. Every factual claim goes in "sources" with the full URL of a page that states it; if you have no source for a claim, leave the claim out. Facts marked UNVERIFIED are said only in their hedged wording.
+
+Image and video prompts are in English, specific and visual, with no text in the image and no real people's likenesses. Answer with JSON matching the required schema and nothing else.`;
+
+function parsePostAnswer(
+  text: string,
+  finishReason: string | undefined,
+  target: { format: PostFormat; language: string },
+): PostDraft {
+  let raw: RawPostDraft;
+  try {
+    raw = JSON.parse(text) as RawPostDraft;
+  } catch {
+    throw new PostGenerationError(
+      `The model didn't return a parseable post (finish reason: ${finishReason ?? "unknown"}). Try again.`,
+    );
+  }
+  const draft = assemblePostDraft(raw, target);
+  const verdict = validatePostDraft(draft);
+  if (!verdict.ok) {
+    throw new PostGenerationError(
+      "The model's post does not match the post contract. Try again.",
+      verdict.errors,
+    );
+  }
+  return draft;
+}
+
+/**
+ * Draft one post for one account (§1.46, §5.O11.1). From an idea it builds on
+ * the idea's copy and citations, ungrounded; from a bare topic it researches
+ * with Search, so every claim can carry a URL. With `rewrite`, the model sees
+ * the current draft and rewrites only that section (the caller merges it).
+ * Returns a body the contract accepts, or throws `PostGenerationError` —
+ * after billing, since the tokens were spent either way.
+ */
+export async function draftPost(
+  seed: PostSeed,
+  target: PostTarget,
+  rewrite?: { current: PostDraft; section: string },
+): Promise<{ body: PostDraft; costUsd: number; groundingQueries: number }> {
+  const grounded = "topic" in seed && !rewrite;
+  const seedBlock =
+    "topic" in seed
+      ? `TOPIC: ${seed.topic}${grounded ? `\nResearch it with Google Search first (at most ${POST_MAX_GROUNDING_QUERIES} searches — each one costs money).` : ""}`
+      : `IDEA on file — build the post on it, in the target language and format:
+Title: ${seed.idea.title}
+Angle: ${seed.idea.angle}
+Draft copy: ${seed.idea.draftCopy}${seed.idea.visualNotes ? `\nVisual notes: ${seed.idea.visualNotes}` : ""}${
+          seed.idea.citations?.length
+            ? `\nCitations already checked:\n${seed.idea.citations
+                .map((c) => `- ${c.claim} (${c.sources.join(", ")})`)
+                .join("\n")}`
+            : ""
+        }`;
+  const rewriteBlock = rewrite
+    ? `\n\nCURRENT DRAFT (JSON):\n${JSON.stringify(rewrite.current)}\n\nRewrite ONLY "${rewrite.section}" — make it clearly better and different. Return the whole post, with every other field as it is now.`
+    : "\n\nWrite the post.";
+
+  const { text, costUsd, groundingQueries, finishReason } = await structuredJson({
+    system: POST_SYSTEM,
+    prompt: `${targetBlock(target)}\n\n${seedBlock}${rewriteBlock}`,
+    schema: POST_DRAFT_JSON_SCHEMA,
+    webSearch: grounded,
+    estimateUsd: estimatePostCostUsd(grounded),
+    maxOutputTokens: POST_MAX_OUTPUT_TOKENS,
+    thinkingLow: !grounded,
+  });
+  const body = parsePostAnswer(text, finishReason, target);
+  return { body, costUsd, groundingQueries };
+}
+
+/**
+ * Adapt a post to a sibling account (§1.47): not a translation — a rewrite
+ * for that brand's language, voice and audience. Ungrounded. The target's
+ * facts are the only facts it may state; a claim of the source post that the
+ * target's facts (or the source's own cited URL) do not support is dropped.
+ */
+export async function adaptPost(
+  source: PostDraft,
+  target: PostTarget,
+): Promise<{ body: PostDraft; costUsd: number }> {
+  const prompt = `${targetBlock(target)}
+
+SOURCE POST (JSON), written for a sibling brand in ${languageName(source.language)}:
+${JSON.stringify(source)}
+
+Adapt it for THIS account: same topic and the same engagement mechanic, rewritten from scratch for this brand's audience, voice and language — not translated line by line. Keep the structure (number of slides or shots) unless the playbook says otherwise. Keep a claim only if the FACTS above or the source post's own cited URL support it, and cite it; a fact that differs for this audience (a price in another currency, a rule for another nationality) is left out rather than guessed. Hashtags are the ones this audience searches for, in this language.`;
+
+  const { text, costUsd, finishReason } = await structuredJson({
+    system: POST_SYSTEM,
+    prompt,
+    schema: POST_DRAFT_JSON_SCHEMA,
+    webSearch: false,
+    estimateUsd: estimatePostCostUsd(false),
+    maxOutputTokens: POST_MAX_OUTPUT_TOKENS,
+    thinkingLow: true,
+  });
+  const body = parsePostAnswer(text, finishReason, target);
+  return { body, costUsd };
+}
+
+// ---------------------------------------------------------------------------
+// clip transcription (PLAN.md §1.44) — Gemini only, because it needs the media
+// ---------------------------------------------------------------------------
+
+/** The cheap multimodal seat: listening and reading, no judgement. */
+const TRANSCRIBE_MODEL = process.env.GEMINI_TRANSCRIBE_MODEL ?? "gemini-3.1-flash-lite";
+/** Past this, a reel is a long video; research clips are short. */
+export const TRANSCRIBE_MAX_SECONDS = 15 * 60;
+/** Assumed when the duration is unknown: IG reels and TikToks run up to three minutes. */
+const TRANSCRIBE_ASSUMED_SECONDS = 180;
+/** Gemini's inline request limit is 20 MB, base64 included; stay under it. */
+export const TRANSCRIBE_MAX_INLINE_BYTES = 14 * 1024 * 1024;
+const TRANSCRIBE_MAX_OUTPUT_TOKENS = 6_000;
+const TRANSCRIBE_PROMPT_OVERHEAD_TOKENS = 800;
+/** Default media resolution: ~260 tokens per frame at 1 fps + 32 for audio, rounded up. */
+const MEDIA_TOKENS_PER_SECOND = 300;
+/** A photo (a clip sent as an image) is one frame. */
+const IMAGE_TOKENS = 1_300;
+
+export const TRANSCRIPT_JSON_SCHEMA = {
+  type: "object",
+  properties: {
+    transcript: {
+      type: "string",
+      description:
+        "Everything said, verbatim, in the language it is spoken. Empty if nothing is said.",
+    },
+    postText: {
+      type: "string",
+      description: "The text shown on screen, in order, verbatim. Empty if none.",
+    },
+    summary: {
+      type: "string",
+      description: "What the clip says and shows, 2-4 sentences, English.",
+    },
+    claims: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          claim: {
+            type: "string",
+            description: "One factual claim made (a rule, price, number, deadline), as stated.",
+          },
+          timestampSec: { type: "number", minimum: 0 },
+        },
+        required: ["claim"],
+      },
+    },
+  },
+  required: ["transcript", "postText", "summary", "claims"],
+} as const;
+
+export type ClipTranscript = {
+  transcript: string;
+  postText: string;
+  summary: string;
+  claims: { claim: string; timestampSec?: number }[];
+};
+
+export type TranscribeInput = {
+  /** The media file on disk (absolute). S17 passes `MEDIA_ROOT` + the asset's `local_path`. */
+  path?: string;
+  /** A YouTube URL or a Gemini Files URI, when there is no local file. */
+  url?: string;
+  mime?: string | null;
+  durationSec?: number | null;
+  /** The caption or note the clip was saved with, to help read the screen text. */
+  context?: string | null;
+};
+
+export class TranscribeRefusedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TranscribeRefusedError";
+  }
+}
+
+export function estimateTranscribeCostUsd(
+  input: { durationSec?: number | null; mime?: string | null },
+  model: string = TRANSCRIBE_MODEL,
+): number {
+  const image = input.mime?.startsWith("image/");
+  const seconds =
+    input.durationSec && input.durationSec > 0 ? input.durationSec : TRANSCRIBE_ASSUMED_SECONDS;
+  return costUsdAtRates(ideationRates(model), {
+    inputTokens:
+      (image ? IMAGE_TOKENS : Math.ceil(seconds * MEDIA_TOKENS_PER_SECOND)) +
+      TRANSCRIBE_PROMPT_OVERHEAD_TOKENS,
+    outputTokens: TRANSCRIBE_MAX_OUTPUT_TOKENS,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+  });
+}
+
+/**
+ * Transcribe a fetched clip (§1.44): the words said, the text on screen, a
+ * summary and the claims made — one Flash-Lite call under the spend cap.
+ * Always Gemini, whatever `AI_PROVIDER` says: the CLI providers cannot take
+ * the media. Research only; nothing here republishes anyone's media.
+ * Refuses (for free) a clip past `TRANSCRIBE_MAX_SECONDS` or a file too big to
+ * send inline.
+ */
+export async function transcribeClip(
+  input: TranscribeInput,
+): Promise<ClipTranscript & { costUsd: number }> {
+  if (!input.path && !input.url)
+    throw new TranscribeRefusedError("Nothing to transcribe: no file and no URL.");
+  if (input.durationSec && input.durationSec > TRANSCRIBE_MAX_SECONDS) {
+    throw new TranscribeRefusedError(
+      `This clip is ${Math.round(input.durationSec / 60)} minutes long; transcription stops at ${TRANSCRIBE_MAX_SECONDS / 60} minutes.`,
+    );
+  }
+
+  let media:
+    | { inlineData: { mimeType: string; data: string } }
+    | { fileData: { fileUri: string; mimeType?: string } };
+  if (input.path) {
+    const { readFile, stat } = await import("node:fs/promises");
+    const size = (await stat(input.path)).size;
+    if (size > TRANSCRIBE_MAX_INLINE_BYTES) {
+      throw new TranscribeRefusedError(
+        `This file is ${Math.round(size / 1024 / 1024)} MB; transcription sends files up to ${TRANSCRIBE_MAX_INLINE_BYTES / 1024 / 1024} MB.`,
+      );
+    }
+    media = {
+      inlineData: {
+        mimeType: input.mime ?? "video/mp4",
+        data: (await readFile(input.path)).toString("base64"),
+      },
+    };
+  } else {
+    media = { fileData: { fileUri: input.url!, ...(input.mime ? { mimeType: input.mime } : {}) } };
+  }
+
+  const prompt = `This is a short social media clip saved for research and fact-checking.${
+    input.context?.trim() ? `\nIt was saved with this note or caption: ${input.context.trim()}` : ""
+  }
+Transcribe what is said, copy the on-screen text, summarise it, and list every factual claim it makes (rules, prices, numbers, deadlines, program names) with the second it is made.`;
+
+  return withSpendCap(estimateTranscribeCostUsd(input), async () => {
+    const response = await geminiClient().models.generateContent({
+      model: TRANSCRIBE_MODEL,
+      contents: [{ role: "user", parts: [media, { text: prompt }] }],
+      config: {
+        systemInstruction:
+          "You transcribe and summarise social media clips accurately. Never add claims that are not in the clip. Answer with JSON matching the required schema and nothing else.",
+        maxOutputTokens: TRANSCRIBE_MAX_OUTPUT_TOKENS,
+        thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+        responseMimeType: "application/json",
+        responseJsonSchema: TRANSCRIPT_JSON_SCHEMA,
+      },
+    });
+    // Billed whether or not the answer parses: the tokens were spent.
+    const costUsd = messageCostUsd(readUsage(response), 0, TRANSCRIBE_MODEL);
+    await recordSpend(costUsd);
+
+    let parsed: Partial<ClipTranscript>;
+    try {
+      parsed = JSON.parse(responseText(response)) as Partial<ClipTranscript>;
+    } catch {
+      throw new Error(
+        `The model returned no transcript (finish reason: ${
+          response.candidates?.[0]?.finishReason ?? "unknown"
+        }).`,
+      );
+    }
+    return {
+      transcript: String(parsed.transcript ?? "").trim(),
+      postText: String(parsed.postText ?? "").trim(),
+      summary: String(parsed.summary ?? "").trim(),
+      claims: (parsed.claims ?? [])
+        .filter((c) => c?.claim?.trim())
+        .map((c) => ({
+          claim: c.claim.trim(),
+          ...(typeof c.timestampSec === "number" && c.timestampSec >= 0
+            ? { timestampSec: c.timestampSec }
+            : {}),
+        })),
+      costUsd,
+    };
+  });
 }

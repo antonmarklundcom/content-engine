@@ -10,7 +10,13 @@ import {
   WEB_SEARCH_QUERIES,
   type FakeResponseKind,
 } from "./ai-fake";
-import { readUsage, SCRIPT_JSON_SCHEMA, TITLES_JSON_SCHEMA } from "./ai";
+import {
+  POST_DRAFT_JSON_SCHEMA,
+  readUsage,
+  SCRIPT_JSON_SCHEMA,
+  TITLES_JSON_SCHEMA,
+  TRANSCRIPT_JSON_SCHEMA,
+} from "./ai";
 import { ANALYSIS_JSON_SCHEMA } from "./analysis/prompt";
 import { OUTLINE_JSON_SCHEMA } from "./analysis/outline-prompt";
 import { SCREENING_JSON_SCHEMA } from "./screening/prompt";
@@ -36,6 +42,8 @@ const KINDS: FakeResponseKind[] = [
   "outline",
   "titles",
   "script",
+  "post",
+  "transcript",
 ];
 
 test("every canned payload validates against the schema it answers", () => {
@@ -105,6 +113,8 @@ test("every canned payload validates against the schema it answers", () => {
     outline: OUTLINE_JSON_SCHEMA,
     titles: TITLES_JSON_SCHEMA,
     script: SCRIPT_JSON_SCHEMA,
+    post: POST_DRAFT_JSON_SCHEMA,
+    transcript: TRANSCRIPT_JSON_SCHEMA,
   };
 
   for (const kind of KINDS) {

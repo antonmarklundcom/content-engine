@@ -43,6 +43,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "analysisId must be an analysis id" }, { status: 400 });
   }
 
+  // Topic-first research (PLAN.md §5.O11.4): optional, grounded as today.
+  if (body.topic !== undefined && body.topic !== null && typeof body.topic !== "string") {
+    return NextResponse.json({ error: "topic must be text" }, { status: 400 });
+  }
+  const topic = typeof body.topic === "string" ? body.topic.trim().slice(0, 500) : "";
+
   let grounding = null;
   if (analysisId !== null) {
     const found = await getAnalysisWithVideo(analysisId);
@@ -72,7 +78,7 @@ export async function POST(request: Request) {
 
   let plan;
   try {
-    plan = await generateContentPlan(brand, allBrands, existingResearch, grounding);
+    plan = await generateContentPlan(brand, allBrands, existingResearch, grounding, { topic });
   } catch (error) {
     // The one failure worth its own status code: nothing was spent, nothing is
     // broken, and the caller's next move is to raise the cap or wait — which a
