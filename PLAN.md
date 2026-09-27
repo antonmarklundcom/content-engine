@@ -23,8 +23,9 @@ through `structuredJson()` (§1.38), every paid call through `withSpendCap`.
 Lane 1 runs first, sequentially (O9 → O10 → O11). When O11 merges it spawns
 every lane 2 phase at once (S13–S19). Each lane 2 phase, when it merges, checks
 whether all of lane 2 has merged; the last one spawns the link pass S20
-(§4.10). Lane 3 (O12 → O13 → O14, S21) is **gated on human inputs** (§7 items
-7–9) and is started by Anton with one pasted line when they are ticked.
+(§4.10). S20 then spawns lane 3 (O12 → O13 → O14, S21). **Amended 2026-09-27:**
+lane 3 is built right away against recorded API fixtures; its live paths are marked
+UNVERIFIED until Anton ticks §7 items 7–8, so no code waits on a human.
 
 | Phase | Lane | Model | Prompt file | Plan § | Owns | Depends on |
 |---|---|---|---|---|---|---|
@@ -278,7 +279,7 @@ sources: [{ claim, url }], notes? }`.
   capture + inbox tags; clip fetch; facts import + hooks library; docs +
   setup.
 - **C. Link pass** (S20): nav, home, cross-mounts, KNOWN-ISSUES, closing report.
-- **D. Online** (lane 3, gated on §7): Meta insights → publishing → Hostinger
+- **D. Online** (lane 3, fixtures first; live once §7 items 7–8 are done): Meta insights → publishing → Hostinger
   EU deploy; IG competitors + weekly report.
 
 ## §4. Autonomy protocol
@@ -323,8 +324,8 @@ most needs. Unchanged from build 2 except §4.10 (no watcher, §1.53).
     findings fixed in ONE follow-up commit); phase log committed. Then:
     O9 → O10 → O11 spawn the next lane 1 phase; **O11 spawns S13–S19 at once**;
     each lane 2 phase, after its gates, spawns S20 **only if** every other lane
-    2 PR is merged and S20 has no branch or PR yet; S20 stops with the closing
-    report. Lane 3: O12 → O13 → O14 in sequence; O12 also spawns S21.
+    2 PR is merged and S20 has no branch or PR yet; S20 spawns O12. Lane 3:
+    O12 → O13 → O14 in sequence; O12 also spawns S21; O14 and S21 end with a report.
 11. **Phase log** `docs/log/<id>.md`: ≤ 12 lines "Built", ≤ 8 "Decisions",
     ≤ 8 "Known issues", one line "Verification: CI green on <sha>". Add the
     index line to §9.
@@ -428,7 +429,7 @@ against a stub server; PR merged.
 Exit: verify green; one post drafted from an idea and one adapted under the
 fake in an integration test; PR merged; then spawn S13–S19 (§4.10).
 
-### O12 — Meta connect + insights (lane 3, needs §7 item 7)
+### O12 — Meta connect + insights (lane 3; live needs §7 item 7)
 
 `src/lib/crypto.ts` (§1.50); Meta OAuth (Facebook Login for Business) in
 Settings, storing a long-lived token in `integrations`; link IG Professional
@@ -450,7 +451,7 @@ online) publishes `scheduled` posts whose time has come, with the lease
 fixture-based tests for every media type and the failure paths; PR merged;
 spawn O14.
 
-### O14 — Hostinger EU deploy (lane 3, needs §7 item 8)
+### O14 — Hostinger EU deploy (lane 3; live needs §7 item 8)
 
 `docs/DEPLOY-HOSTINGER.md` per the `nextjs-deploy-hostinger` skill (EU
 account, GitHub integration, env vars, migrations run from the PC, cron jobs
