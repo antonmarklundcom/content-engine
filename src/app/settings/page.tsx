@@ -10,14 +10,20 @@ import { isLocalRequest } from "@/lib/settings.actions";
 import { maskValue, readEnv } from "@/lib/settings/envfile";
 import { SETTING_FIELDS } from "@/lib/settings/fields";
 
+import { MetaSection } from "./MetaSection";
+
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: translator(await getLocale())("settings.title") };
 }
 
-/** API keys and AI provider, written to the local `.env` (local mode). */
-export default async function SettingsPage() {
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+
+/** API keys and AI provider, written to the local `.env` (local mode); the Meta connection (O12). */
+export default async function SettingsPage({ searchParams }: { searchParams: SearchParams }) {
+  const params = await searchParams;
   const [user, locale, local] = await Promise.all([requireUser(), getLocale(), isLocalRequest()]);
   const t = translator(locale);
   const fileEnv = readEnv(await readFile(path.join(process.cwd(), ".env"), "utf8").catch(() => ""));
@@ -52,6 +58,18 @@ export default async function SettingsPage() {
         </p>
         <p className="mt-1 text-[var(--color-muted)]">{t("settings.databaseNote")}</p>
       </section>
+
+      {isOwner(user) && (
+        <MetaSection
+          locale={locale}
+          local={local}
+          notice={{
+            connected: one(params.meta) === "connected" ? "1" : undefined,
+            linked: one(params.linked),
+            error: one(params.meta_error),
+          }}
+        />
+      )}
     </main>
   );
 }

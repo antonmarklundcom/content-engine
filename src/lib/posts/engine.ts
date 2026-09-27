@@ -46,6 +46,7 @@ import {
   type PostPack,
 } from "./export";
 import { checkTransition } from "./status";
+import { whatWorked } from "./what-worked";
 
 /**
  * The post engine (PLAN.md §1.46–§1.47, §5.O11.2): drafting a post for one
@@ -137,12 +138,13 @@ export async function postTarget(
 ): Promise<PostTarget> {
   const brand = await getBrand(account.brandId);
   if (!brand) throw new PostEngineError(`Account @${account.handle} has no brand on file.`, 409);
-  const [kit, facts, promptLessons, playbook, styleGuide] = await Promise.all([
+  const [kit, facts, promptLessons, playbook, styleGuide, worked] = await Promise.all([
     getBrandKit(brand.id),
     factsFor(account),
     lessonsFor(account),
     loadPlaybook(account.platform),
     loadPostStyleGuide(account.effectiveLanguage),
+    whatWorked(account.id),
   ]);
   return {
     brand,
@@ -163,6 +165,7 @@ export async function postTarget(
     lessons: promptLessons,
     playbook,
     styleGuide,
+    whatWorked: worked,
   };
 }
 
