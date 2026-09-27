@@ -608,7 +608,7 @@ their archived plans.
 | S18 Facts import + hooks library | #55 | `docs/log/s18.md` | merged |
 | S19 Docs + local setup | #53 | `docs/log/s19.md` | merged |
 | Fix: Neon transactions, reaper start time | #63 | — | merged |
-| S20 Link pass | — | `docs/log/s20.md` | open |
+| S20 Link pass | #64 | `docs/log/s20.md` | merged |
 
 ## §10. Backlog
 
