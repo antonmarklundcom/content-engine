@@ -22,6 +22,11 @@ export type FactRowData = {
   notes: string | null;
   lastCheckedAt: string;
   stale: boolean;
+  /** False for an imported fact that is not signed off: the claim is its hedged wording (§1.48). */
+  verified?: boolean;
+  /** Set for family facts, which come one row per language. */
+  language?: string;
+  externalKey?: string | null;
 };
 
 const SMALL_BUTTON =
@@ -95,6 +100,18 @@ export function FactRow({
           </a>
         ) : (
           <span>{t("facts.noSource")}</span>
+        )}
+        {fact.verified === false && (
+          <span
+            title={t("facts.unverifiedTitle")}
+            className="rounded-[var(--radius-sm)] border border-[var(--color-danger)] px-2 py-0.5 font-medium text-[var(--color-danger)]"
+          >
+            {t("facts.unverified")}
+          </span>
+        )}
+        {fact.language && <span className="font-mono uppercase">{fact.language}</span>}
+        {fact.externalKey && (
+          <span className="font-mono">{t("facts.key", { key: fact.externalKey })}</span>
         )}
         <span>{t("facts.checked", { date: formatDate(fact.lastCheckedAt, locale) })}</span>
         {fact.stale && (
