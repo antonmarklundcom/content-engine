@@ -1,14 +1,26 @@
 # Content Engine
 
-A private research studio for Anton's brands, run on his own PC:
+The one place where every brand's social media lives, run on Anton's own PC:
+research, ideas, posts and the media behind them, for every brand and account.
+How a normal day goes: **[docs/SOCIAL-OS.md](docs/SOCIAL-OS.md)**.
 
+- **Brands, families and accounts** — every brand, grouped in families that share facts,
+  with one account per platform and language. Brand kits (colours, fonts, CTAs,
+  Higgsfield elements) in the UI arrive with S13.
+- **Posts** — drafted for engagement (hook, caption, slides or shots, sources) for one
+  account, then adapted to every sibling account in its own language. Via
+  `/api/posts` today; the editor, calendar and phone post pack arrive with S15.
+- **Media** — photos and videos on an external office drive, backed up by Google Drive,
+  with a public copy on Hostinger only while publishing: [docs/STORAGE.md](docs/STORAGE.md).
+  The media library page arrives with S14.
 - **Competitors** — link YouTube channels to a brand, rank their videos by outlier score.
 - **Digests** — captions pulled from YouTube, analysed by Gemini into summaries and key points.
 - **Lessons** — hooks, facts and title patterns saved by hand from a digest.
 - **Titles and scripts** — 10 title ideas, then an on-camera script (teleprompter lines, b-roll shots).
 - **Higgsfield hand-off** — a script's shot list, exported for a Claude Code session to generate.
 - **Ideas** — researched post ideas with ready-to-post captions, per brand.
-- **Inbox** — links saved from your phone, waiting to be used.
+- **Inbox** — links saved from your phone, waiting to be used. Telegram capture arrives
+  with S16; reel download + transcript (`clips:fetch`) with S17.
 
 ## Run it locally (start here)
 
@@ -54,6 +66,11 @@ Copy `.env.example` to `.env`. Each variable is explained there in full.
 | `ADMIN_EMAIL` | once | Owner login, read by `npm run yt:seed-owner`. |
 | `ADMIN_PASSWORD` | once | Owner password (12+ chars), same script. |
 | `MONTHLY_SPEND_CAP_USD` | no | Hard monthly cap across every paid call. Default 25. |
+| `MEDIA_ROOT` | recommended | Folder on the media drive, e.g. `E:\ContentEngine`. See [docs/STORAGE.md](docs/STORAGE.md). |
+| `FFPROBE_PATH` | no | ffprobe location, only if it is not on PATH. |
+| `MEDIA_UPLOAD_URL`, `MEDIA_UPLOAD_TOKEN`, `MEDIA_PUBLIC_BASE` | to publish | The Hostinger EU media endpoint. |
+| `MEDIA_PUBLIC_RETENTION_DAYS` | no | Days a public copy stays up. Default 90. |
+| `AI_PROVIDER` | no | `claude` or `codex` to write through your CLI subscription. |
 | `GEMINI_MODEL` | no | Override the ideas model. |
 | `GEMINI_PROMOTE_MODEL` | no | Override the model that adapts a promoted idea. |
 | `GEMINI_FAKE` | no | `1` = canned Gemini answers. Tests only. |
@@ -87,6 +104,9 @@ What each proves, and what neither can: [docs/VERIFY.md](docs/VERIFY.md).
 | `npm run build` / `npm run start` | Production build and server. |
 | `npm run db:check` | Test the database connection. |
 | `npm run db:generate` | Write a migration after a schema change (developers). |
+| `npm run media:scan` | Register files on the media drive (idempotent, safe hourly). |
+| `npm run media:prune` | Delete public Hostinger copies older than the retention. |
+| `npm run studio:weekly` | Build the weekly competitor report (Task Scheduler runs it Mondays). |
 | `npm run yt:poll` | Poll channels, screen and analyse new videos (Task Scheduler runs it hourly). |
 | `npm run yt:ingest`, `yt:analyze`, `yt:backfill`, `yt:screen`, `yt:uploads` | One-off YouTube pipeline steps. |
 | `npm run yt:spend` | This month's spend. |
