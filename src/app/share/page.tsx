@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { requireUser } from "@/lib/auth/session";
 import { getLocale } from "@/lib/i18n/server";
 import { translator } from "@/lib/i18n";
+import { listBrands } from "@/lib/bridge";
+import { CLIP_PURPOSES } from "@/db/schema";
 import { ShareCaptureForm } from "./ShareCaptureForm";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -40,7 +42,8 @@ export default async function SharePage({
   searchParams: Promise<{ url?: string; title?: string; text?: string }>;
 }) {
   await requireUser();
-  const params = await searchParams;
+  const [params, brands, locale] = await Promise.all([searchParams, listBrands(), getLocale()]);
+  const t = translator(locale);
   const guessedUrl = firstUrl(params.url, params.text, params.title);
   // Whatever text is left over, once the URL itself is stripped out, is the
   // closest thing to "why I saved this" a share sheet ever hands over.
@@ -52,7 +55,19 @@ export default async function SharePage({
 
   return (
     <main className="mx-auto max-w-md px-6 py-10">
-      <ShareCaptureForm initialUrl={guessedUrl} initialNote={guessedNote} />
+      <ShareCaptureForm
+        initialUrl={guessedUrl}
+        initialNote={guessedNote}
+        brands={brands.map((b) => ({ id: b.id, name: b.name }))}
+        purposes={CLIP_PURPOSES.map((p) => ({ id: p, label: t(`capture.purpose.${p}`) }))}
+        labels={{
+          brand: t("capture.brand"),
+          noBrand: t("capture.noBrand"),
+          purpose: t("capture.purpose"),
+          tags: t("capture.tags"),
+          tagsPlaceholder: t("capture.tagsPlaceholder"),
+        }}
+      />
     </main>
   );
 }

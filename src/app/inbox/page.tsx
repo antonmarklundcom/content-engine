@@ -10,7 +10,14 @@ import {
   clipCountsByStatus,
   type InboxClip,
 } from "@/lib/bridge";
-import { CLIP_PLATFORMS, CLIP_STATUSES, type ClipPlatform, type ClipStatus } from "@/db/schema";
+import {
+  CLIP_PLATFORMS,
+  CLIP_PURPOSES,
+  CLIP_STATUSES,
+  type ClipPlatform,
+  type ClipPurpose,
+  type ClipStatus,
+} from "@/db/schema";
 import { ClipFilters } from "@/components/ClipFilters";
 import { ClipRow } from "@/components/ClipRow";
 import { QuickAddClipForm } from "@/components/QuickAddClipForm";
@@ -21,10 +28,21 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: translator(await getLocale())("inbox.title") };
 }
 
-type SearchParams = { status?: string; platform?: string; page?: string };
+type SearchParams = {
+  status?: string;
+  platform?: string;
+  brand?: string;
+  purpose?: string;
+  tag?: string;
+  page?: string;
+};
 
 function isClipStatus(value: string | undefined): value is ClipStatus {
   return !!value && (CLIP_STATUSES as readonly string[]).includes(value);
+}
+
+function isClipPurpose(value: string | undefined): value is ClipPurpose {
+  return !!value && (CLIP_PURPOSES as readonly string[]).includes(value);
 }
 
 function isClipPlatform(value: string | undefined): value is ClipPlatform {
@@ -57,15 +75,19 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
   const status = isClipStatus(params.status) ? params.status : undefined;
   const platform = isClipPlatform(params.platform) ? params.platform : undefined;
   const page = Number(params.page) || 1;
+  const brandId = params.brand?.trim() || undefined;
+  const purpose = isClipPurpose(params.purpose) ? params.purpose : undefined;
+  // Tags are stored lower-case without the `#` (normalizeTags), so match that.
+  const tag = params.tag?.trim().replace(/^#+/, "").toLowerCase() || undefined;
 
   const [result, counts, brands] = await Promise.all([
-    listClips({ status, platform, page }),
+    listClips({ status, platform, brandId, purpose, tag, page }),
     clipCountsByStatus(),
     listBrands(),
   ]);
 
   const promoteSources = await Promise.all(result.clips.map(promoteSourcesFor));
-  const hasFilters = status !== undefined || platform !== undefined;
+  const hasFilters = [status, platform, brandId, purpose, tag].some((v) => v !== undefined);
   const brandOptions = brands.map((b) => ({ id: b.id, name: b.name, platforms: b.platforms }));
 
   return (
@@ -79,7 +101,15 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
             {result.total} {t(result.total === 1 ? "inbox.countOne" : "inbox.countMany")}
           </h1>
         </div>
-        <ClipFilters status={status ?? ""} platform={platform ?? ""} locale={locale} />
+        <ClipFilters
+          status={status ?? ""}
+          platform={platform ?? ""}
+          brandId={brandId ?? ""}
+          purpose={purpose ?? ""}
+          tag={tag ?? ""}
+          brands={brandOptions}
+          locale={locale}
+        />
         {Object.keys(counts).length > 0 && (
           <p className="text-xs text-[var(--color-ink-muted)]">
             {Object.entries(counts)
@@ -91,6 +121,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
 
       <div className="surface-border surface-card mb-6 p-5">
         <QuickAddClipForm />
+        <p className="mt-3 text-xs text-[var(--color-ink-muted)]">{t("capture.hashtagHint")}</p>
       </div>
 
       {result.clips.length === 0 ? (
@@ -132,6 +163,8 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
       <div className="surface-border surface-card mt-8 p-5 text-sm text-[var(--color-ink-muted)]">
         <p className="font-medium text-[var(--color-ink)]">{t("inbox.captureSetup.title")}</p>
         <p className="mt-1">{t("inbox.captureSetup.body")}</p>
+        <p className="mt-3 font-medium text-[var(--color-ink)]">{t("capture.telegram.title")}</p>
+        <p className="mt-1">{t("capture.telegram.body")}</p>
       </div>
     </main>
   );
