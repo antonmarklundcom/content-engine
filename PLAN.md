@@ -600,7 +600,7 @@ their archived plans.
 | O9 Social schema + contracts | #48 | `docs/log/o9.md` | merged (seed filled by parent session) |
 | O10 Media storage | #50 | `docs/log/o10.md` | merged |
 | O11 Post engine | #52 | `docs/log/o11.md` | open |
-| S15 Posts, calendar, post pack | — | `docs/log/s15.md` | open |
+| S15 Posts, calendar, post pack | #59 | `docs/log/s15.md` | open |
 
 ## §10. Backlog
 
