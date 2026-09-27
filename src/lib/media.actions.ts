@@ -24,7 +24,12 @@ import { entryCandidates } from "@/lib/media/manifest";
 import { scanMediaRoot } from "@/lib/media/scan";
 import { localDriver } from "@/lib/storage/local";
 import { handleSegment, INBOX_DIR, segment } from "@/lib/storage/paths";
-import { mediaRoot, mediaRootMessage, mediaRootStatus, splitRelative } from "@/lib/storage/root";
+import {
+  mediaRootMessage,
+  mediaRootStatus,
+  resolveMediaFile,
+  splitRelative,
+} from "@/lib/storage/root";
 
 export type MediaActionResult<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 
@@ -114,7 +119,9 @@ async function moveOutOfInbox(
   const segments = splitRelative(from);
   if (!segments) return { ok: false, message: `Unsafe media path: ${from}` };
   const driver = localDriver();
-  const absolute = path.resolve(mediaRoot(), ...segments);
+  // O10's boundary: a regular file whose real path is inside the root, never a symlink out.
+  const absolute = await resolveMediaFile(segments);
+  if (!absolute) return { ok: false, message: `No file at ${from}.` };
 
   let put = await driver.put(sortedKey(asset, brandId, handle, fileName(from)), {
     file: absolute,
