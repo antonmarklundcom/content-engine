@@ -1,37 +1,35 @@
-# Handoff — the four gates, then spawn (PLAN.md §4.10)
+# Handoff — the four gates, then spawn (PLAN.md §4.10, build 3)
 
 A phase is done only when ALL of these hold:
 
-1. **PR merged green** — CI (typecheck, unit, integration, build; lint once
-   S9 adds it) passed on the merged head.
-2. **Exit checklist passed** — every line of the phase's Exit in its prompt,
-   checked against main after the merge, not against the branch.
-3. **Pre-handoff audit** — ONE `npm run verify` on main, ONE adversarial
-   re-read of the merged diff. Findings fixed in ONE follow-up commit (a
-   second PR if the first is merged). No second round.
-4. **Phase log committed** — `docs/log/<id>.md` per `docs/log/README.md`,
-   plus the index line in PLAN.md §9.
+1. **PR merged green** — CI (typecheck, lint, unit, integration, build) passed on the merged head.
+2. **Exit checklist passed** — every line of the phase's Exit, checked against main after the merge.
+3. **Pre-handoff audit** — ONE `npm run verify` on main, ONE adversarial re-read of the merged
+   diff. Findings fixed in ONE follow-up commit (a second PR if the first is merged). No second round.
+4. **Phase log committed** — `docs/log/<id>.md` per `docs/log/README.md`, plus the index line in PLAN.md §9.
 
-Then, by lane:
+Every spawn uses the claude-code-remote `create_session` tool with: `source_url`
+`https://github.com/antonmarklundcom/content-engine`, inherited environment and permission mode
+(never `plan`), `model` exactly `claude-opus-5-5` (§1.37, never inherit, never Fable), and `prompt`
+exactly `Read prompts/<file>.md in this repo and execute it.`
 
-- **Lane 1 (O4–O7):** spawn the next lane 1 phase with the claude-code-remote
-  `create_session` tool — inherit environment and permission mode (never
-  `plan`), `model` set explicitly to `claude-opus-5-5` (§1.37; never inherit, never Fable), `prompt` exactly
-  `Read prompts/<next-file>.md in this repo and execute it.`
-- **O8 (last lane 1 phase):** first create the watcher Routine with
-  `create_trigger`: hourly cron, `create_new_session_on_fire: true`, model
-  `claude-opus-5-5` (§1.37), prompt exactly
-  `Read prompts/_watcher.md in this repo and execute it.` Then spawn S5, S6,
-  S8, S10 — up to 4 concurrent sessions (the watcher starts S11, S12 as
-  slots free), each on Opus 5.5 (`claude-opus-5-5`), same `prompt`
-  pattern with its own file.
-- **Lane 2 (S5, S6, S8, S10–S12):** spawn nothing. End with the phase report.
-- **S9:** delete the watcher Routine (`delete_trigger`), then STOP with the
-  closing report to Anton.
+Then, by phase:
 
-Fallback when `create_session` is unavailable (local CLI): same model → the
-next phase may continue in this window; model switch → stop and report the
-line Anton pastes.
+- **O9** → spawn `prompts/opus-10-media-storage.md`.
+- **O10** → spawn `prompts/opus-11-post-engine.md`.
+- **O11** → spawn ALL of lane 2 at once (seven `create_session` calls):
+  `sonnet-13-brands-accounts.md`, `sonnet-14-media-library.md`, `sonnet-15-posts-calendar.md`,
+  `sonnet-16-telegram-capture.md`, `sonnet-17-clip-fetch.md`, `sonnet-18-facts-hooks.md`,
+  `sonnet-19-docs.md`.
+- **S13–S19** → check the PRs of the other six lane 2 phases (by branch `phase/s<n>-…`, or `S<n>` /
+  the prompt file name in the PR title or body). If ALL are merged AND no branch or PR for S20
+  exists yet → spawn `prompts/sonnet-20-link-pass.md`. Otherwise spawn nothing.
+- **S20** → spawn nothing. STOP with the closing report to Anton (§7 checklist state, what to do next).
+- **Lane 3** (started by Anton): **O12** → spawn `opus-13-publishing.md` AND `sonnet-21-ig-competitors.md`;
+  **O13** → spawn `opus-14-hostinger-deploy.md`; **O14**, **S21** → spawn nothing, report.
 
-Never message a running session. To change what a later phase will do, edit
-its prompt file on main (§4.14).
+Fallback when `create_session` is unavailable (local CLI): continue in this window with the next
+lane 1 phase, or stop and report the exact line Anton pastes.
+
+There is no watcher (§1.53). Never message a running session. To change what a later phase does,
+edit its prompt file on main (§4.14).
