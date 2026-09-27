@@ -2,6 +2,7 @@ import "dotenv/config";
 import { drizzle as drizzleNeon, type NeonHttpDatabase } from "drizzle-orm/neon-http";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 import { neon } from "@neondatabase/serverless";
+import { setDefaultResultOrder } from "node:dns";
 import { Pool } from "pg";
 import { resolveDriver } from "./driver";
 import * as schema from "./schema";
@@ -26,6 +27,10 @@ function createDb(): Db {
   if (!url) throw new Error("DATABASE_URL is not set — see .env.example.");
 
   if (driver === "neon") return drizzleNeon(neon(url), { schema });
+
+  // Hostinger's shared servers have a broken IPv6 route to Neon (see
+  // docs/DEPLOY-HOSTINGER.md): resolving A records first keeps pg on IPv4.
+  if (process.env.DB_FORCE_IPV4 === "1") setDefaultResultOrder("ipv4first");
 
   pool = new Pool({ connectionString: url });
   // Structurally the two are the same query builder over the same schema, and

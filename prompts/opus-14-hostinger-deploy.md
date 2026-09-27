@@ -15,6 +15,7 @@ Budget: one session, ≤ 90 min. When the exit criteria pass, open the PR that t
 Phase rules:
 - Branch `phase/o14-hostinger-deploy` off latest main (or the harness's `claude/…` branch). WIP commit every 30 min.
 - Skills: `nextjs-deploy-hostinger` — follow it exactly (EU account, IPv6 to Neon, migrations from the PC).
+- `docs/DEPLOY-HOSTINGER.md` and the `DB_FORCE_IPV4` flag in `src/db/index.ts` already exist (added before build 3 finished, because Anton deployed early). Extend them; do not rewrite. Add every env var lanes 2–3 introduced.
 - Never put the app on the Brazil account (§1.42).
 - YouTube caption polling stays on the PC; the online cron runs poll with captions disabled.
 - Steps you cannot run from the sandbox are written as exact commands for Anton and marked UNVERIFIED.

@@ -14,6 +14,9 @@ turn (a short `sleep` loop in Bash, a Monitor, or `send_later` if you have it) u
 then merge and spawn. Cloud sessions cannot clone other repos (e.g. paraguayresidency); use what
 is committed here.
 
+**Never ask for a go-ahead.** When the four gates pass, spawn the next phase(s) in that same turn.
+Nobody reads a spawned session's questions; a "reply go to continue" stalls the build.
+
 Every spawn uses the claude-code-remote `create_session` tool with: `source_url`
 `https://github.com/antonmarklundcom/content-engine`, inherited environment and permission mode
 (never `plan`), `model` exactly `claude-opus-5-5` (§1.37, never inherit, never Fable), and `prompt`
