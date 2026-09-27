@@ -23,6 +23,7 @@
     "studio:weekly": "tsx --conditions=react-server scripts/weekly-report.ts",
     "media:scan": "tsx --conditions=react-server scripts/media-scan.ts",
     "media:prune": "tsx --conditions=react-server scripts/media-prune.ts",
+    "facts:import": "tsx --conditions=react-server scripts/facts-import.ts",
     "yt:seed-owner": "tsx scripts/seed-yt-owner.ts",
     "yt:uploads": "tsx scripts/list-uploads.ts",
     "yt:ingest": "tsx scripts/ingest.ts",
