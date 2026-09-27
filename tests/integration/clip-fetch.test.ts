@@ -200,13 +200,13 @@ test("the batch job takes only fact_check and competitor clips, and leaves faile
   const inspo = await clip({ url: "https://www.instagram.com/reel/I/", purpose: "inspo" });
   const own = await clip({
     url: "https://www.tiktok.com/@me/video/1",
-    platform: "tiktok",
+    platform: "other",
     purpose: "own",
   });
   const fact = await clip({ url: "https://www.instagram.com/reel/F/", purpose: "fact_check" });
   const comp = await clip({
     url: "https://www.tiktok.com/@x/video/2",
-    platform: "tiktok",
+    platform: "other",
     purpose: "competitor",
   });
   const failed = await clip({
