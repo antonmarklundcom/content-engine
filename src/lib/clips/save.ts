@@ -177,7 +177,10 @@ export async function processYouTubeClip(clip: Clip): Promise<Clip> {
     return row;
   }
 
-  await db.update(clips).set({ status: "ingesting", error: null }).where(eq(clips.id, clip.id));
+  await db
+    .update(clips)
+    .set({ status: "ingesting", error: null, ingestStartedAt: sql`now()` })
+    .where(eq(clips.id, clip.id));
 
   let video: Video;
   try {

@@ -182,3 +182,30 @@ test("the poll run fails clips stuck in ingesting for over 15 minutes", async ()
   // A second run finds nothing left to reap.
   assert.equal((await pollSources({ analyze: false })).reapedClips, 0);
 });
+
+test("the reaper times a retried old clip from its ingest start, not its save", async () => {
+  await db.insert(schema.clips).values([
+    {
+      // Saved a month ago, retried a minute ago: in time.
+      url: "https://youtu.be/retried0001",
+      platform: "youtube",
+      status: "ingesting",
+      savedAt: sql`now() - interval '30 days'`,
+      ingestStartedAt: sql`now() - interval '1 minute'`,
+    },
+    {
+      // Saved a minute ago but its ingest started 20 minutes back cannot
+      // happen in practice; it pins that the start time, not the save, decides.
+      url: "https://youtu.be/started0001",
+      platform: "youtube",
+      status: "ingesting",
+      savedAt: sql`now() - interval '1 minute'`,
+      ingestStartedAt: sql`now() - interval '20 minutes'`,
+    },
+  ]);
+
+  assert.equal((await pollSources({ analyze: false })).reapedClips, 1);
+  const byUrl = new Map((await db.select().from(schema.clips)).map((c) => [c.url, c]));
+  assert.equal(byUrl.get("https://youtu.be/retried0001")!.status, "ingesting");
+  assert.equal(byUrl.get("https://youtu.be/started0001")!.status, "failed");
+});

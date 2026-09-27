@@ -24,9 +24,7 @@ notes are in this file's git history.
 
 ## Data and correctness
 
-- `db.transaction()` throws on the Neon HTTP driver (fine on `pg`, the local-first driver §1.27) — `o4.md`, `b2b-c.md`.
-- `canonicalClipUrl` does not strip `utm_*`, so one video shared from two apps can become two clips — `o4.md`.
-- The ingest reaper keys on `saved_at`, so a retried old clip can be failed early (self-heals) — `o6.md`.
+- Neon transactions run over a WebSocket pool that needs Node.js 22+ (global `WebSocket`); older Node gets a clear error — O14 should pin Node 22 on the slot.
 - A fallback analysis is indistinguishable from a caption one in `analyses` — `o7.md`.
 - Filming-plan setup detection is a fixed en/es word list and can false-positive — `b2b-c.md`.
 - The listing LAN check is on the literal host; a public name resolving to a private IP is not caught — `b2b-d.md`.

@@ -212,6 +212,12 @@ export const clips = pgTable(
     telegramFileId: varchar("telegram_file_id", { length: 255 }),
     /** When media fetch + transcript last succeeded. */
     fetchedAt: timestamp("fetched_at"),
+    /**
+     * When the clip last entered `ingesting`. The stuck-ingest reaper keys on
+     * this, not on `savedAt`: a retried clip saved weeks ago would otherwise
+     * look stuck the moment its retry started. Null on rows from before it.
+     */
+    ingestStartedAt: timestamp("ingest_started_at"),
   },
   (t) => [
     // Dedupe key: the save route upserts on this rather than checking first.
