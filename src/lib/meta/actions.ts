@@ -113,6 +113,9 @@ export async function linkAccountAction(
     if (!Number.isInteger(integrationId) || integrationId <= 0) {
       return { ok: false, error: "Connect Meta first." };
     }
+    if (!(await listMetaIntegrations()).some((r) => r.id === integrationId)) {
+      return { ok: false, error: "That Meta connection no longer exists. Reload the page." };
+    }
     await linkAccount(accountId, { externalId, integrationId });
     return done("Linked.");
   } catch (err) {
