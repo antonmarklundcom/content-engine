@@ -32,13 +32,16 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
   const post = await getPost(id);
   if (!post) notFound();
 
-  const [attached, library, related] = await Promise.all([
+  // The brand's files, then the unsorted inbox (no brand yet) — both can be attached.
+  const [attached, own, unsorted, related] = await Promise.all([
     listPostAssets(id),
     listAssets({ brandId: post.brandId }),
+    listAssets({ unsorted: true }),
     listRelatedPosts(id),
   ]);
+  const library = [...own.assets, ...unsorted.assets];
   const draft = validatePostDraft(post.body).ok ? (post.body as PostDraft) : null;
-  const toItem = (a: (typeof library.assets)[number]): PostAssetItem => ({
+  const toItem = (a: (typeof library)[number]): PostAssetItem => ({
     id: a.id,
     kind: a.kind,
     name: a.localPath?.split("/").pop() ?? `asset ${a.id}`,
@@ -119,7 +122,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
             <PostAssets
               postId={id}
               attached={attached.map((a) => ({ ...toItem(a.asset), role: a.role }))}
-              library={library.assets
+              library={library
                 .filter(
                   (a) =>
                     !attachedIds.has(a.id) && a.status !== "rejected" && a.status !== "archived",
