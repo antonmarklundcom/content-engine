@@ -369,9 +369,11 @@ async function failed(
   const retries = temporary && post.publishAttempts < MAX_ATTEMPTS && post.scheduledFor !== null;
   const stored = retries
     ? `${TEMPORARY_PREFIX}${text}`
-    : temporary
-      ? `${text} Gave up after ${post.publishAttempts} attempt(s).`
-      : text;
+    : !temporary
+      ? text
+      : post.scheduledFor === null
+        ? `${text} Try again in a few minutes.`
+        : `${text} Gave up after ${post.publishAttempts} attempt(s).`;
   await db
     .update(posts)
     .set({
