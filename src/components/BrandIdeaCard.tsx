@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { translator, type Locale } from "@/lib/i18n";
@@ -119,6 +120,11 @@ export function BrandIdeaCard({
           <span role="alert" className="text-xs text-[var(--color-danger)]">
             {t("ideas.action.failed")}
           </span>
+        )}
+        {idea.status !== "rejected" && (
+          <Link href={`/posts/new?idea=${idea.id}`} className={BUTTON_SECONDARY}>
+            {t("links.makePost")}
+          </Link>
         )}
         <IdeaActions
           ideaId={idea.id}

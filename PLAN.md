@@ -606,8 +606,9 @@ their archived plans.
 | S16 Telegram capture | #56 | `docs/log/s16.md` | merged |
 | S17 Clip fetch + transcript | #57 | `docs/log/s17.md` | merged |
 | S18 Facts import + hooks library | #55 | `docs/log/s18.md` | merged |
-| S19 Docs + local setup | #53 | `docs/log/s19.md` | open |
-| Fix: Neon transactions, reaper start time | #63 | — | open |
+| S19 Docs + local setup | #53 | `docs/log/s19.md` | merged |
+| Fix: Neon transactions, reaper start time | #63 | — | merged |
+| S20 Link pass | — | `docs/log/s20.md` | open |
 
 ## §10. Backlog
 

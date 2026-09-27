@@ -1,7 +1,6 @@
 /** Header nav groups and the links under them (PLAN.md §6.S9). `nav.ts` is pinned by the O6 key snapshot, so these live here. */
 
 export const en = {
-  "header.content": "Content",
   "header.research": "Research",
   "header.research.outliers": "Outliers",
   "header.research.report": "Report",
@@ -15,10 +14,19 @@ export const en = {
   "header.lessons": "Lessons",
   "header.settings": "Settings",
   "header.youtube": "YouTube",
+
+  // S20 link pass (PLAN.md §6.S20): the build 3 pages.
+  "header.posts": "Posts",
+  "header.calendar": "Calendar",
+  "header.media": "Media",
+  "header.accounts": "Accounts",
+  "header.accounts.brands": "Brands",
+  "header.accounts.families": "Families",
+  "header.hooks": "Hooks",
+  "header.inbox": "Inbox",
 } as const;
 
 export const sv: Record<keyof typeof en, string> = {
-  "header.content": "Innehåll",
   "header.research": "Research",
   "header.research.outliers": "Avvikare",
   "header.research.report": "Rapport",
@@ -32,4 +40,13 @@ export const sv: Record<keyof typeof en, string> = {
   "header.lessons": "Lärdomar",
   "header.settings": "Inställningar",
   "header.youtube": "YouTube",
+
+  "header.posts": "Inlägg",
+  "header.calendar": "Kalender",
+  "header.media": "Media",
+  "header.accounts": "Konton",
+  "header.accounts.brands": "Varumärken",
+  "header.accounts.families": "Familjer",
+  "header.hooks": "Hooks",
+  "header.inbox": "Inkorg",
 };

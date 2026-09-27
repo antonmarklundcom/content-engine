@@ -32,7 +32,7 @@ export default async function BrandPage({
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
       <Link
-        href="/"
+        href="/brands"
         className="text-sm text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)]"
       >
         {t("brands.back")}
@@ -42,6 +42,20 @@ export default async function BrandPage({
       </h1>
       <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
         {brand.niche} · {brand.market} · {brand.platforms.join(", ")}
+      </p>
+      <p className="mt-2 flex flex-wrap gap-4 text-sm">
+        <Link
+          href={`/brands/${encodeURIComponent(brand.id)}`}
+          className="text-[var(--color-accent)] hover:underline"
+        >
+          {t("links.brandAccounts")}
+        </Link>
+        <Link
+          href={`/brand/${encodeURIComponent(brand.id)}/kit`}
+          className="text-[var(--color-accent)] hover:underline"
+        >
+          {t("links.brandKit")}
+        </Link>
       </p>
       <BrandIdeas
         brandId={brand.id}

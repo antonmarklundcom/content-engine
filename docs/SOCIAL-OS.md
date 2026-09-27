@@ -5,7 +5,7 @@ accounts, the media, the posts, the calendar and the research behind them
 (PLAN.md build 3). No brand is special; everything below works the same for
 each one.
 
-Build 3 lands in phases, so some steps are marked **arrives with S1x / O1x**:
+Build 3 lands in phases, so steps that still wait on lane 3 are marked **arrives with O1x**:
 the page or command does not exist on `main` yet. Until then the step's API
 route or the older page does the job, as noted.
 
@@ -28,7 +28,7 @@ capture → research → idea → post → Higgsfield → pack → posted → me
 
 - **Today:** the share sheet or iOS Shortcut saves a link into `/inbox`
   ([CAPTURE.md](CAPTURE.md)). Needs the PC on and reachable.
-- **Telegram** (arrives with S16): send the link to your bot, with
+- **Telegram**: send the link to your bot, with
   `#<brand>` and `#inspo`, `#competitor`, `#factcheck` or `#own`. Works while
   the PC is off (a free Cloudflare Worker). Setup: `workers/telegram-capture/README.md`.
 
@@ -39,7 +39,7 @@ capture → research → idea → post → Higgsfield → pack → posted → me
 - `/facts` and `/lessons` — facts per brand, and hooks/title patterns you saved.
   Family facts imported from a site with `npm run facts:import` and a hooks
   library at `/hooks` arrive with S18.
-- **Fetch + transcribe a reel** (arrives with S17): `npm run clips:fetch`
+- **Fetch + transcribe a reel**: `npm run clips:fetch`
   downloads saved `#factcheck` / `#competitor` clips with yt-dlp and asks Gemini
   for transcript, summary and claims; `/clips/<id>` shows them. Research only:
   other people's media is never republished.
@@ -51,14 +51,14 @@ Keep the good ones.
 
 ## 4. Post — written for engagement
 
-- `/posts/new` (arrives with S15) turns an idea or a topic into a draft for
+- `/posts/new` turns an idea or a topic into a draft for
   one account: hook, caption, CTA, hashtags, slides / shots / story frames, and
-  the sources for every claim. Until then: `POST /api/posts`.
+  the sources for every claim (API: `POST /api/posts`).
 - **Adapt to family** writes the same post for every sibling account in its
-  own language (`POST /api/posts/<id>/adapt`; the button arrives with S15).
+  own language (`POST /api/posts/<id>/adapt`; or the button on the post page).
 - Rewrite one section without touching the rest (`POST /api/posts/<id>/regenerate`).
 - Brands, families, accounts and brand kits (colours, fonts, CTAs, Higgsfield
-  element ids) are edited at `/brands` (arrives with S13).
+  element ids) are edited at `/brands`.
 
 ## 5. Higgsfield — make the visuals
 
@@ -74,18 +74,18 @@ a cloud session cannot reach it ([HIGGSFIELD.md](HIGGSFIELD.md)).
   ```powershell
   npm run media:scan
   ```
-  `/media` (arrives with S14) is where you approve, tag and attach them.
+  `/media` is where you approve, tag and attach them.
 
 ## 6. Pack — everything to post from the phone
 
-`/posts/<id>/pack` (arrives with S15): the caption with a copy button and the
-media in order with download links. Until then:
-`GET /api/posts/<id>/export?format=pack`.
+`/posts/<id>/pack`: the caption with a copy button and the
+media in order with download links (API:
+`GET /api/posts/<id>/export?format=pack`).
 
 ## 7. Posted
 
 Post by hand from the phone, then **Mark posted** with the permalink on the
-pack page (arrives with S15). The calendar at `/calendar` (arrives with S15)
+pack page. The calendar at `/calendar`
 shows what is scheduled per account or family.
 
 Automatic publishing to Instagram and Facebook arrives with O13:

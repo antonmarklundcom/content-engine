@@ -75,3 +75,4 @@ The O9 session could not clone `antonmarklundcom/paraguayresidency` (the permiss
 **Answered 2026-09-27 (parent session):** the six PENDING brands were filled from `antonmarklundcom/paraguayresidency` (`CLAUDE.md` domain table, `plan.md` §11.1–§11.8) on `phase/o9-social-schema`; the seed now writes all seven.
 
 - S17 (2026-09-27): for S20 — add `"clips:fetch": "tsx --conditions=react-server scripts/clips-fetch.ts"` to `package.json` and the yt-dlp/ffmpeg/Telegram env keys listed in `docs/log/s17.md` to `.env.example` (neither file is S17's).
+  **Done by S20 (2026-09-27):** `clips:fetch` script and the env keys added.

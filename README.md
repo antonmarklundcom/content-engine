@@ -12,7 +12,7 @@ How a normal day goes: **[docs/SOCIAL-OS.md](docs/SOCIAL-OS.md)**.
   `/api/posts` today; the editor, calendar and phone post pack arrive with S15.
 - **Media** — photos and videos on an external office drive, backed up by Google Drive,
   with a public copy on Hostinger only while publishing: [docs/STORAGE.md](docs/STORAGE.md).
-  The media library page arrives with S14.
+  The media library is at `/media`.
 - **Competitors** — link YouTube channels to a brand, rank their videos by outlier score.
 - **Digests** — captions pulled from YouTube, analysed by Gemini into summaries and key points.
 - **Lessons** — hooks, facts and title patterns saved by hand from a digest.
