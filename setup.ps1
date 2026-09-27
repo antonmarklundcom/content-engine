@@ -60,7 +60,8 @@ function NewSecret { -join ((1..32) | ForEach-Object { '{0:x2}' -f (Get-Random -
 $db = $existing["DATABASE_URL"]
 if (-not $db -or $db -like "*ep-xxxx*") {
   Write-Host "You need a free Neon database. A browser window opens: sign in, create a project,"
-  Write-Host "click 'Connect' and copy the connection string (starts with postgresql://)."
+  Write-Host "pick the region AWS Europe Central 1 (Frankfurt), click 'Connect' and copy"
+  Write-Host "the connection string (starts with postgresql://)."
   Start-Process "https://console.neon.tech/signup"
   do { $db = Read-Host "Paste the Neon connection string" } until ($db -match '^postgres(ql)?://')
 }

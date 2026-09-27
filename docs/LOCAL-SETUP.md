@@ -20,7 +20,7 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
    git clone https://github.com/antonmarklundcom/content-engine "$HOME\content-engine"
    ```
 2. Open the `content-engine` folder in your user folder and double-click **`setup.bat`**.
-   It installs Node.js, yt-dlp and ffmpeg, asks for your free Neon database link
+   It installs Node.js (and, when it can, yt-dlp and ffmpeg), asks for your free Neon database link
    and a login, sets everything up and puts a **Content Engine** shortcut on
    your desktop.
 3. Double-click the shortcut, log in, open **Settings** (`localhost:3000/settings`)
