@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, gte, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, ne } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
@@ -184,9 +184,59 @@ export async function addIgCompetitor(
 }
 
 /** The competitor and its stored posts go. */
+/**
+ * The competitor goes. Its stored posts move to another brand's row for the
+ * same handle when there is one (media ids are unique across brands), else go.
+ */
 export async function removeIgCompetitor(id: number): Promise<void> {
-  await db.delete(competitorPosts).where(eq(competitorPosts.competitorId, id));
+  const [row] = await db.select().from(socialCompetitors).where(eq(socialCompetitors.id, id));
+  if (!row) return;
+  const [other] = await db
+    .select({ id: socialCompetitors.id })
+    .from(socialCompetitors)
+    .where(
+      and(
+        eq(socialCompetitors.platform, row.platform),
+        eq(socialCompetitors.handle, row.handle),
+        ne(socialCompetitors.id, id),
+      ),
+    )
+    .limit(1);
+  if (other) {
+    await db
+      .update(competitorPosts)
+      .set({ competitorId: other.id })
+      .where(eq(competitorPosts.competitorId, id));
+  } else {
+    await db.delete(competitorPosts).where(eq(competitorPosts.competitorId, id));
+  }
   await db.delete(socialCompetitors).where(eq(socialCompetitors.id, id));
+}
+
+/**
+ * The stored posts of these competitor rows. `competitor_posts.external_id` is
+ * unique across brands, so when two brands track the same handle the posts sit
+ * under whichever row synced first: read them by handle and hand them back
+ * under the given row's id.
+ */
+async function postsFor(competitors: SocialCompetitor[]): Promise<CompetitorPost[]> {
+  if (competitors.length === 0) return [];
+  const byHandle = new Map(competitors.map((c) => [c.handle, c.id]));
+  const sameHandle = await db
+    .select({ id: socialCompetitors.id, handle: socialCompetitors.handle })
+    .from(socialCompetitors)
+    .where(
+      and(
+        eq(socialCompetitors.platform, "instagram"),
+        inArray(socialCompetitors.handle, [...byHandle.keys()]),
+      ),
+    );
+  const target = new Map(sameHandle.map((r) => [r.id, byHandle.get(r.handle)!]));
+  const rows = await db
+    .select()
+    .from(competitorPosts)
+    .where(inArray(competitorPosts.competitorId, [...target.keys()]));
+  return rows.map((r) => ({ ...r, competitorId: target.get(r.competitorId)! }));
 }
 
 export async function listIgCompetitors(brandId?: string): Promise<SocialCompetitor[]> {
@@ -391,15 +441,7 @@ export async function bestCompetitorPosts(
   );
   if (competitors.length === 0) return [];
   // The median uses every stored post of the competitor; only recent ones are shown.
-  const rows = await db
-    .select()
-    .from(competitorPosts)
-    .where(
-      inArray(
-        competitorPosts.competitorId,
-        competitors.map((c) => c.id),
-      ),
-    );
+  const rows = await postsFor(competitors);
   const since = now.getTime() - (options.days ?? 30) * 86_400_000;
   return rankAgainstMedian(rows, competitors)
     .filter((p) => p.postedAt && p.postedAt.getTime() >= since)
@@ -566,13 +608,13 @@ export async function listIgAccounts(): Promise<SocialAccount[]> {
     .orderBy(asc(socialAccounts.brandId), asc(socialAccounts.handle));
 }
 
-/** Stored post counts per competitor, for the list. */
-export async function competitorPostCounts(ids: number[]): Promise<Map<number, number>> {
-  if (ids.length === 0) return new Map();
-  const rows = await db
-    .select({ id: competitorPosts.competitorId, n: sql<number>`count(*)::int` })
-    .from(competitorPosts)
-    .where(inArray(competitorPosts.competitorId, ids))
-    .groupBy(competitorPosts.competitorId);
-  return new Map(rows.map((r) => [r.id, r.n]));
+/** Stored post counts per competitor row, for the list. */
+export async function competitorPostCounts(
+  competitors: SocialCompetitor[],
+): Promise<Map<number, number>> {
+  const counts = new Map<number, number>();
+  for (const p of await postsFor(competitors)) {
+    counts.set(p.competitorId, (counts.get(p.competitorId) ?? 0) + 1);
+  }
+  return counts;
 }

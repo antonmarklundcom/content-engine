@@ -431,3 +431,34 @@ test("suggestions fall back to our own best post when competitors are few", () =
   assert.equal(s.length, 1);
   assert.match(s[0].title, /Cost of living/);
 });
+
+test("two brands tracking one handle both see its posts; removing one keeps them", async () => {
+  await connected();
+  await db.insert(schema.brands).values({
+    id: "flytta",
+    name: "Flytta till Paraguay",
+    domain: "flyttatillparaguay.se",
+    niche: "residency",
+    market: "sweden",
+    language: "sv",
+    platforms: ["instagram"],
+  });
+  const a = await addIgCompetitor("residency", "rivalresidency");
+  const b = await addIgCompetitor("flytta", "rivalresidency");
+  assert.ok(a.ok && b.ok);
+  const { fetch } = discoveryFetch({ rivalresidency: { body: RIVAL } });
+  await syncIgCompetitors({ fetch, now: NOW });
+
+  const one = await bestCompetitorPosts("residency", { now: NOW });
+  const two = await bestCompetitorPosts("flytta", { now: NOW });
+  assert.equal(one.length, 3);
+  assert.deepEqual(
+    two.map((p) => p.externalId),
+    one.map((p) => p.externalId),
+  );
+  assert.ok(two.every((p) => p.competitorId === (b.ok ? b.competitor.id : -1)));
+
+  await removeIgCompetitor(a.ok ? a.competitor.id : -1);
+  assert.equal((await db.select().from(schema.competitorPosts)).length, 4);
+  assert.equal((await bestCompetitorPosts("flytta", { now: NOW })).length, 3);
+});

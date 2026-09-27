@@ -52,7 +52,7 @@ export default async function IgCompetitorsPage({
   const brand = brands.find((b) => b.id === params.brand) ?? brands[0];
   const competitors = brand ? await listIgCompetitors(brand.id) : [];
   const [counts, best] = await Promise.all([
-    competitorPostCounts(competitors.map((c) => c.id)),
+    competitorPostCounts(competitors),
     brand ? bestCompetitorPosts(brand.id, { days: 30, limit: 12 }) : [],
   ]);
   const linked = igAccounts.some((a) => a.integrationId !== null && a.externalId !== null);
