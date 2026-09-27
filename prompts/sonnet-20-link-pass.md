@@ -14,11 +14,11 @@ Phase rules:
 - Skills: none.
 - You hold every cross-cutting edit: nav, home cards, the one-line mounts listed in §6.S20.
 - Read the lane 2 logs' Known issues and `docs/decisions-needed.md`; promote only still-open cross-phase items.
-- Closing report: what shipped, what Anton does next (§7), how to start lane 3.
+- Closing report: what shipped, what Anton does next (§7). Lane 3 starts automatically (you spawn O12).
 - Re-runnable: check what exists first, continue from the first unmet exit criterion.
   Minor issues → `docs/log/s20.md`; stop only per §4.4.
 
 Exit (§6.S20): every nav link resolves; verify green; PR merged; closing report. Screenshots: CI artifact only.
 
 ## After this phase
-Follow `prompts/_handoff.md`. Spawn nothing. Stop with the closing report.
+Follow `prompts/_handoff.md`. Spawn `prompts/opus-12-meta-insights.md` (model `claude-opus-5-5`), then the closing report.

@@ -24,8 +24,8 @@ Then, by phase:
 - **S13–S19** → check the PRs of the other six lane 2 phases (by branch `phase/s<n>-…`, or `S<n>` /
   the prompt file name in the PR title or body). If ALL are merged AND no branch or PR for S20
   exists yet → spawn `prompts/sonnet-20-link-pass.md`. Otherwise spawn nothing.
-- **S20** → spawn nothing. STOP with the closing report to Anton (§7 checklist state, what to do next).
-- **Lane 3** (started by Anton): **O12** → spawn `opus-13-publishing.md` AND `sonnet-21-ig-competitors.md`;
+- **S20** → spawn `prompts/opus-12-meta-insights.md`, then end with the lane 2 closing report.
+- **Lane 3** (built against recorded fixtures; live paths UNVERIFIED until §7 items 7–8): **O12** → spawn `opus-13-publishing.md` AND `sonnet-21-ig-competitors.md`;
   **O13** → spawn `opus-14-hostinger-deploy.md`; **O14**, **S21** → spawn nothing, report.
 
 Fallback when `create_session` is unavailable (local CLI): continue in this window with the next
