@@ -1,5 +1,7 @@
-import { lstat, readdir, realpath, stat } from "node:fs/promises";
+import { lstat, readdir } from "node:fs/promises";
 import path from "node:path";
+
+import { isSafeSegment, mediaRoot } from "@/lib/storage/root";
 
 /**
  * The `media/` folder (PLAN.md §1.34): what Claude Code saved from Higgsfield,
@@ -12,43 +14,9 @@ import path from "node:path";
  * media root.
  */
 
-/** `MEDIA_ROOT` (tests, or a media folder elsewhere on the PC), else `<repo>/media`. */
-export function mediaRoot(): string {
-  return path.resolve(process.env.MEDIA_ROOT || path.join(process.cwd(), "media"));
-}
-
-/** One path segment a URL may carry: a plain name, nothing that climbs, roots or separates. */
-export function isSafeSegment(segment: string): boolean {
-  if (!segment || segment === "." || segment === "..") return false;
-  if (/[/\\\0]/.test(segment)) return false;
-  if (/^[a-zA-Z]:/.test(segment)) return false; // a Windows drive
-  return true;
-}
-
-function inside(root: string, candidate: string): boolean {
-  const rel = path.relative(root, candidate);
-  return rel !== "" && !rel.startsWith("..") && !path.isAbsolute(rel);
-}
-
-/**
- * The absolute path of a regular file under the media root, or null — for a
- * bad segment, a path that leaves the root, a symlink (anywhere along the way)
- * that resolves outside it, a directory, or a file that does not exist.
- */
-export async function resolveMediaFile(segments: string[]): Promise<string | null> {
-  if (!segments.length || !segments.every(isSafeSegment)) return null;
-  const root = mediaRoot();
-  const candidate = path.resolve(root, ...segments);
-  if (!inside(root, candidate)) return null;
-  try {
-    const [realRoot, realFile] = await Promise.all([realpath(root), realpath(candidate)]);
-    if (!inside(realRoot, realFile)) return null;
-    const info = await stat(realFile);
-    return info.isFile() ? realFile : null;
-  } catch {
-    return null;
-  }
-}
+// The root and the path-safety boundary moved to the storage adapter (O10),
+// so the script-media routes and the media library share one set of rules.
+export { isSafeSegment, mediaRoot, resolveMediaFile } from "@/lib/storage/root";
 
 const TYPES: Record<string, string> = {
   ".png": "image/png",
