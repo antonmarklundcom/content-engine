@@ -58,7 +58,15 @@ import {
  * module back at half the app for no gain.
  */
 export type FakeResponseKind =
-  "ideas" | "adapt" | "analysis" | "screening" | "outline" | "titles" | "script";
+  | "ideas"
+  | "adapt"
+  | "analysis"
+  | "screening"
+  | "outline"
+  | "titles"
+  | "script"
+  | "post"
+  | "transcript";
 
 type JsonObject = Record<string, unknown>;
 
@@ -73,6 +81,10 @@ export function classifySchema(schema: unknown): FakeResponseKind {
   const has = (...names: string[]) => names.every((n) => keys.has(n));
 
   if (has("ideas", "researchNotes")) return "ideas";
+  // A post has a hook and a cta like an outline, and sources like a script;
+  // the caption + engagement pair is its own.
+  if (has("hook", "caption", "engagement")) return "post";
+  if (has("transcript", "postText", "claims")) return "transcript";
   // Ahead of `outline`, which also has a hook and a cta: a script is the one
   // with sections and sources.
   if (has("hook", "sections", "sources")) return "script";
@@ -181,6 +193,83 @@ export function validate(value: unknown, schema: unknown, path = "$"): void {
  * is wide enough.
  */
 export const PAYLOADS: Record<FakeResponseKind, unknown> = {
+  // Every list filled, so one payload serves every format: the app keeps the
+  // list the format uses (src/lib/posts/assemble.ts) and drops the rest. One
+  // source has no URL on purpose, to exercise the UNSOURCED note.
+  post: {
+    hook: "Everyone still quotes 90 days. It's 45.",
+    caption:
+      "Everyone still quotes 90 days for residency. For a complete file it's about 45.\n\nSwipe to see what 'complete' means — and save this before you book a flight.\n\nWhich document would you have forgotten? Tell me below.",
+    cta: "Save this before you book",
+    hashtags: ["#paraguay", "residency", "Expat Life"],
+    firstComment: "Sources: the migraciones office's own page, linked in bio.",
+    altText: "Carousel: the four documents of a complete residency file, one per slide.",
+    engagement: {
+      mechanic: "question",
+      detail: "Which document would you have forgotten?",
+    },
+    slides: [
+      {
+        headline: "90 days? Not any more.",
+        body: "",
+        visualPrompt: "Wall calendar with the number 45 circled, warm window light, photographic",
+        textOverlay: "90 → 45 days",
+      },
+      {
+        headline: "Only for a complete file",
+        body: "Miss one document and the clock restarts.",
+        visualPrompt: "Neat stack of forms tied with string on a wooden desk, top-down",
+        textOverlay: "Complete = 4 documents",
+      },
+      {
+        headline: "Save this",
+        body: "Check all four before you fly.",
+        visualPrompt: "Passport and boarding pass on a table next to a checklist, soft light",
+        textOverlay: "Save for your move",
+      },
+    ],
+    shots: [
+      {
+        seconds: 3,
+        onScreenText: "90 days? No.",
+        voiceover: "Everyone still says ninety days.",
+        imagePrompt: "Close-up of a desk calendar, shallow depth of field, vertical 9:16",
+        videoPrompt: "Slow push-in on the calendar",
+      },
+      {
+        seconds: 5,
+        onScreenText: "~45 days (complete files)",
+        imagePrompt: "Hands laying four documents on a desk one at a time, vertical 9:16",
+        videoPrompt: "Top-down, documents slide into frame",
+      },
+    ],
+    storyFrames: [
+      {
+        text: "How long does residency take?",
+        sticker: "quiz",
+        visualPrompt: "Asunción street at golden hour, vertical 9:16",
+      },
+      { text: "About 45 days — if your file is complete.", visualPrompt: "Stack of forms, vertical" },
+    ],
+    sources: [
+      {
+        claim: "Complete residency applications are processed in about 45 days.",
+        url: "https://example.gov.py/migraciones/plazos",
+      },
+      { claim: "Four documents make a file complete.", url: "see the guide" },
+    ],
+  },
+  transcript: {
+    transcript:
+      "Si querés la residencia en Paraguay, esto es lo que nadie te dice. El trámite tarda cuarenta y cinco días.",
+    postText: "RESIDENCIA EN 45 DÍAS | Comentá GUIA",
+    summary:
+      "A creator claims Paraguayan residency takes 45 days and invites viewers to comment for a guide.",
+    claims: [
+      { claim: "Paraguayan residency takes 45 days.", timestampSec: 4 },
+      { claim: "Nobody mentions the police certificate expiry." },
+    ],
+  },
   ideas: {
     // Empty on purpose: /api/generate falls back to [brandId] when a note names
     // no brands, which is the branch worth exercising, and it keeps the note
@@ -527,6 +616,21 @@ export const PAYLOADS: Record<FakeResponseKind, unknown> = {
  * transcript-sized input for an analysis, a couple of paragraphs for an adapt.
  */
 export const USAGE: Record<FakeResponseKind, GenerateContentResponseUsageMetadata> = {
+  post: {
+    promptTokenCount: 5_200,
+    candidatesTokenCount: 1_900,
+    thoughtsTokenCount: 800,
+    cachedContentTokenCount: 0,
+    totalTokenCount: 7_900,
+  },
+  // A 40-second reel sent inline at default resolution.
+  transcript: {
+    promptTokenCount: 12_400,
+    candidatesTokenCount: 420,
+    thoughtsTokenCount: 0,
+    cachedContentTokenCount: 0,
+    totalTokenCount: 12_820,
+  },
   ideas: {
     promptTokenCount: 4_200,
     candidatesTokenCount: 3_100,
@@ -620,6 +724,14 @@ export const FALLBACK_USAGE: GenerateContentResponseUsageMetadata = {
   totalTokenCount: 191_300,
 };
 
+/**
+ * The fallback is an *analysis* request carrying a file URI. Clip
+ * transcription (§1.44) also attaches media, and answers in its own schema.
+ */
+function isVideoUrlFallback(params: GenerateContentParameters, kind: FakeResponseKind): boolean {
+  return kind === "analysis" && isVideoUrlRequest(params);
+}
+
 /** Does this request attach a file by URI — i.e. is it the video-URL fallback? */
 export function isVideoUrlRequest(params: GenerateContentParameters): boolean {
   const contents = Array.isArray(params.contents) ? params.contents : [params.contents];
@@ -636,9 +748,6 @@ export function isVideoUrlRequest(params: GenerateContentParameters): boolean {
 // building responses
 // ---------------------------------------------------------------------------
 
-function textOf(kind: FakeResponseKind): string {
-  return JSON.stringify(PAYLOADS[kind]);
-}
 
 /** Is this request asking for Search grounding? `/api/generate` and script generation do. */
 function isGrounded(params: GenerateContentParameters): boolean {
@@ -720,6 +829,13 @@ export type FakeControls = {
   batchState: JobState;
   /** `custom_id` → error, to fail individual entries of an otherwise fine batch. */
   batchEntryErrors: Map<string, JobError>;
+  /**
+   * Answer interactive calls of a kind with this payload instead. Still checked
+   * against the caller's schema, so it drives a schema-valid answer the app
+   * must reject on its own (e.g. a one-slide carousel) — never a shape the real
+   * API could not return.
+   */
+  payloadOverrides: Map<FakeResponseKind, unknown>;
 };
 
 export class FakeGemini {
@@ -728,6 +844,7 @@ export class FakeGemini {
   readonly controls: FakeControls = {
     batchState: JobState.JOB_STATE_SUCCEEDED,
     batchEntryErrors: new Map(),
+    payloadOverrides: new Map(),
   };
 
   /** Requests as submitted, keyed by the job name `batches.create` handed back. */
@@ -738,14 +855,14 @@ export class FakeGemini {
       params: GenerateContentParameters,
     ): Promise<GenerateContentResponse> => {
       const kind = this.record(params);
-      if (isVideoUrlRequest(params)) {
+      if (isVideoUrlFallback(params, kind)) {
         return sdkResponse({
           text: JSON.stringify(FALLBACK_PAYLOAD),
           usageMetadata: FALLBACK_USAGE,
         });
       }
       return sdkResponse({
-        text: textOf(kind),
+        text: JSON.stringify(this.payloadFor(kind)),
         usageMetadata: USAGE[kind],
         webSearchQueries: isGrounded(params) ? WEB_SEARCH_QUERIES : undefined,
       });
@@ -756,7 +873,7 @@ export class FakeGemini {
     ): Promise<AsyncGenerator<GenerateContentResponse>> => {
       const kind = this.record(params, "generateContentStream");
       const grounded = isGrounded(params);
-      const pieces = fragments(textOf(kind), 3);
+      const pieces = fragments(JSON.stringify(this.payloadFor(kind)), 3);
 
       // Grounding metadata is split across chunks on purpose. Whether the real
       // API repeats the full list on every chunk or dribbles it out is not
@@ -875,6 +992,13 @@ export class FakeGemini {
     this.submitted.clear();
     this.controls.batchState = JobState.JOB_STATE_SUCCEEDED;
     this.controls.batchEntryErrors.clear();
+    this.controls.payloadOverrides.clear();
+  }
+
+  private payloadFor(kind: FakeResponseKind): unknown {
+    return this.controls.payloadOverrides.has(kind)
+      ? this.controls.payloadOverrides.get(kind)
+      : PAYLOADS[kind];
   }
 
   /** Calls of one kind, for the common "what did the app send?" assertion. */
@@ -891,8 +1015,8 @@ export class FakeGemini {
     // The canned answer is checked against the caller's own schema on every
     // call, not once at module load: the schema travels with the request, and
     // this is the only place both halves are in the same scope.
-    const videoUrl = isVideoUrlRequest(params);
-    validate(videoUrl ? FALLBACK_PAYLOAD : PAYLOADS[kind], schema);
+    const videoUrl = isVideoUrlFallback(params, kind);
+    validate(videoUrl ? FALLBACK_PAYLOAD : this.payloadFor(kind), schema);
 
     this.calls.push({
       kind: as,
