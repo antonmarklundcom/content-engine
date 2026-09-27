@@ -1,5 +1,20 @@
 # Capturing a clip from your phone
 
+**Easiest: Telegram (works with the PC off).** Send the link to your own Telegram bot.
+A free Cloudflare Worker saves it straight into the database. Setup (BotFather, chat id,
+`wrangler secret put`) is in [`workers/telegram-capture/README.md`](../workers/telegram-capture/README.md).
+
+```
+https://instagram.com/reel/abc #guide #factcheck #visa says 90 days?
+```
+
+`#<brand id>` sets the brand, `#inspo #competitor #factcheck #own` set the purpose, any
+other `#tag` is a tag, and the rest is the note. The same hashtags work in the note of
+every option below. In the inbox you can filter by brand, purpose and tag, and fix them
+per clip under "Edit tags".
+
+The options below need the app itself to be reachable from the phone.
+
 **First: your phone has to reach the app.** The app runs on your PC
 (`docs/LOCAL-SETUP.md`), so `localhost:3000` means nothing to the phone. Two options:
 
@@ -100,7 +115,10 @@ Content-Type: application/json
 { "url": "https://www.instagram.com/reel/...", "note": "why I saved this" }
 ```
 
-`note` is optional. Response is `201` (new clip) or `200` (already saved —
+`note` is optional. Optional capture fields: `brandId`, `purpose`
+(`inspo|competitor|fact_check|own|other`) and `tags` (array or `"a, b"`); an
+explicit field wins over a hashtag in the note. An unknown brand or purpose is a
+`400`. A Bearer call is recorded with source `shortcut`. Response is `201` (new clip) or `200` (already saved —
 the note is updated, nothing duplicates) with the clip row as JSON, or a
 `4xx`/`5xx` with `{ "error": "..." }` — most commonly `503` if `CLIP_TOKEN`
 isn't set in `.env` yet.
