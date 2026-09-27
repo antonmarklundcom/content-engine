@@ -1,0 +1,11 @@
+# Telegram capture Worker (PLAN.md §1.43). Free plan is plenty: one request per saved link.
+name = "content-engine-telegram-capture"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+# Secrets, set with `wrangler secret put <NAME>` (never committed):
+#   DATABASE_URL              Neon connection string (same database as the app)
+#   TELEGRAM_WEBHOOK_SECRET   the secret_token given to setWebhook (scripts/setup.ts)
+#   TELEGRAM_ALLOWED_CHAT_IDS comma-separated chat ids the bot serves, e.g. "123456789"
+# Optional, a plain var or a secret:
+#   TELEGRAM_BRAND_ALIASES    JSON object alias → brand id, e.g. {"guia":"guide"}

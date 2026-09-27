@@ -1,0 +1,22 @@
+{
+  "name": "telegram-capture",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cloudflare Worker: saves links sent to a Telegram bot into the content-engine clip inbox (PLAN.md §1.43).",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "setup": "tsx scripts/setup.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test \"test/*.test.ts\""
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "wrangler": "^3.99.0"
+  }
+}

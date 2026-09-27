@@ -1,7 +1,15 @@
 import "server-only";
 import { eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { clips, transcripts, type Clip, type Video } from "@/db/schema";
+import {
+  CLIP_PURPOSES,
+  clips,
+  transcripts,
+  type Clip,
+  type ClipPurpose,
+  type ClipSource,
+  type Video,
+} from "@/db/schema";
 import { DEFAULT_MODEL } from "@/lib/analysis/pricing";
 import { analyzeVideo } from "@/lib/analysis/run";
 import { ingestUrl } from "@/lib/ingest";
@@ -15,7 +23,15 @@ import { canonicalClipUrl, CLIP_URL_LIMIT, platformForUrl } from "./url";
  * between statuses.
  */
 
-export type SaveClipInput = { url: string; note?: string | null };
+export type SaveClipInput = {
+  url: string;
+  note?: string | null;
+  /** Build 3 capture fields (PLAN.md §1.43). Set on insert only, like every field but the note. */
+  brandId?: string | null;
+  purpose?: ClipPurpose | null;
+  tags?: readonly string[];
+  source?: ClipSource;
+};
 
 export type SaveClipResult =
   { ok: true; clip: Clip; created: boolean } | { ok: false; error: string };
@@ -28,6 +44,21 @@ function cleanNote(note: string | null | undefined): string | null {
   const trimmed = note.trim();
   if (!trimmed) return null;
   return trimmed.length <= NOTE_LIMIT ? trimmed : trimmed.slice(0, NOTE_LIMIT);
+}
+
+/** Lower-case, no `#`, no blanks, no repeats — the shape `clips.tags` holds and the tag filter matches. */
+export function normalizeTags(tags: readonly string[] | string | null | undefined): string[] {
+  const list = typeof tags === "string" ? tags.split(/[\s,]+/) : (tags ?? []);
+  const out: string[] = [];
+  for (const raw of list) {
+    const tag = String(raw).trim().replace(/^#+/, "").toLowerCase().slice(0, 64);
+    if (tag && !out.includes(tag)) out.push(tag);
+  }
+  return out.slice(0, 20);
+}
+
+export function isClipPurpose(value: unknown): value is ClipPurpose {
+  return typeof value === "string" && (CLIP_PURPOSES as readonly string[]).includes(value);
 }
 
 /**
@@ -57,7 +88,15 @@ export async function saveClip(input: SaveClipInput): Promise<SaveClipResult> {
 
   const [row] = await db
     .insert(clips)
-    .values({ url, platform, note })
+    .values({
+      url,
+      platform,
+      note,
+      brandId: input.brandId || null,
+      purpose: input.purpose ?? "other",
+      tags: normalizeTags(input.tags),
+      source: input.source ?? "web",
+    })
     .onConflictDoUpdate({
       target: clips.url,
       set: {
@@ -69,6 +108,28 @@ export async function saveClip(input: SaveClipInput): Promise<SaveClipResult> {
     .returning();
 
   return { ok: true, clip: row, created: existing.length === 0 };
+}
+
+export type ClipCaptureFields = { brandId: string | null; purpose: ClipPurpose; tags: string[] };
+
+/**
+ * The inbox's inline edit (PLAN.md §6.S16): brand, purpose and tags of one
+ * clip. A deliberate edit, so unlike a re-save it may overwrite them.
+ */
+export async function updateClipCapture(
+  clipId: number,
+  fields: ClipCaptureFields,
+): Promise<Clip | null> {
+  const [row] = await db
+    .update(clips)
+    .set({
+      brandId: fields.brandId || null,
+      purpose: fields.purpose,
+      tags: normalizeTags(fields.tags),
+    })
+    .where(eq(clips.id, clipId))
+    .returning();
+  return row ?? null;
 }
 
 async function markFailed(clipId: number, error: string): Promise<Clip> {
