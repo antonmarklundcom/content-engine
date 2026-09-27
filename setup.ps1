@@ -1,7 +1,8 @@
 # Content Engine — one-time Windows installer (docs/LOCAL-SETUP.md).
 # Re-runnable: every step checks what is already done.
 #
-#   1. Installs Node.js LTS and Git with winget if they are missing
+#   1. Installs Node.js LTS and Git with winget if they are missing, and the
+#      optional yt-dlp (reel downloads) and ffmpeg (video durations)
 #   2. Asks for your Neon database URL, login email and password
 #   3. Writes .env (secrets generated for you), installs, creates the database
 #      tables, brands and your owner login, builds the app
@@ -20,12 +21,16 @@ function RefreshPath {
               [Environment]::GetEnvironmentVariable("Path", "User")
 }
 
-Step "1/6  Node.js and Git"
-function InstallOrAsk($cmd, $wingetId, $url, $name) {
+Step "1/6  Node.js, Git, yt-dlp and ffmpeg"
+function InstallOrAsk($cmd, $wingetId, $url, $name, [switch]$Optional) {
   if (Have $cmd) { return }
   if (Have winget) {
     winget install --id $wingetId -e --accept-source-agreements --accept-package-agreements
     RefreshPath
+  }
+  if (-not (Have $cmd) -and $Optional) {
+    Write-Host "$name is not installed (optional; the app runs without it). Get it from $url" -ForegroundColor Yellow
+    return
   }
   if (-not (Have $cmd)) {
     Write-Host "$name is not installed and winget is not available." -ForegroundColor Yellow
@@ -37,6 +42,8 @@ function InstallOrAsk($cmd, $wingetId, $url, $name) {
 }
 InstallOrAsk node "OpenJS.NodeJS.LTS" "https://nodejs.org/en/download" "Node.js (LTS)"
 InstallOrAsk git "Git.Git" "https://git-scm.com/download/win" "Git"
+InstallOrAsk yt-dlp "yt-dlp.yt-dlp" "https://github.com/yt-dlp/yt-dlp/releases/latest" "yt-dlp" -Optional
+InstallOrAsk ffmpeg "Gyan.FFmpeg" "https://www.gyan.dev/ffmpeg/builds/" "ffmpeg" -Optional
 if (-not (Have node)) { throw "Node.js is still not found. Close this window, open a NEW PowerShell window and run setup.bat again." }
 Write-Host "Node $(node --version)  ·  npm $(npm --version)"
 
