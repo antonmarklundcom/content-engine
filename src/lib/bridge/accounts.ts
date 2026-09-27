@@ -94,7 +94,10 @@ export async function getAccountByHandle(
     .from(socialAccounts)
     .leftJoin(brands, eq(brands.id, socialAccounts.brandId))
     .where(
-      and(eq(socialAccounts.platform, platform), eq(socialAccounts.handle, handle.replace(/^@/, ""))),
+      and(
+        eq(socialAccounts.platform, platform),
+        eq(socialAccounts.handle, handle.replace(/^@/, "")),
+      ),
     )
     .limit(1);
   return row ? withBrand(row) : null;
@@ -124,7 +127,9 @@ function summarise(row: Integration): IntegrationSummary {
   return { ...rest, hasToken: !!tokenCiphertext };
 }
 
-export async function listIntegrations(provider?: IntegrationProvider): Promise<IntegrationSummary[]> {
+export async function listIntegrations(
+  provider?: IntegrationProvider,
+): Promise<IntegrationSummary[]> {
   const rows = await db
     .select()
     .from(integrations)

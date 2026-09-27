@@ -75,7 +75,9 @@ test("families list their brands; kits and family facts read back", async () => 
   );
 
   assert.equal(await getBrandKit("guide"), null);
-  await db.insert(schema.brandKits).values({ brandId: "guide", colors: [{ name: "Red", hex: "#f00" }] });
+  await db
+    .insert(schema.brandKits)
+    .values({ brandId: "guide", colors: [{ name: "Red", hex: "#f00" }] });
   const kit = await getBrandKit("guide");
   assert.deepEqual(kit?.colors, [{ name: "Red", hex: "#f00" }]);
   assert.deepEqual(kit?.higgsfield, { elementIds: [], characterIds: [], styleNotes: "" });
@@ -121,7 +123,11 @@ test("accounts resolve their brand's language and find their family siblings", a
   });
   const [integration] = await listIntegrations("meta");
   assert.equal(integration.hasToken, true);
-  assert.equal("tokenCiphertext" in integration, false, "the token never leaves through the bridge");
+  assert.equal(
+    "tokenCiphertext" in integration,
+    false,
+    "the token never leaves through the bridge",
+  );
 });
 
 test("assets filter, dedupe by sha256 and report where they are used", async () => {
@@ -151,9 +157,18 @@ test("assets filter, dedupe by sha256 and report where they are used", async () 
     .returning();
 
   assert.equal((await listAssets()).total, 2);
-  assert.deepEqual((await listAssets({ unsorted: true })).assets.map((x) => x.id), [b.id]);
-  assert.deepEqual((await listAssets({ tag: "hero" })).assets.map((x) => x.id), [a.id]);
-  assert.equal((await listAssets({ brandId: "guide", status: "approved", kind: "image" })).total, 1);
+  assert.deepEqual(
+    (await listAssets({ unsorted: true })).assets.map((x) => x.id),
+    [b.id],
+  );
+  assert.deepEqual(
+    (await listAssets({ tag: "hero" })).assets.map((x) => x.id),
+    [a.id],
+  );
+  assert.equal(
+    (await listAssets({ brandId: "guide", status: "approved", kind: "image" })).total,
+    1,
+  );
   assert.equal((await getAssetBySha256("A".repeat(64)))?.id, a.id);
   assert.equal((await getAsset(b.id))?.kind, "video");
   assert.deepEqual(await listAssetTags(), [
@@ -234,11 +249,20 @@ test("posts list, calendar, family tree, due and counts", async () => {
     "dated by publishedAt, else scheduledFor; undated posts are left out",
   );
 
-  assert.deepEqual((await listRelatedPosts(root.id)).map((p) => p.id), [child.id]);
-  assert.deepEqual((await listRelatedPosts(child.id)).map((p) => p.id), [root.id]);
+  assert.deepEqual(
+    (await listRelatedPosts(root.id)).map((p) => p.id),
+    [child.id],
+  );
+  assert.deepEqual(
+    (await listRelatedPosts(child.id)).map((p) => p.id),
+    [root.id],
+  );
 
   assert.deepEqual((await listDuePosts(at("04"))).length, 0);
-  assert.deepEqual((await listDuePosts(at("05"))).map((p) => p.id), [root.id]);
+  assert.deepEqual(
+    (await listDuePosts(at("05"))).map((p) => p.id),
+    [root.id],
+  );
 
   assert.deepEqual(
     await countPostsByStatus({ familyId: "paraguay-residency", from: at("01"), to: at("31") }),
@@ -256,8 +280,14 @@ test("metrics: snapshots, latest per post, account days, competitors", async () 
     { postId: post.id, capturedAt: new Date("2026-10-01T00:00:00Z"), reach: 10 },
     { postId: post.id, capturedAt: new Date("2026-10-02T00:00:00Z"), reach: 25, saves: 3 },
   ]);
-  assert.deepEqual((await listPostMetrics(post.id)).map((m) => m.reach), [10, 25]);
-  assert.deepEqual((await latestPostMetrics([post.id, 999])).map((m) => m.reach), [25]);
+  assert.deepEqual(
+    (await listPostMetrics(post.id)).map((m) => m.reach),
+    [10, 25],
+  );
+  assert.deepEqual(
+    (await latestPostMetrics([post.id, 999])).map((m) => m.reach),
+    [25],
+  );
 
   await db.insert(schema.accountMetrics).values([
     { accountId: account.id, date: "2026-10-01", followers: 100 },

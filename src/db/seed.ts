@@ -308,7 +308,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   );
   const pending = BRAND_SEEDS.filter(isPendingSeed).map((b) => b.id);
   if (pending.length) {
-    console.warn(`Skipped ${pending.length} brands with PENDING seed values: ${pending.join(", ")}.`);
+    console.warn(
+      `Skipped ${pending.length} brands with PENDING seed values: ${pending.join(", ")}.`,
+    );
   }
   process.exit(0);
 }

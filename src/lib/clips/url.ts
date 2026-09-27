@@ -10,7 +10,12 @@
  * host app felt like appending; the inbox has to see one clip, not four.
  */
 
-import type { ClipPlatform } from "@/db/schema";
+/**
+ * `ClipPlatform` from src/db/schema.ts, restated so the Worker compiles this
+ * file without the schema. url.test.ts fails typecheck if the two drift.
+ */
+export type UrlPlatform = "youtube" | "instagram" | "facebook" | "other";
+type ClipPlatform = UrlPlatform;
 
 const HOSTS: { platform: ClipPlatform; hosts: string[] }[] = [
   {

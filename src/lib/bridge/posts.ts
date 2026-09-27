@@ -41,7 +41,12 @@ export type PostWithAccount = Post & {
   familyId: string | null;
 };
 
-export type PostsPage = { posts: PostWithAccount[]; total: number; page: number; totalPages: number };
+export type PostsPage = {
+  posts: PostWithAccount[];
+  total: number;
+  page: number;
+  totalPages: number;
+};
 
 const postColumns = {
   ...getTableColumns(posts),
@@ -98,9 +103,7 @@ export async function listPosts(query: PostsQuery = {}): Promise<PostsPage> {
 export async function listCalendarPosts(
   query: Omit<PostsQuery, "page" | "from" | "to"> & { from: Date; to: Date },
 ): Promise<PostWithAccount[]> {
-  return fromPosts()
-    .where(postConditions(query))
-    .orderBy(asc(postDate), asc(posts.id));
+  return fromPosts().where(postConditions(query)).orderBy(asc(postDate), asc(posts.id));
 }
 
 export async function getPost(id: number): Promise<PostWithAccount | null> {

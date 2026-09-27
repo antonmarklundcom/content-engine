@@ -47,7 +47,10 @@ test("an unknown engagement mechanic is refused", () => {
   body.engagement.mechanic = "giveaway";
   const errors = errorsOf(body);
   assert.equal(errors.length, 1);
-  assert.match(errors[0], /^body\.engagement\.mechanic must be one of "question", .* got "giveaway"$/);
+  assert.match(
+    errors[0],
+    /^body\.engagement\.mechanic must be one of "question", .* got "giveaway"$/,
+  );
 });
 
 test("unknown fields, wrong positions, bad hashtags and bad URLs are each reported", () => {
@@ -57,10 +60,10 @@ test("unknown fields, wrong positions, bad hashtags and bad URLs are each report
   (body.slides as Array<Record<string, unknown>>)[1].n = 3;
   (body.sources as Array<Record<string, unknown>>)[0].url = "not a url";
   assert.deepEqual(errorsOf(body).sort(), [
-    'body.extra is not a field of this contract',
+    "body.extra is not a field of this contract",
     'body.hashtags[0] must be one word without "#", got "#paraguay"',
     'body.hashtags[1] must be one word without "#", got "two words"',
-    'body.slides[1].n must be 2, got number 3',
+    "body.slides[1].n must be 2, got number 3",
     'body.sources[0].url must be an http(s) URL, got "not a url"',
   ]);
 });

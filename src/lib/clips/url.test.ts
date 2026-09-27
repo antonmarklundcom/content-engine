@@ -5,6 +5,8 @@
  */
 
 import assert from "node:assert/strict";
+import type { ClipPlatform } from "@/db/schema";
+import type { UrlPlatform } from "./url";
 import { test } from "node:test";
 import { canonicalClipUrl, platformForUrl } from "./url";
 
@@ -72,3 +74,8 @@ test("utm_* campaign tags do not create a second clip", () => {
   // A parameter that merely contains "utm" is content, not a campaign tag.
   assert.equal(canonicalClipUrl("https://example.com/p?autm=1"), "https://example.com/p?autm=1");
 });
+
+// Compile-time only: the restated type and the schema's must be the same set.
+type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+const _urlplatformMatchesSchema: Same<UrlPlatform, ClipPlatform> = true;
+void _urlplatformMatchesSchema;

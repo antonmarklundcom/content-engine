@@ -216,7 +216,10 @@ export function validatePostDraft(body: unknown): ValidationResult {
   c.oneOf(root.format, "body.format", POST_FORMATS);
   c.text(root.language, "body.language");
   if (typeof root.language === "string" && root.language.length > 8) {
-    c.fail("body.language", `must be a language tag of at most 8 characters, got ${describe(root.language)}`);
+    c.fail(
+      "body.language",
+      `must be a language tag of at most 8 characters, got ${describe(root.language)}`,
+    );
   }
   c.text(root.hook, "body.hook");
   c.text(root.caption, "body.caption");
@@ -270,7 +273,10 @@ export function validatePostDraft(body: unknown): ValidationResult {
     if (s.seconds !== undefined) {
       const sec = s.seconds;
       if (typeof sec !== "number" || !Number.isFinite(sec) || sec <= 0 || sec > 180) {
-        c.fail(`${p}.seconds`, `must be a number of seconds between 0 and 180, got ${describe(sec)}`);
+        c.fail(
+          `${p}.seconds`,
+          `must be a number of seconds between 0 and 180, got ${describe(sec)}`,
+        );
       }
     }
     c.text(s.onScreenText, `${p}.onScreenText`, { allowEmpty: true });

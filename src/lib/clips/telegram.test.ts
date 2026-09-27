@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import type { ClipPurpose } from "@/db/schema";
+import type { CapturePurpose } from "./telegram";
 import { test } from "node:test";
 
 import { parseCaptureMessage } from "./telegram";
@@ -37,10 +39,7 @@ test("an alias names its brand, and the first brand and purpose win", () => {
 });
 
 test("only the first URL is the clip; later ones stay in the note", () => {
-  const parsed = parseCaptureMessage(
-    "https://a.example/one, compare https://b.example/two.",
-    {},
-  );
+  const parsed = parseCaptureMessage("https://a.example/one, compare https://b.example/two.", {});
   assert.equal(parsed.url, "https://a.example/one");
   assert.equal(parsed.note, ", compare https://b.example/two.");
 });
@@ -72,3 +71,8 @@ test("a non-http link is kept as text but is not a clip", () => {
   assert.equal(parsed.url, null);
   assert.equal(parsed.note, "mailto:a@b.c");
 });
+
+// Compile-time only: the restated type and the schema's must be the same set.
+type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+const _capturepurposeMatchesSchema: Same<CapturePurpose, ClipPurpose> = true;
+void _capturepurposeMatchesSchema;

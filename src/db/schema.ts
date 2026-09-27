@@ -1250,7 +1250,14 @@ export const integrations = pgTable(
 
 export const ASSET_KINDS = ["image", "video", "audio", "document"] as const;
 export type AssetKind = (typeof ASSET_KINDS)[number];
-export const ASSET_SOURCES = ["higgsfield", "upload", "capture", "telegram", "import", "camera"] as const;
+export const ASSET_SOURCES = [
+  "higgsfield",
+  "upload",
+  "capture",
+  "telegram",
+  "import",
+  "camera",
+] as const;
 export type AssetSource = (typeof ASSET_SOURCES)[number];
 export const ASSET_STATUSES = ["new", "approved", "rejected", "used", "archived"] as const;
 export type AssetStatus = (typeof ASSET_STATUSES)[number];
@@ -1457,11 +1464,7 @@ export const socialCompetitors = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [
-    uniqueIndex("social_competitors_brand_platform_handle_idx").on(
-      t.brandId,
-      t.platform,
-      t.handle,
-    ),
+    uniqueIndex("social_competitors_brand_platform_handle_idx").on(t.brandId, t.platform, t.handle),
   ],
 );
 

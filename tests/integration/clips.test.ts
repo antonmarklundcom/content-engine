@@ -97,10 +97,11 @@ test("URLs that canonicalise the same are one clip", async () => {
 test("a URL that differs outside the allowlist is deliberately a second clip", async () => {
   // canonicalClipUrl strips a named list of junk and nothing else, on the
   // reasoning that a duplicate row is a nuisance while a collision silently
-  // overwrites someone else's note. `utm_*` is not on that list — see
-  // docs/log/o4.md, which is where the case for widening it is recorded.
+  // overwrites someone else's note. `utm_*` joined that list in O9 (the case
+  // for it is in docs/log/o4.md); any other parameter still makes a new clip.
   await saveClip({ url: "https://www.youtube.com/watch?v=abc123" });
   await saveClip({ url: "https://www.youtube.com/watch?v=abc123&utm_source=twitter" });
+  await saveClip({ url: "https://www.youtube.com/watch?v=abc123&list=PL1" });
 
   assert.equal((await db.select().from(schema.clips)).length, 2);
 });

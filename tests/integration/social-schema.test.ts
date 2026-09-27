@@ -119,9 +119,10 @@ test("a build 2 database has residency-guide renamed to guide everywhere", async
       await migrate(drizzle(pool), { migrationsFolder: "./drizzle" });
 
       const one = async (q: string) => (await pool.query(q)).rows;
-      assert.deepEqual(await one(`select id, voice, family_id from brands where id like '%guide'`), [
-        { id: "guide", voice: "Tuned voice", family_id: "paraguay-residency" },
-      ]);
+      assert.deepEqual(
+        await one(`select id, voice, family_id from brands where id like '%guide'`),
+        [{ id: "guide", voice: "Tuned voice", family_id: "paraguay-residency" }],
+      );
       for (const table of [
         "ideas",
         "scripts",

@@ -11,11 +11,17 @@
  * - whatever text is left is the note.
  *
  * Pure, and imported by the Cloudflare Worker (S16): no Node APIs, no database,
- * no `server-only`, and only type imports from outside this folder.
+ * no `server-only`, and no imports from outside this folder.
  */
 
-import type { ClipPurpose } from "@/db/schema";
 import { canonicalClipUrl } from "./url";
+
+/**
+ * `ClipPurpose` from src/db/schema.ts, restated so the Worker compiles this
+ * file without the schema. telegram.test.ts fails typecheck if the two drift.
+ */
+export type CapturePurpose = "inspo" | "competitor" | "fact_check" | "own" | "other";
+type ClipPurpose = CapturePurpose;
 
 /** Hashtag (lower-case) → purpose. `fact_check`/`fact-check` are spellings people type too. */
 const PURPOSE_TAGS: Readonly<Record<string, ClipPurpose>> = {
