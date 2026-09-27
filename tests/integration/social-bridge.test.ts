@@ -71,7 +71,21 @@ test("families list their brands; kits and family facts read back", async () => 
   const families = await listFamiliesWithBrands();
   assert.deepEqual(
     families.map((f) => [f.id, f.brands.map((b) => b.id).sort()]),
-    [["paraguay-residency", ["guide", "sibling"]]],
+    [
+      [
+        "paraguay-residency",
+        [
+          "flytta",
+          "frontier",
+          "guide",
+          "investorpass",
+          "residenciaes",
+          "residenciapt",
+          "residency",
+          "sibling",
+        ],
+      ],
+    ],
   );
 
   assert.equal(await getBrandKit("guide"), null);

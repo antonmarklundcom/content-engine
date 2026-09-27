@@ -40,9 +40,8 @@ export const FAMILY_SEEDS: NewBrandFamily[] = [
  * existing database its row (and its tuned voice) is already there and this
  * entry is skipped.
  *
- * PENDING (docs/log/o9.md): the values marked PENDING could not be read from
- * the paraguayresidency repo in the O9 session and must be filled from it
- * before this seed runs against a real database.
+ * Values come from the paraguayresidency repo (CLAUDE.md domain table,
+ * plan.md §11), filled in after the O9 session could not clone it.
  */
 const RESIDENCY_FAMILY = "paraguay-residency";
 const PENDING = "PENDING";
@@ -50,23 +49,27 @@ const PENDING = "PENDING";
 const RESIDENCY_BRANDS: NewBrand[] = [
   {
     id: "residency",
-    name: PENDING,
+    name: "Paraguay Residency",
     domain: "paraguayresidency.co.uk",
-    niche: PENDING,
+    niche:
+      "Done-for-you Paraguay residency services (temporary, permanent, cédula, tax residency, family); the hub brand, global English with a UK-friendly tone",
     market: "global",
     language: "en",
-    voice: null,
+    voice:
+      "Calm, competent service voice. Global English that makes British readers feel at home without excluding Americans. Fixed fees, nationality-specific checklists, honest about when the standard route is wrong.",
     platforms: ["instagram", "facebook"],
     familyId: RESIDENCY_FAMILY,
   },
   {
     id: "investorpass",
-    name: PENDING,
-    domain: PENDING,
-    niche: PENDING,
+    name: "Paraguay Investor Pass",
+    domain: "paraguayinvestorpass.com",
+    niche:
+      "Paraguay Investor Pass: direct permanent residency by qualifying investment (real estate, business, financial instruments, tourism) for investors, family offices and migration agents",
     market: "global",
     language: "en",
-    voice: null,
+    voice:
+      "Precise, premium advisory voice for investors. States that thresholds and rules are new and still moving; quotes figures only when verified; cost, timeline and exit options in writing before anything is filed.",
     platforms: ["instagram", "facebook"],
     familyId: RESIDENCY_FAMILY,
   },
@@ -84,45 +87,53 @@ const RESIDENCY_BRANDS: NewBrand[] = [
   },
   {
     id: "frontier",
-    name: PENDING,
-    domain: PENDING,
-    niche: PENDING,
+    name: "Paraguay Frontier",
+    domain: "paraguayfrontier.com",
+    niche:
+      "Plan-B second residency in Paraguay for Americans, Canadians, Britons and Australians: residency and tax ID held in reserve, territorial tax, land or a small business",
     market: "global",
     language: "en",
-    voice: null,
+    voice:
+      "Skeptical, practical voice for people who have seen the golden-visa hype and want the catch stated. Presence rules explained honestly. Never says tax-free.",
     platforms: ["instagram", "facebook"],
     familyId: RESIDENCY_FAMILY,
   },
   {
     id: "residenciaes",
-    name: PENDING,
-    domain: PENDING,
-    niche: PENDING,
+    name: "Residencia Paraguay",
+    domain: "residenciaenparaguay.es",
+    niche:
+      "Residencia en Paraguay para españoles primero y latinoamericanos después (Argentina sobre todo): residencia temporal y permanente, cédula, ruta Mercosur, salida fiscal de España",
     market: "global",
     language: "es",
-    voice: null,
+    voice:
+      "Directo y cercano, tuteo, sin vueltas. Honorarios fijos en euros. Dice cuándo Paraguay no conviene. Temas fiscales de España siempre con 'confírmalo con tu asesor'.",
     platforms: ["instagram", "facebook"],
     familyId: RESIDENCY_FAMILY,
   },
   {
     id: "residenciapt",
-    name: PENDING,
-    domain: PENDING,
-    niche: PENDING,
+    name: "Vida no Paraguai",
+    domain: "vidanoparaguai.com",
+    niche:
+      "Morar no Paraguai para brasileiros: residência temporária e permanente, cédula, rota Mercosul, custo de vida, negócios, fronteira e impostos",
     market: "global",
     language: "pt-BR",
-    voice: null,
+    voice:
+      "Fala com um vizinho, de forma simples, em 'você'. Nunca promete imposto zero nem vende o Paraguai como paraíso; diz o que é pior que no Brasil para que o resto seja acreditado. Impostos no Brasil: 'confirme com seu contador'.",
     platforms: ["instagram", "facebook"],
     familyId: RESIDENCY_FAMILY,
   },
   {
     id: "flytta",
-    name: PENDING,
-    domain: PENDING,
-    niche: PENDING,
+    name: "Flytta till Paraguay",
+    domain: "flyttatillparaguay.se",
+    niche:
+      "Flytta till Paraguay för svenskar: uppehållstillstånd, cédula, skatt vid utflyttning, kostnader och vardag, berättat utifrån Antons egen flytt",
     market: "global",
     language: "sv",
-    voice: null,
+    voice:
+      "Anton's personal story: first person plural ('vi') allowed here only. Ärligt och utan skönmålning om vad som tar tid och kostar. Utflyttningsskatt alltid med 'stäm av med en skatterådgivare'.",
     platforms: ["instagram", "facebook"],
     familyId: RESIDENCY_FAMILY,
   },

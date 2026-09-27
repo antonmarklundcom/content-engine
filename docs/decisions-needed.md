@@ -71,3 +71,5 @@ being wrong high only makes the cap trip early.
 ## O9 (2026-09-27) — seed values for six residency brands
 
 The O9 session could not clone `antonmarklundcom/paraguayresidency` (the permission check blocked it), so `src/db/seed.ts` has `PENDING` for the name/domain/niche of `residency`, `investorpass`, `frontier`, `residenciaes`, `residenciapt`, `flytta` (only `residency`'s domain, paraguayresidency.co.uk, is known from PLAN.md §1.52). The seed **skips** any PENDING brand, so nothing wrong is ever written. **Ask:** allow the clone in a session (or paste the `CLAUDE.md` domain table and `plan.md` §11), then replace the PENDING values, also the placeholder `platforms` and `voice`; the next `npm run db:seed` inserts them.
+
+**Answered 2026-09-27 (parent session):** the six PENDING brands were filled from `antonmarklundcom/paraguayresidency` (`CLAUDE.md` domain table, `plan.md` §11.1–§11.8) on `phase/o9-social-schema`; the seed now writes all seven.

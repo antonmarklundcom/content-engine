@@ -113,7 +113,11 @@ test("families seed insert-only, and the residency brands join theirs (§1.52)",
   await seedBrands();
 
   const members = await listFamilyBrands("paraguay-residency");
-  assert.ok(members.some((b) => b.id === "guide"));
+  assert.deepEqual(
+    members.map((b) => b.id).sort(),
+    ["flytta", "frontier", "guide", "investorpass", "residenciaes", "residenciapt", "residency"],
+    "all seven residency brands are seeded",
+  );
   assert.ok(
     members.every((b) => b.familyId === "paraguay-residency"),
     "every member points back at the family",
