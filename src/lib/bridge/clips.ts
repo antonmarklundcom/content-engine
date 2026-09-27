@@ -1,7 +1,14 @@
 import "server-only";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { clips, videos, type Clip, type ClipPlatform, type ClipStatus } from "@/db/schema";
+import {
+  clips,
+  videos,
+  type Clip,
+  type ClipPlatform,
+  type ClipPurpose,
+  type ClipStatus,
+} from "@/db/schema";
 
 /**
  * Reads over the clip inbox (PLAN.md §2). O2 writes these rows; S3 renders
@@ -13,6 +20,10 @@ export const CLIPS_PAGE_SIZE = 50;
 export type ClipsQuery = {
   status?: ClipStatus;
   platform?: ClipPlatform;
+  /** Build 3 (§1.43): the capture fields. `tag` is one tag, exact, lower-case. */
+  brandId?: string;
+  purpose?: ClipPurpose;
+  tag?: string;
   page?: number;
 };
 
@@ -48,6 +59,9 @@ export async function listClips(query: ClipsQuery = {}): Promise<ClipsPage> {
   const conditions = [
     query.status ? eq(clips.status, query.status) : undefined,
     query.platform ? eq(clips.platform, query.platform) : undefined,
+    query.brandId ? eq(clips.brandId, query.brandId) : undefined,
+    query.purpose ? eq(clips.purpose, query.purpose) : undefined,
+    query.tag ? sql`${clips.tags} ? ${query.tag}` : undefined,
   ].filter((c): c is NonNullable<typeof c> => c !== undefined);
   const where = conditions.length ? and(...conditions) : undefined;
 

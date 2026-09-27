@@ -5,3 +5,4 @@ docs/screenshots/
 media/
 package-lock.json
 *.md
+workers/

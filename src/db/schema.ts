@@ -2,6 +2,7 @@ import { relations, sql } from "drizzle-orm";
 import {
   bigint,
   boolean,
+  char,
   date,
   index,
   integer,
@@ -10,6 +11,7 @@ import {
   numeric,
   pgTable,
   primaryKey,
+  real,
   smallint,
   text,
   timestamp,
@@ -52,13 +54,15 @@ export const brands = pgTable("brands", {
   voice: text("voice"), // tone/style notes for research + copy
   platforms: json("platforms").$type<string[]>().notNull(), // ["instagram","facebook",...]
   active: boolean("active").notNull().default(true),
+  /** Soft link to `brand_families.id` (PLAN.md §1.40). Null is a brand on its own. */
+  familyId: text("family_id"),
   createdAt: timestamp("created_at")
     .notNull()
     .default(sql`now()`),
 });
 
 // A research finding worth sharing across brands — e.g. "Paraguay approves
-// new investor visa rules" is relevant to both residency-guide and propia; a
+// new investor visa rules" is relevant to both guide and propia; a
 // tax-law change is relevant to contador and negocio. Written once, tagged
 // with every brand it applies to, instead of every brand re-researching the
 // same topic from scratch.
@@ -135,6 +139,21 @@ export const CLIP_STATUSES = [
 export type ClipStatus = (typeof CLIP_STATUSES)[number];
 
 /**
+ * Why a clip was saved (PLAN.md §1.43–§1.44). Decides what happens to it next:
+ * only `fact_check` and `competitor` clips are fetched and transcribed without
+ * a click; `inspo` never is.
+ */
+export const CLIP_PURPOSES = ["inspo", "competitor", "fact_check", "own", "other"] as const;
+export type ClipPurpose = (typeof CLIP_PURPOSES)[number];
+
+/** Which door the clip came in through (§1.43). `web` is the in-app form and every row before build 3. */
+export const CLIP_SOURCES = ["share", "shortcut", "telegram", "web"] as const;
+export type ClipSource = (typeof CLIP_SOURCES)[number];
+
+/** One claim a fetched clip makes, for fact-checking (§1.44). */
+export type ClipClaim = { claim: string; timestampSec?: number };
+
+/**
  * One row per link saved from a phone share sheet — the capture half of the
  * app (PLAN.md §1.6). Capture is time-sensitive in a way processing is not: a
  * clip scrolled past and not logged is gone, so a row is written the moment a
@@ -174,6 +193,25 @@ export const clips = pgTable(
     /** Why the last attempt failed, for the inbox to show next to a retry. */
     error: varchar("error", { length: 1024 }),
     savedAt: timestamp("saved_at").notNull().defaultNow(),
+
+    // --- build 3 (PLAN.md §2): capture + fetch --------------------------------
+    /** Soft link to `brands.id`, from `#<brand>` in a Telegram message or the inbox. */
+    brandId: text("brand_id"),
+    purpose: text("purpose", { enum: CLIP_PURPOSES }).notNull().default("other"),
+    /** Free tags (`#tag` in a capture message), lower-case, no `#`. */
+    tags: jsonb("tags").$type<string[]>().notNull().default([]),
+    source: text("source", { enum: CLIP_SOURCES }).notNull().default("web"),
+    /** The post's own caption / on-screen text, as fetched (§1.44). */
+    postText: text("post_text"),
+    transcript: text("transcript"),
+    summary: text("summary"),
+    claims: jsonb("claims").$type<ClipClaim[]>(),
+    /** Soft link to `assets.id`: the downloaded media under `captures/<clip-id>/`. */
+    mediaAssetId: integer("media_asset_id"),
+    /** A photo/video sent to the bot as a file; S17 downloads it (Bot API limit 20 MB). */
+    telegramFileId: varchar("telegram_file_id", { length: 255 }),
+    /** When media fetch + transcript last succeeded. */
+    fetchedAt: timestamp("fetched_at"),
   },
   (t) => [
     // Dedupe key: the save route upserts on this rather than checking first.
@@ -181,6 +219,9 @@ export const clips = pgTable(
     // The inbox's two queries: filter by status, order newest-first.
     index("clips_status_idx").on(t.status),
     index("clips_saved_idx").on(t.savedAt),
+    // The inbox's build 3 filters, and the fetch job's "eligible clips" scan.
+    index("clips_brand_idx").on(t.brandId),
+    index("clips_purpose_idx").on(t.purpose),
   ],
 );
 
@@ -701,7 +742,15 @@ export const brandSources = pgTable(
 // lessons
 // ---------------------------------------------------------------------------
 
-export const LESSON_KINDS = ["lesson", "hook", "title_pattern", "fact"] as const;
+/** `cta` and `caption_pattern` (build 3, §2) feed post generation and the hooks library. */
+export const LESSON_KINDS = [
+  "lesson",
+  "hook",
+  "title_pattern",
+  "fact",
+  "cta",
+  "caption_pattern",
+] as const;
 export type LessonKind = (typeof LESSON_KINDS)[number];
 
 /**
@@ -722,6 +771,8 @@ export const lessons = pgTable(
     kind: text("kind", { enum: LESSON_KINDS }).notNull().default("lesson"),
     /** Soft link to `brands.id`. Null is a portfolio-wide lesson, not a missing value. */
     brandId: text("brand_id"),
+    /** Soft link to `brand_families.id`: a lesson shared by every brand in a family (§2). */
+    familyId: text("family_id"),
     /** Soft link to `videos.id` it was learned from, when it came from a video. */
     videoId: integer("video_id"),
     /** Where in that video, so the export can link to the exact moment. */
@@ -735,6 +786,7 @@ export const lessons = pgTable(
     index("lessons_brand_kind_idx").on(t.brandId, t.kind),
     // The video page's "lessons from this video".
     index("lessons_video_idx").on(t.videoId),
+    index("lessons_family_kind_idx").on(t.familyId, t.kind),
   ],
 );
 
@@ -1001,7 +1053,19 @@ export const facts = pgTable(
   "facts",
   {
     id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-    brandId: text("brand_id").notNull(),
+    /**
+     * Soft link to `brands.id`. Nullable since build 3 (§1.48): a fact that
+     * belongs to a whole family (`familyId`) has no one brand.
+     */
+    brandId: text("brand_id"),
+    /** Soft link to `brand_families.id`, for facts shared across a family. */
+    familyId: text("family_id"),
+    /** The fact's key in an imported source (e.g. `investorVisaMinimum`); null for hand-made facts. */
+    externalKey: varchar("external_key", { length: 255 }),
+    /** Language the claim is written in. One imported key has a row per locale. */
+    language: varchar("language", { length: 8 }).notNull().default("en"),
+    /** False: the claim is hedged wording, and generation may only cite it as hedged (§1.48). */
+    verified: boolean("verified").notNull().default(false),
     /** Grouping on the fact sheet, e.g. "permanent residency", "closing costs". */
     topic: text("topic").notNull(),
     /** The claim as it may be said on camera. */
@@ -1013,7 +1077,14 @@ export const facts = pgTable(
     /** Bumped when the claim or source changes — what the out-of-date check compares. */
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
-  (t) => [index("facts_brand_topic_idx").on(t.brandId, t.topic)],
+  (t) => [
+    index("facts_brand_topic_idx").on(t.brandId, t.topic),
+    index("facts_family_topic_idx").on(t.familyId, t.topic),
+    // The import's upsert key (§1.48). Partial: hand-made facts have no key.
+    uniqueIndex("facts_family_key_language_idx")
+      .on(t.familyId, t.externalKey, t.language)
+      .where(sql`${t.externalKey} is not null`),
+  ],
 );
 
 export const SCRIPT_DERIVATIVE_KINDS = ["blog", "newsletter"] as const;
@@ -1040,3 +1111,405 @@ export type CompetitorReportRow = typeof competitorReports.$inferSelect;
 export type AudienceQuestion = typeof audienceQuestions.$inferSelect;
 export type Fact = typeof facts.$inferSelect;
 export type ScriptDerivative = typeof scriptDerivatives.$inferSelect;
+
+// =============================================================================
+// Build 3 — the social OS (PLAN.md §2, O9). Family → Brand → Account → Post →
+// Assets (§1.40). This block is the complete contract for build 3: lane 2 and
+// lane 3 never add a column (§4.7). Soft links only, no FK constraints (§1.4).
+// =============================================================================
+
+/** Every platform an account, a competitor or a post can live on. */
+export const SOCIAL_PLATFORMS = [
+  "instagram",
+  "facebook",
+  "tiktok",
+  "youtube",
+  "threads",
+  "x",
+  "linkedin",
+  "pinterest",
+] as const;
+export type SocialPlatform = (typeof SOCIAL_PLATFORMS)[number];
+
+// ---------------------------------------------------------------------------
+// brand_families
+// ---------------------------------------------------------------------------
+
+/**
+ * A group of brands that share facts, research and inspiration (§1.40) — e.g.
+ * the Paraguay residency brands, one per language or angle. Nothing in code
+ * knows any family by name; behaviour comes from these rows.
+ */
+export const brandFamilies = pgTable("brand_families", {
+  /** Slug, e.g. "paraguay-residency". */
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// ---------------------------------------------------------------------------
+// brand_kits
+// ---------------------------------------------------------------------------
+
+export type KitColor = { name: string; hex: string };
+export type KitFont = { role: string; family: string };
+/** Higgsfield references every generation for the brand reuses (§1.45). */
+export type KitHiggsfield = { elementIds: string[]; characterIds: string[]; styleNotes: string };
+
+/** One per brand: what every visual and caption for it must look and sound like. */
+export const brandKits = pgTable("brand_kits", {
+  /** Soft link to `brands.id`; also the key, so a brand has at most one kit. */
+  brandId: text("brand_id").primaryKey(),
+  colors: jsonb("colors").$type<KitColor[]>().notNull().default([]),
+  fonts: jsonb("fonts").$type<KitFont[]>().notNull().default([]),
+  /** Soft link to `assets.id`. */
+  logoAssetId: integer("logo_asset_id"),
+  higgsfield: jsonb("higgsfield")
+    .$type<KitHiggsfield>()
+    .notNull()
+    .default({ elementIds: [], characterIds: [], styleNotes: "" }),
+  ctas: jsonb("ctas").$type<string[]>().notNull().default([]),
+  hashtags: jsonb("hashtags").$type<string[]>().notNull().default([]),
+  dos: text("dos"),
+  donts: text("donts"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// ---------------------------------------------------------------------------
+// social_accounts
+// ---------------------------------------------------------------------------
+
+export const ACCOUNT_STATUSES = ["planned", "active", "paused"] as const;
+export type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
+
+/** One handle on one platform in one language (§1.40). Posts belong to an account. */
+export const socialAccounts = pgTable(
+  "social_accounts",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    /** Soft link to `brands.id`. */
+    brandId: text("brand_id").notNull(),
+    platform: text("platform", { enum: SOCIAL_PLATFORMS }).notNull(),
+    /** Without the `@`. */
+    handle: varchar("handle", { length: 255 }).notNull(),
+    /** Null means the brand's language. */
+    language: varchar("language", { length: 8 }),
+    status: text("status", { enum: ACCOUNT_STATUSES }).notNull().default("planned"),
+    /** Business/Creator on Instagram — required for insights and publishing (§1.49). */
+    isProfessional: boolean("is_professional").notNull().default(false),
+    /** The platform's own id: IG user id, FB page id. Set by the Meta link (O12). */
+    externalId: varchar("external_id", { length: 128 }),
+    /** Soft link to `integrations.id` whose token acts for this account. */
+    integrationId: integer("integration_id"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("social_accounts_platform_handle_idx").on(t.platform, t.handle),
+    index("social_accounts_brand_idx").on(t.brandId),
+  ],
+);
+
+// ---------------------------------------------------------------------------
+// integrations
+// ---------------------------------------------------------------------------
+
+export const INTEGRATION_PROVIDERS = ["meta", "tiktok", "google_drive", "telegram"] as const;
+export type IntegrationProvider = (typeof INTEGRATION_PROVIDERS)[number];
+export const INTEGRATION_STATUSES = ["ok", "expired", "error", "disabled"] as const;
+export type IntegrationStatus = (typeof INTEGRATION_STATUSES)[number];
+
+/**
+ * A connection to an outside service and its token. The token is only ever
+ * stored encrypted (AES-256-GCM with `ENCRYPTION_KEY`, §1.50, O12).
+ */
+export const integrations = pgTable(
+  "integrations",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    provider: text("provider", { enum: INTEGRATION_PROVIDERS }).notNull(),
+    /** What the settings page calls it, e.g. "Meta — Anton". */
+    label: varchar("label", { length: 255 }).notNull(),
+    /** Whose token it is on the provider's side: a user id, a page id. */
+    accountRef: varchar("account_ref", { length: 255 }),
+    tokenCiphertext: text("token_ciphertext"),
+    tokenExpiresAt: timestamp("token_expires_at"),
+    scopes: jsonb("scopes").$type<string[]>().notNull().default([]),
+    status: text("status", { enum: INTEGRATION_STATUSES }).notNull().default("ok"),
+    lastError: varchar("last_error", { length: 1024 }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [index("integrations_provider_idx").on(t.provider, t.status)],
+);
+
+// ---------------------------------------------------------------------------
+// assets — the media library
+// ---------------------------------------------------------------------------
+
+export const ASSET_KINDS = ["image", "video", "audio", "document"] as const;
+export type AssetKind = (typeof ASSET_KINDS)[number];
+export const ASSET_SOURCES = [
+  "higgsfield",
+  "upload",
+  "capture",
+  "telegram",
+  "import",
+  "camera",
+] as const;
+export type AssetSource = (typeof ASSET_SOURCES)[number];
+export const ASSET_STATUSES = ["new", "approved", "rejected", "used", "archived"] as const;
+export type AssetStatus = (typeof ASSET_STATUSES)[number];
+
+/**
+ * One file in the media library (§1.41). The bytes live on disk under
+ * `MEDIA_ROOT` (and, while a post needs it public, on the Hostinger media
+ * endpoint); this row holds only text and links. `sha256` is the identity:
+ * registering the same file twice is a no-op, wherever it sits.
+ */
+export const assets = pgTable(
+  "assets",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    /** Soft link to `brands.id`; null while unsorted. */
+    brandId: text("brand_id"),
+    /** Soft link to `social_accounts.id`. */
+    accountId: integer("account_id"),
+    kind: text("kind", { enum: ASSET_KINDS }).notNull(),
+    mime: varchar("mime", { length: 128 }).notNull(),
+    bytes: bigint("bytes", { mode: "number" }).notNull(),
+    sha256: char("sha256", { length: 64 }).notNull(),
+    width: integer("width"),
+    height: integer("height"),
+    durationSec: real("duration_sec"),
+    /** Relative to `MEDIA_ROOT`, forward slashes (§1.41 folder layout). */
+    localPath: varchar("local_path", { length: 1024 }),
+    /** The public Hostinger copy, while one exists. */
+    publicUrl: varchar("public_url", { length: 1024 }),
+    /** When `prunePublic()` may delete the public copy. */
+    publicExpiresAt: timestamp("public_expires_at"),
+    driveFileId: varchar("drive_file_id", { length: 255 }),
+    /** Relative to `MEDIA_ROOT`. */
+    thumbPath: varchar("thumb_path", { length: 1024 }),
+    source: text("source", { enum: ASSET_SOURCES }).notNull(),
+    /** Higgsfield job id or URL, clip id — whatever says where it came from. */
+    sourceRef: varchar("source_ref", { length: 1024 }),
+    prompt: text("prompt"),
+    model: varchar("model", { length: 128 }),
+    tags: jsonb("tags").$type<string[]>().notNull().default([]),
+    status: text("status", { enum: ASSET_STATUSES }).notNull().default("new"),
+    altText: text("alt_text"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("assets_sha256_idx").on(t.sha256),
+    index("assets_brand_status_idx").on(t.brandId, t.status),
+    index("assets_created_idx").on(t.createdAt),
+    index("assets_account_idx").on(t.accountId),
+  ],
+);
+
+// ---------------------------------------------------------------------------
+// posts
+// ---------------------------------------------------------------------------
+
+export const POST_FORMATS = ["reel", "carousel", "image_post", "story", "video", "text"] as const;
+export type PostFormat = (typeof POST_FORMATS)[number];
+export const POST_STATUSES = [
+  "idea",
+  "drafting",
+  "ready",
+  "scheduled",
+  "publishing",
+  "published",
+  "failed",
+  "archived",
+] as const;
+export type PostStatus = (typeof POST_STATUSES)[number];
+
+/**
+ * One post on one account (§1.40). The content is `body`, a `PostDraft`
+ * (src/lib/posts/contract.ts); `caption` and `first_comment` are what actually
+ * goes out, copied out of the body and editable on their own.
+ */
+export const posts = pgTable(
+  "posts",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    /** Soft link to `social_accounts.id`. */
+    accountId: integer("account_id").notNull(),
+    /** Soft link to `brands.id` — the account's brand, denormalised for filters. */
+    brandId: text("brand_id").notNull(),
+    /** Soft link to `ideas.id` the post grew from, if any. */
+    ideaId: integer("idea_id"),
+    /** Soft link to the post this one was adapted from (§1.47). */
+    parentPostId: integer("parent_post_id"),
+    format: text("format", { enum: POST_FORMATS }).notNull(),
+    status: text("status", { enum: POST_STATUSES }).notNull().default("idea"),
+    /** Internal name for lists; never published. */
+    title: text("title").notNull().default(""),
+    /** `PostDraft`; null until the first draft exists. */
+    body: jsonb("body"),
+    caption: text("caption"),
+    firstComment: text("first_comment"),
+    notes: text("notes"),
+    scheduledFor: timestamp("scheduled_for"),
+    publishedAt: timestamp("published_at"),
+    permalink: varchar("permalink", { length: 1024 }),
+    /** The platform's media id once published (IG media id, FB post id). */
+    externalMediaId: varchar("external_media_id", { length: 128 }),
+    /** A created-but-unpublished container (IG reels are polled until ready, O13). */
+    externalContainerId: varchar("external_container_id", { length: 128 }),
+    publishError: varchar("publish_error", { length: 1024 }),
+    publishAttempts: integer("publish_attempts").notNull().default(0),
+    /** When the last publish attempt started — what the retry backoff counts from. */
+    lastPublishAttemptAt: timestamp("last_publish_attempt_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("posts_account_status_idx").on(t.accountId, t.status),
+    index("posts_scheduled_idx").on(t.scheduledFor),
+    index("posts_brand_status_idx").on(t.brandId, t.status),
+    index("posts_parent_idx").on(t.parentPostId),
+  ],
+);
+
+// ---------------------------------------------------------------------------
+// post_assets
+// ---------------------------------------------------------------------------
+
+export const POST_ASSET_ROLES = ["slide", "cover", "clip", "thumbnail", "audio"] as const;
+export type PostAssetRole = (typeof POST_ASSET_ROLES)[number];
+
+/** A post's files, in order. Position is the slide order of a carousel. */
+export const postAssets = pgTable(
+  "post_assets",
+  {
+    postId: integer("post_id").notNull(),
+    assetId: integer("asset_id").notNull(),
+    position: smallint("position").notNull(),
+    role: text("role", { enum: POST_ASSET_ROLES }).notNull().default("slide"),
+  },
+  (t) => [
+    primaryKey({ columns: [t.postId, t.position] }),
+    // "Used in" on the media detail drawer.
+    index("post_assets_asset_idx").on(t.assetId),
+  ],
+);
+
+// ---------------------------------------------------------------------------
+// post_metrics / account_metrics
+// ---------------------------------------------------------------------------
+
+/** Append-only insight snapshots of one post (§1.51). Null is "not reported", not zero. */
+export const postMetrics = pgTable(
+  "post_metrics",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    postId: integer("post_id").notNull(),
+    capturedAt: timestamp("captured_at").notNull().defaultNow(),
+    reach: integer("reach"),
+    impressions: integer("impressions"),
+    plays: integer("plays"),
+    likes: integer("likes"),
+    comments: integer("comments"),
+    saves: integer("saves"),
+    shares: integer("shares"),
+    follows: integer("follows"),
+    profileVisits: integer("profile_visits"),
+    raw: jsonb("raw"),
+  },
+  (t) => [index("post_metrics_post_captured_idx").on(t.postId, t.capturedAt)],
+);
+
+/** One row per account per day. */
+export const accountMetrics = pgTable(
+  "account_metrics",
+  {
+    accountId: integer("account_id").notNull(),
+    date: date("date", { mode: "string" }).notNull(),
+    followers: integer("followers"),
+    reach: integer("reach"),
+    profileVisits: integer("profile_visits"),
+    raw: jsonb("raw"),
+  },
+  (t) => [primaryKey({ columns: [t.accountId, t.date] })],
+);
+
+// ---------------------------------------------------------------------------
+// social_competitors / competitor_posts
+// ---------------------------------------------------------------------------
+
+export const SOCIAL_COMPETITOR_ROLES = ["competitor", "inspiration"] as const;
+export type SocialCompetitorRole = (typeof SOCIAL_COMPETITOR_ROLES)[number];
+
+/** Someone else's account a brand studies (S21), the social twin of `brand_sources`. */
+export const socialCompetitors = pgTable(
+  "social_competitors",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    brandId: text("brand_id").notNull(),
+    platform: text("platform", { enum: SOCIAL_PLATFORMS }).notNull(),
+    handle: varchar("handle", { length: 255 }).notNull(),
+    role: text("role", { enum: SOCIAL_COMPETITOR_ROLES }).notNull().default("competitor"),
+    externalId: varchar("external_id", { length: 128 }),
+    /** Last follower count the sync saw, for engagement-per-follower ranking. */
+    followers: integer("followers"),
+    lastSyncedAt: timestamp("last_synced_at"),
+    lastError: varchar("last_error", { length: 1024 }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("social_competitors_brand_platform_handle_idx").on(t.brandId, t.platform, t.handle),
+  ],
+);
+
+export const competitorPosts = pgTable(
+  "competitor_posts",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    /** Soft link to `social_competitors.id`. */
+    competitorId: integer("competitor_id").notNull(),
+    externalId: varchar("external_id", { length: 128 }).notNull(),
+    permalink: varchar("permalink", { length: 1024 }),
+    caption: text("caption"),
+    /** The platform's own word: IMAGE, VIDEO, CAROUSEL_ALBUM, REEL… */
+    mediaType: varchar("media_type", { length: 32 }),
+    postedAt: timestamp("posted_at"),
+    likes: integer("likes"),
+    comments: integer("comments"),
+    views: integer("views"),
+    capturedAt: timestamp("captured_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("competitor_posts_external_id_idx").on(t.externalId),
+    index("competitor_posts_competitor_posted_idx").on(t.competitorId, t.postedAt),
+  ],
+);
+
+export type BrandFamily = typeof brandFamilies.$inferSelect;
+export type NewBrandFamily = typeof brandFamilies.$inferInsert;
+export type BrandKit = typeof brandKits.$inferSelect;
+export type NewBrandKit = typeof brandKits.$inferInsert;
+export type SocialAccount = typeof socialAccounts.$inferSelect;
+export type NewSocialAccount = typeof socialAccounts.$inferInsert;
+export type Integration = typeof integrations.$inferSelect;
+export type NewIntegration = typeof integrations.$inferInsert;
+export type Asset = typeof assets.$inferSelect;
+export type NewAsset = typeof assets.$inferInsert;
+export type Post = typeof posts.$inferSelect;
+export type NewPost = typeof posts.$inferInsert;
+export type PostAsset = typeof postAssets.$inferSelect;
+export type NewPostAsset = typeof postAssets.$inferInsert;
+export type PostMetric = typeof postMetrics.$inferSelect;
+export type NewPostMetric = typeof postMetrics.$inferInsert;
+export type AccountMetric = typeof accountMetrics.$inferSelect;
+export type NewAccountMetric = typeof accountMetrics.$inferInsert;
+export type SocialCompetitor = typeof socialCompetitors.$inferSelect;
+export type NewSocialCompetitor = typeof socialCompetitors.$inferInsert;
+export type CompetitorPost = typeof competitorPosts.$inferSelect;
+export type NewCompetitorPost = typeof competitorPosts.$inferInsert;

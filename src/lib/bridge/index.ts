@@ -9,3 +9,9 @@ export * from "./clips";
 export * from "./analyses";
 export * from "./marks";
 export * from "./ideas";
+// Build 3 (PLAN.md §2, O9): the social OS.
+export * from "./families";
+export * from "./accounts";
+export * from "./assets";
+export * from "./posts";
+export * from "./metrics";

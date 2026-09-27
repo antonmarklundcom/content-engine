@@ -17,6 +17,8 @@ const KIND_LABEL: Record<LessonKind, TranslationKey> = {
   hook: "studio.lessonKind.hook",
   title_pattern: "studio.lessonKind.title_pattern",
   fact: "studio.lessonKind.fact",
+  cta: "studio.lessonKind.cta",
+  caption_pattern: "studio.lessonKind.caption_pattern",
 };
 
 async function postJson(

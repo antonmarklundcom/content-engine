@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { formatLikeRate, likesPerThousandViews } from "./format";
+import { formatLikeRate, likesPerThousandViews, slugify } from "./format";
 
 /**
  * [PR-33] The engagement ratio.
@@ -41,4 +41,13 @@ test("formatting follows the UI locale", () => {
   // Swedish uses a decimal comma; the point of PR-22 was that numbers leak the
   // original language even when every string is translated.
   assert.equal(formatLikeRate(38, 10_000, "sv"), "3,8");
+});
+
+test("slugify makes a safe, bounded name and never an empty one", () => {
+  assert.equal(slugify("Residência Permanente: ¿cómo?"), "residencia-permanente-como");
+  assert.equal(slugify("a".repeat(80)).length, 60);
+  assert.equal(slugify("word ".repeat(20), { max: 12 }), "word-word-wo");
+  assert.equal(slugify("hello-world--", { max: 6 }), "hello");
+  assert.equal(slugify("!!!"), "untitled");
+  assert.equal(slugify("", { fallback: "file" }), "file");
 });

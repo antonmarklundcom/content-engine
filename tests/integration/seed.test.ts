@@ -4,8 +4,8 @@ import { after, beforeEach, test } from "node:test";
 import { eq } from "drizzle-orm";
 
 import { db, schema } from "@/db";
-import { BRAND_SEEDS, seedBrands } from "@/db/seed";
-import { getBrand, listAllBrands, listBrands } from "@/lib/bridge";
+import { FAMILY_SEEDS, READY_BRAND_SEEDS, seedBrands, seedFamilies } from "@/db/seed";
+import { getBrand, listAllBrands, listBrands, listFamilyBrands } from "@/lib/bridge";
 
 import { resetTables, teardown } from "./setup";
 
@@ -24,8 +24,8 @@ after(teardown);
 test("the first seed inserts every brand", async () => {
   const written = await seedBrands();
 
-  assert.equal(written, BRAND_SEEDS.length);
-  assert.equal((await db.select().from(schema.brands)).length, BRAND_SEEDS.length);
+  assert.equal(written, READY_BRAND_SEEDS.length);
+  assert.equal((await db.select().from(schema.brands)).length, READY_BRAND_SEEDS.length);
 });
 
 test("seeding twice writes nothing the second time", async () => {
@@ -33,7 +33,7 @@ test("seeding twice writes nothing the second time", async () => {
   const second = await seedBrands();
 
   assert.equal(second, 0, "a re-run reports 0, not 11");
-  assert.equal((await db.select().from(schema.brands)).length, BRAND_SEEDS.length);
+  assert.equal((await db.select().from(schema.brands)).length, READY_BRAND_SEEDS.length);
 });
 
 test("a re-seed leaves edits made in the database alone", async () => {
@@ -63,7 +63,7 @@ test("--overwrite pushes the file back over the stored row, except `active`", as
   await seedBrands({ overwrite: true });
 
   const brand = await getBrand("propia");
-  assert.equal(brand?.voice, BRAND_SEEDS.find((b) => b.id === "propia")?.voice);
+  assert.equal(brand?.voice, READY_BRAND_SEEDS.find((b) => b.id === "propia")?.voice);
   assert.equal(brand?.active, false, "deactivation is the app's switch, not seed data");
 });
 
@@ -74,8 +74,8 @@ test("listBrands hides deactivated brands and listAllBrands does not", async () 
   const active = await listBrands();
   const all = await listAllBrands();
 
-  assert.equal(all.length, BRAND_SEEDS.length);
-  assert.equal(active.length, BRAND_SEEDS.length - 1);
+  assert.equal(all.length, READY_BRAND_SEEDS.length);
+  assert.equal(active.length, READY_BRAND_SEEDS.length - 1);
   assert.ok(!active.some((b) => b.id === "pozo"));
   // A deactivated brand still has ideas attached, so history can still name it.
   assert.ok(all.some((b) => b.id === "pozo"));
@@ -101,8 +101,32 @@ test("getBrand returns null for a brand that does not exist", async () => {
 test("every seeded brand round-trips its json platforms column", async () => {
   await seedBrands();
 
-  for (const seeded of BRAND_SEEDS) {
+  for (const seeded of READY_BRAND_SEEDS) {
     const stored = await getBrand(seeded.id!);
     assert.deepEqual(stored?.platforms, seeded.platforms, `${seeded.id} platforms`);
   }
+});
+
+test("families seed insert-only, and the residency brands join theirs (§1.52)", async () => {
+  assert.equal(await seedFamilies(), FAMILY_SEEDS.length);
+  assert.equal(await seedFamilies(), 0, "a re-run writes nothing");
+  await seedBrands();
+
+  const members = await listFamilyBrands("paraguay-residency");
+  assert.deepEqual(
+    members.map((b) => b.id).sort(),
+    ["flytta", "frontier", "guide", "investorpass", "residenciaes", "residenciapt", "residency"],
+    "all seven residency brands are seeded",
+  );
+  assert.ok(
+    members.every((b) => b.familyId === "paraguay-residency"),
+    "every member points back at the family",
+  );
+  assert.equal(await getBrand("residency-guide"), null, "the build 2 id is gone from the seed");
+});
+
+test("no seed with a PENDING value is ever written", async () => {
+  await seedBrands();
+  const rows = await db.select().from(schema.brands);
+  assert.ok(rows.every((b) => ![b.name, b.domain, b.niche].includes("PENDING")));
 });

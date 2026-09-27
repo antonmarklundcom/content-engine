@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { facts, scripts, type Fact } from "@/db/schema";
+import { brands, facts, scripts, type Fact } from "@/db/schema";
 import { scriptsNeedingCorrection, type ScriptNeedingCorrection } from "@/lib/studio/staleness";
 
 /**
@@ -54,11 +54,20 @@ function clean(input: FactInput): CleanFact {
   return { topic, claim, sourceUrl, notes: input.notes?.trim() || null };
 }
 
-/** Add a fact to a brand's sheet, checked as of now. */
+/**
+ * Add a fact to a brand's sheet, checked as of now. A fact typed in by hand is
+ * a checked one, so it is `verified` (§1.48: only imported, unchecked facts are
+ * not), and it is in the brand's language.
+ */
 export async function createFact(brandId: string, input: FactInput): Promise<Fact> {
   const [row] = await db
     .insert(facts)
-    .values({ brandId, ...clean(input) })
+    .values({
+      brandId,
+      ...clean(input),
+      verified: true,
+      language: sql`coalesce((select left(${brands.language}, 8) from ${brands} where ${brands.id} = ${brandId}), 'en')`,
+    })
     .returning();
   if (!row) throw new Error("Insert into facts returned no row");
   return row;
