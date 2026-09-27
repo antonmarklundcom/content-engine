@@ -39,7 +39,7 @@ export default async function BrandKitPage({ params }: { params: Promise<{ id: s
     logoOptions.push({ id: a.id, label: `#${a.id} · ${name}`, hasThumb: !!a.thumbPath });
   }
   if (kit?.logoAssetId && !seen.has(kit.logoAssetId)) {
-    logoOptions.unshift({ id: kit.logoAssetId, label: `#${kit.logoAssetId}`, hasThumb: true });
+    logoOptions.unshift({ id: kit.logoAssetId, label: `#${kit.logoAssetId}`, hasThumb: false });
   }
 
   return (
