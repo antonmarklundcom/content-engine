@@ -453,6 +453,9 @@ spawn O14.
 
 ### O14 — Hostinger EU deploy (lane 3; live needs §7 item 8)
 
+*Amended 2026-09-27:* Anton deploys to the EU slot early. `docs/DEPLOY-HOSTINGER.md` and
+`DB_FORCE_IPV4` already exist; O14 extends them.
+
 `docs/DEPLOY-HOSTINGER.md` per the `nextjs-deploy-hostinger` skill (EU
 account, GitHub integration, env vars, migrations run from the PC, cron jobs
 calling `/api/cron/poll` without captions and `/api/cron/publish`); force IPv4
