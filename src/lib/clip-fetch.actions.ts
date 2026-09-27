@@ -11,7 +11,10 @@
  * refusals (no yt-dlp, drive unplugged, the cap) are what the owner must read.
  */
 
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { db } from "@/db";
+import { facts } from "@/db/schema";
 import { ForbiddenError } from "@/lib/auth/roles";
 import { requireOwner, requireUser } from "@/lib/auth/session";
 import { getBrand, getClip } from "@/lib/bridge";
@@ -72,14 +75,18 @@ export async function saveClaimAsFactAction(
   const brandId = text(input.brandId);
   if (!brandId || !(await getBrand(brandId))) return { ok: false, error: "Pick a brand." };
   try {
-    // Unverified by default (§1.48): a claim heard in someone else's reel is
-    // what needs checking, not a checked fact. The clip is the source.
-    await createFact(brandId, {
+    // Unverified (§1.48): a claim heard in someone else's reel is what needs
+    // checking, not a checked fact, so generation may cite it only hedged.
+    // `createFact` marks hand-typed facts verified (the owner's word); the
+    // bridge only reads and creates, so the flag is cleared here, in the
+    // action that owns this write. The clip is the source.
+    const fact = await createFact(brandId, {
       topic: text(input.topic) || "from clips",
       claim: text(input.text),
       sourceUrl: clip.url,
       notes: `Claim from clip ${clip.id}; check it before saying it as fact.`,
     });
+    await db.update(facts).set({ verified: false }).where(eq(facts.id, fact.id));
   } catch (err) {
     if (err instanceof InvalidFactError) return { ok: false, error: err.message };
     throw err;
