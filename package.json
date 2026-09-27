@@ -21,6 +21,8 @@
     "smoke": "tsx --conditions=react-server scripts/smoke.ts",
     "db:check": "tsx scripts/check-db.ts",
     "studio:weekly": "tsx --conditions=react-server scripts/weekly-report.ts",
+    "media:scan": "tsx --conditions=react-server scripts/media-scan.ts",
+    "media:prune": "tsx --conditions=react-server scripts/media-prune.ts",
     "yt:seed-owner": "tsx scripts/seed-yt-owner.ts",
     "yt:uploads": "tsx scripts/list-uploads.ts",
     "yt:ingest": "tsx scripts/ingest.ts",
@@ -42,6 +44,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "server-only": "^0.0.1",
+    "sharp": "^0.35.4",
     "undici": "^6.28.0",
     "youtubei.js": "^13.4.0"
   },
