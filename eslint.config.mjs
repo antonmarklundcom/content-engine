@@ -17,6 +17,8 @@ export default tseslint.config(
       "docs/screenshots/**",
       "media/**",
       "next-env.d.ts",
+      // Cloudflare Workers (S16) have their own package.json and tsconfig.
+      "workers/**",
     ],
   },
   ...compat.extends("next/core-web-vitals"),

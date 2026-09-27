@@ -50,6 +50,13 @@
       "when": 1790388531704,
       "tag": "0006_studio_extras",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790472956250,
+      "tag": "0007_social_os",
+      "breakpoints": true
     }
   ]
 }

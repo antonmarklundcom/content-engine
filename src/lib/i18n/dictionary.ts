@@ -37,6 +37,10 @@ import * as listing from "./dict/listing";
 import * as report from "./dict/report";
 import * as settings from "./dict/settings";
 import * as header from "./dict/header";
+import * as accounts from "./dict/accounts";
+import * as media from "./dict/media";
+import * as posts from "./dict/posts";
+import * as capture from "./dict/capture";
 
 export const en = {
   ...app.en,
@@ -58,6 +62,10 @@ export const en = {
   ...report.en,
   ...settings.en,
   ...header.en,
+  ...accounts.en,
+  ...media.en,
+  ...posts.en,
+  ...capture.en,
 } as const;
 
 export type TranslationKey = keyof typeof en;
@@ -82,6 +90,10 @@ export const sv: Record<TranslationKey, string> = {
   ...report.sv,
   ...settings.sv,
   ...header.sv,
+  ...accounts.sv,
+  ...media.sv,
+  ...posts.sv,
+  ...capture.sv,
 };
 
 export const DICTIONARIES = { en, sv } as const;

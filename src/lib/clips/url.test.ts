@@ -59,3 +59,16 @@ test("anything that is not an http(s) URL is rejected outright", () => {
   assert.equal(canonicalClipUrl("mailto:a@b.c"), null);
   assert.equal(canonicalClipUrl("   "), null);
 });
+
+test("utm_* campaign tags do not create a second clip", () => {
+  assert.equal(
+    canonicalClipUrl("https://example.com/post?utm_source=ig&utm_medium=social&UTM_Campaign=x"),
+    "https://example.com/post",
+  );
+  assert.equal(
+    canonicalClipUrl("https://youtube.com/watch?v=aaaaaaaaaaa&utm_source=share"),
+    canonicalClipUrl("https://youtube.com/watch?v=aaaaaaaaaaa"),
+  );
+  // A parameter that merely contains "utm" is content, not a campaign tag.
+  assert.equal(canonicalClipUrl("https://example.com/p?autm=1"), "https://example.com/p?autm=1");
+});

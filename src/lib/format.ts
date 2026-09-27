@@ -74,3 +74,22 @@ export function formatLikeRate(
     maximumFractionDigits: rate < 10 ? 1 : 0,
   }).format(rate);
 }
+
+/**
+ * ASCII, lower-case, hyphenated, at most `max` characters — safe as a folder
+ * or file name on Windows and in a URL. The media folder layout (PLAN.md
+ * §1.41, `src/lib/storage/paths.ts`) builds its names with it. An input with
+ * nothing sluggable in it gives `fallback`, never an empty name.
+ */
+export function slugify(text: string, options: { max?: number; fallback?: string } = {}): string {
+  const { max = 60, fallback = "untitled" } = options;
+  const slug = text
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, max)
+    .replace(/-+$/g, "");
+  return slug || fallback;
+}

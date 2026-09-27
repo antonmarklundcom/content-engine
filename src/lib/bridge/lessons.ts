@@ -124,6 +124,8 @@ const KIND_HEADINGS: Record<LessonKind, string> = {
   hook: "Hooks",
   title_pattern: "Title patterns",
   fact: "Facts",
+  cta: "CTAs",
+  caption_pattern: "Caption patterns",
 };
 
 /** `m:ss` or `h:mm:ss`, as YouTube shows it. */

@@ -1,6 +1,9 @@
 /**
  * What a saved link is, and what counts as the *same* saved link.
  *
+ * Pure: no Node APIs, no database. The Telegram capture Worker (PLAN.md §1.43)
+ * bundles this file so it dedupes exactly like the app does.
+ *
  * Both questions are answered here, with no database and no network, because
  * both are pure string work and because the save route, the dedupe lookup and
  * the tests all have to agree on the answer. A share sheet sends whatever the
@@ -96,8 +99,8 @@ function parseUrl(input: string): URL | null {
  * The dedupe key: the same link, in one canonical spelling.
  *
  * Deliberately conservative. It normalises what is provably noise — scheme,
- * `www.`, a trailing slash, the fragment, the tracking params above, and
- * parameter order — and touches nothing else. Two URLs that differ in any
+ * `www.`, a trailing slash, the fragment, the tracking params above, `utm_*`,
+ * and parameter order — and touches nothing else. Two URLs that differ in any
  * remaining way are treated as two clips, which is the safe way to be wrong:
  * a duplicate row is a nuisance, a collision silently overwrites the note on
  * something else.
@@ -116,6 +119,10 @@ export function canonicalClipUrl(input: string): string | null {
   url.password = "";
 
   for (const param of TRACKING_PARAMS) url.searchParams.delete(param);
+  // Campaign tags (`utm_source`, `utm_medium`, …) say who shared, never what.
+  for (const param of [...url.searchParams.keys()]) {
+    if (param.toLowerCase().startsWith("utm_")) url.searchParams.delete(param);
+  }
   // Sort so ?a=1&b=2 and ?b=2&a=1 are one clip.
   url.searchParams.sort();
 
