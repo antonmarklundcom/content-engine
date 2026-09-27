@@ -609,7 +609,7 @@ their archived plans.
 | S19 Docs + local setup | #53 | `docs/log/s19.md` | merged |
 | Fix: Neon transactions, reaper start time | #63 | — | merged |
 | S20 Link pass | #64 | `docs/log/s20.md` | merged |
-| O12 Meta connect + insights | — | `docs/log/o12.md` | open |
+| O12 Meta connect + insights | #66 | `docs/log/o12.md` | merged; O13 + S21 spawned 2026-09-27 |
 
 ## §10. Backlog
 
