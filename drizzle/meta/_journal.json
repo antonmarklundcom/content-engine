@@ -57,6 +57,13 @@
       "when": 1790472956250,
       "tag": "0007_social_os",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790514586409,
+      "tag": "0008_clip_ingest_started_at",
+      "breakpoints": true
     }
   ]
 }

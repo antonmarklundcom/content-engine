@@ -599,7 +599,8 @@ their archived plans.
 | Plan v3 | #46, #47 | — | merged |
 | O9 Social schema + contracts | #48 | `docs/log/o9.md` | merged (seed filled by parent session) |
 | O10 Media storage | #50 | `docs/log/o10.md` | merged |
-| O11 Post engine | #52 | `docs/log/o11.md` | open |
+| O11 Post engine | #52 | `docs/log/o11.md` | merged; lane 2 (S13–S19) spawned 2026-09-27 |
+| Fix: Neon transactions, reaper start time | this branch | — | open |
 
 ## §10. Backlog
 
