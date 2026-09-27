@@ -601,9 +601,10 @@ their archived plans.
 | O10 Media storage | #50 | `docs/log/o10.md` | merged |
 | O11 Post engine | #52 | `docs/log/o11.md` | open |
 | S13 Brands, families, accounts, kits | #54 | `docs/log/s13.md` | merged |
-| S19 Docs + local setup | #53 | `docs/log/s19.md` | open |
 | S15 Posts, calendar, post pack | #59 | `docs/log/s15.md` | merged |
+| S17 Clip fetch + transcript | — | `docs/log/s17.md` | open |
 | S18 Facts import + hooks library | #55 | `docs/log/s18.md` | merged |
+| S19 Docs + local setup | #53 | `docs/log/s19.md` | open |
 
 ## §10. Backlog
 

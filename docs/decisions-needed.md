@@ -73,3 +73,5 @@ being wrong high only makes the cap trip early.
 The O9 session could not clone `antonmarklundcom/paraguayresidency` (the permission check blocked it), so `src/db/seed.ts` has `PENDING` for the name/domain/niche of `residency`, `investorpass`, `frontier`, `residenciaes`, `residenciapt`, `flytta` (only `residency`'s domain, paraguayresidency.co.uk, is known from PLAN.md §1.52). The seed **skips** any PENDING brand, so nothing wrong is ever written. **Ask:** allow the clone in a session (or paste the `CLAUDE.md` domain table and `plan.md` §11), then replace the PENDING values, also the placeholder `platforms` and `voice`; the next `npm run db:seed` inserts them.
 
 **Answered 2026-09-27 (parent session):** the six PENDING brands were filled from `antonmarklundcom/paraguayresidency` (`CLAUDE.md` domain table, `plan.md` §11.1–§11.8) on `phase/o9-social-schema`; the seed now writes all seven.
+
+- S17 (2026-09-27): for S20 — add `"clips:fetch": "tsx --conditions=react-server scripts/clips-fetch.ts"` to `package.json` and the yt-dlp/ffmpeg/Telegram env keys listed in `docs/log/s17.md` to `.env.example` (neither file is S17's).
