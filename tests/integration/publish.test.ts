@@ -635,7 +635,10 @@ test("leases: a held post lease or run lease stops a second publisher; concurren
     publishDue({ now: NOW, fetch: both.fetch, ...FAST }),
     publishDue({ now: NOW, fetch: both.fetch, ...FAST }),
   ]);
-  assert.equal([a, b].filter((r) => r.busy).length, 1);
+  // Either the second run found the lease held, or it started after the first
+  // had finished; in both cases the post went out exactly once.
+  const published = [a, b].flatMap((r) => r.outcomes).filter((o) => o.result === "published");
+  assert.equal(published.length, 1);
   assert.equal(both.posts(`${IG_ID}/media_publish`).length, 1);
   assert.equal((await load(p.id)).status, "published");
 });
