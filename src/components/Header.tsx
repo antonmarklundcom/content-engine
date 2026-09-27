@@ -6,12 +6,7 @@ import { getLocale } from "@/lib/i18n/server";
 import { translator } from "@/lib/i18n";
 import { LocaleToggle } from "./LocaleToggle";
 import { SpendMeter } from "./SpendMeter";
-
-type NavLink = { href: string; label: string };
-type NavItem = NavLink | { label: string; items: NavLink[] };
-
-const LINK =
-  "text-sm text-[var(--color-ink-muted)] transition-colors hover:text-[var(--color-ink)] rounded-[var(--radius-sm)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]";
+import { HeaderNav, type NavItem } from "./HeaderNav";
 
 export async function Header() {
   const [locale, user] = await Promise.all([getLocale(), getSession()]);
@@ -22,10 +17,22 @@ export async function Header() {
   // put MySQL in the path of the one page that must work when things are broken.
   const status = user ? await spendStatus() : null;
 
-  // Final order (PLAN.md §6.S9). A group opens on hover or focus (a tap on a
-  // phone), so the header stays a server component with no menu state.
+  // Final order (PLAN.md §6.S20): the daily loop first, then research and the
+  // older tools. The wordmark is the home link (families and this week).
   const nav: NavItem[] = [
-    { href: "/", label: t("header.content") },
+    { href: "/posts", label: t("header.posts") },
+    { href: "/calendar", label: t("header.calendar") },
+    { href: "/media", label: t("header.media") },
+    {
+      label: t("header.accounts"),
+      items: [
+        { href: "/accounts", label: t("header.accounts") },
+        { href: "/brands", label: t("header.accounts.brands"), also: ["/brand"] },
+        { href: "/families", label: t("header.accounts.families") },
+      ],
+    },
+    { href: "/hooks", label: t("header.hooks") },
+    { href: "/inbox", label: t("header.inbox"), also: ["/clips", "/share"] },
     {
       label: t("header.research"),
       items: [
@@ -33,6 +40,7 @@ export async function Header() {
         { href: "/research/report", label: t("header.research.report") },
         { href: "/research/questions", label: t("header.research.questions") },
         { href: "/research/compare", label: t("header.research.compare") },
+        { href: "/lessons", label: t("header.lessons") },
       ],
     },
     {
@@ -44,7 +52,6 @@ export async function Header() {
       ],
     },
     { href: "/facts", label: t("header.facts") },
-    { href: "/lessons", label: t("header.lessons") },
     {
       label: t("header.youtube"),
       items: [
@@ -55,7 +62,6 @@ export async function Header() {
         { href: "/youtube/ingest", label: t("nav.ingest") },
       ],
     },
-    { href: "/inbox", label: t("nav.inbox") },
     { href: "/settings", label: t("header.settings") },
   ];
 
@@ -69,43 +75,7 @@ export async function Header() {
           >
             {t("app.name")}
           </Link>
-          <nav className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            {user &&
-              nav.map((item) =>
-                "items" in item ? (
-                  <div key={item.label} className="group relative">
-                    <button
-                      type="button"
-                      aria-haspopup="true"
-                      className={`${LINK} flex items-center gap-1`}
-                    >
-                      {item.label}
-                      <span aria-hidden className="text-[10px]">
-                        ▾
-                      </span>
-                    </button>
-                    <div className="absolute left-0 top-full z-20 hidden pt-2 group-hover:block group-focus-within:block">
-                      <ul className="surface-border flex min-w-40 flex-col gap-1 rounded-[var(--radius-md)] bg-[var(--color-surface)] p-2 shadow-lg">
-                        {item.items.map((sub) => (
-                          <li key={sub.href}>
-                            <Link
-                              href={sub.href}
-                              className={`${LINK} block rounded-[var(--radius-sm)] px-2 py-1`}
-                            >
-                              {sub.label}
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                ) : (
-                  <Link key={item.href} href={item.href} className={LINK}>
-                    {item.label}
-                  </Link>
-                ),
-              )}
-          </nav>
+          {user && <HeaderNav nav={nav} />}
         </div>
         <div className="flex items-center gap-5">
           <LocaleToggle locale={locale} />

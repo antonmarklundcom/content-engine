@@ -48,8 +48,7 @@ winget install --id yt-dlp.yt-dlp -e
 winget install --id Gyan.FFmpeg -e
 ```
 
-yt-dlp downloads saved reels for research (used by `npm run clips:fetch`,
-which arrives with S17). ffmpeg gives videos their duration in the media
+yt-dlp downloads saved reels for research (used by `npm run clips:fetch`). ffmpeg gives videos their duration in the media
 library. Both are optional: without them the app still runs.
 
 Close PowerShell and open it again, then check both answer with a version number:
@@ -201,7 +200,7 @@ schtasks /Create /F /SC WEEKLY /D SUN /ST 03:00 /TN "content-engine media-prune"
 **Publish due posts every 5 minutes** — arrives with O13 (`npm run
 publish:due`); the exact line is added here then.
 
-## 7b. Telegram capture (arrives with S16)
+## 7b. Telegram capture
 
 Save links from your phone by sending them to a Telegram bot, even while the
 PC is off. It runs on a free Cloudflare Worker, not on this PC. What you need

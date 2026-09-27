@@ -48,6 +48,7 @@ export default async function BrandIdeas({
         locale={locale}
         ideas={result.ideas}
         canDelete={isOwner(user)}
+        canGenerate={isOwner(user)}
         tabs={
           <IdeaStatusTabs counts={counts} active={status} basePath={basePath} locale={locale} />
         }

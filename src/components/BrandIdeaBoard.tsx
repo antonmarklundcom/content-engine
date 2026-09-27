@@ -14,6 +14,7 @@ export function BrandIdeaBoard({
   locale,
   ideas,
   canDelete,
+  canGenerate,
   tabs,
 }: {
   brandId: string;
@@ -21,6 +22,8 @@ export function BrandIdeaBoard({
   locale: Locale;
   ideas: BrandIdea[];
   canDelete: boolean;
+  /** Generating spends money, so it is owner-only (PLAN.md §1.20); employees do not see the form. */
+  canGenerate: boolean;
   tabs: ReactNode;
 }) {
   const t = translator(locale);
@@ -28,12 +31,14 @@ export function BrandIdeaBoard({
 
   return (
     <div className="flex flex-col gap-6">
-      <BrandGenerateForm
-        brandId={brandId}
-        analyzedVideos={analyzedVideos}
-        locale={locale}
-        onGenerated={() => router.refresh()}
-      />
+      {canGenerate && (
+        <BrandGenerateForm
+          brandId={brandId}
+          analyzedVideos={analyzedVideos}
+          locale={locale}
+          onGenerated={() => router.refresh()}
+        />
+      )}
 
       {tabs}
 

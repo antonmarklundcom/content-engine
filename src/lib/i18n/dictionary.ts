@@ -42,6 +42,7 @@ import * as media from "./dict/media";
 import * as posts from "./dict/posts";
 import * as capture from "./dict/capture";
 import * as clipFetch from "./dict/clipFetch";
+import * as home from "./dict/home";
 
 export const en = {
   ...app.en,
@@ -68,6 +69,7 @@ export const en = {
   ...posts.en,
   ...capture.en,
   ...clipFetch.en,
+  ...home.en,
 } as const;
 
 export type TranslationKey = keyof typeof en;
@@ -97,6 +99,7 @@ export const sv: Record<TranslationKey, string> = {
   ...posts.sv,
   ...capture.sv,
   ...clipFetch.sv,
+  ...home.sv,
 };
 
 export const DICTIONARIES = { en, sv } as const;

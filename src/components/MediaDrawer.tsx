@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Asset } from "@/db/schema";
 import type { AssetUse } from "@/lib/bridge/assets";
 import { formatDate } from "@/lib/format";
@@ -126,7 +127,13 @@ export function MediaDrawer({
                 <ul className="flex flex-col gap-1">
                   {uses.map((use) => (
                     <li key={`${use.postId}-${use.position}`}>
-                      #{use.postId} {use.postTitle} · {use.role} {use.position} · {use.postStatus}
+                      <Link
+                        href={`/posts/${use.postId}`}
+                        className="text-[var(--color-accent)] hover:underline"
+                      >
+                        #{use.postId} {use.postTitle}
+                      </Link>{" "}
+                      · {use.role} {use.position} · {use.postStatus}
                     </li>
                   ))}
                 </ul>

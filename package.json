@@ -24,6 +24,7 @@
     "media:scan": "tsx --conditions=react-server scripts/media-scan.ts",
     "media:prune": "tsx --conditions=react-server scripts/media-prune.ts",
     "facts:import": "tsx --conditions=react-server scripts/facts-import.ts",
+    "clips:fetch": "tsx --conditions=react-server scripts/clips-fetch.ts",
     "yt:seed-owner": "tsx scripts/seed-yt-owner.ts",
     "yt:uploads": "tsx scripts/list-uploads.ts",
     "yt:ingest": "tsx scripts/ingest.ts",

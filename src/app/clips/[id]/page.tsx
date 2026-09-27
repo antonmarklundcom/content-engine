@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ClipFetchButton, ClipSaveForm } from "@/components/ClipMediaActions";
@@ -79,6 +80,13 @@ export default async function ClipPage({ params }: { params: Promise<{ id: strin
         >
           {t("clipFetch.openOriginal")}
         </a>
+        {" · "}
+        <Link
+          href={`/posts/new?topic=${encodeURIComponent((clip.summary ?? clip.title ?? clip.url).slice(0, 500))}`}
+          className="text-[var(--color-accent)] underline"
+        >
+          {t("links.makePost")}
+        </Link>
       </p>
       {clip.note && (
         <p className="mt-2 text-sm text-[var(--color-ink-muted)]">

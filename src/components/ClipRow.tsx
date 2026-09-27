@@ -160,6 +160,9 @@ export function ClipRow({
         )}
 
         <div className="mt-1 flex flex-wrap items-center gap-2">
+          <Link href={`/clips/${clip.id}`} className={ACTION_BUTTON}>
+            {t("links.openClip")}
+          </Link>
           {clip.videoId !== null && (
             <Link href={`/youtube/video/${clip.videoId}`} className={ACTION_BUTTON}>
               {t("inbox.viewVideo")}
