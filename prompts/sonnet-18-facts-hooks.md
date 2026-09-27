@@ -16,7 +16,7 @@ Budget: one session, ≤ 90 min. When the exit criteria pass, open the PR that t
 Phase rules:
 - Branch `phase/s18-facts-hooks` off latest main (or the harness's `claude/…` branch). WIP commit every 30 min.
 - Skills: none.
-- Test against a fixture copy of paraguayresidency's `content/shared/facts.ts` committed under `tests/fixtures/` (trim it to ~5 facts).
+- The fixture is already on main: `tests/fixtures/paraguayresidency-facts.ts.txt` (5 facts, the real file shape; `.txt` so root typecheck/lint skip it). Cloud sessions cannot clone paraguayresidency, so never try; the live source for `--source` is its raw GitHub URL, read over HTTPS at run time on Anton's PC.
 - Unverified facts store the hedged text; the facts page shows a visible 'unverified' badge.
 - `/hooks` reuses `lessons`; no new table.
 - Re-runnable: check what exists first, continue from the first unmet exit criterion.

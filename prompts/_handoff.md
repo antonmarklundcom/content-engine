@@ -8,6 +8,12 @@ A phase is done only when ALL of these hold:
    diff. Findings fixed in ONE follow-up commit (a second PR if the first is merged). No second round.
 4. **Phase log committed** — `docs/log/<id>.md` per `docs/log/README.md`, plus the index line in PLAN.md §9.
 
+**Never end your turn while CI is running.** An idle spawned session is never woken again, so a
+phase that stops to "wait for CI" stalls the whole chain. Re-check the PR's check runs in the same
+turn (a short `sleep` loop in Bash, a Monitor, or `send_later` if you have it) until they finish,
+then merge and spawn. Cloud sessions cannot clone other repos (e.g. paraguayresidency); use what
+is committed here.
+
 Every spawn uses the claude-code-remote `create_session` tool with: `source_url`
 `https://github.com/antonmarklundcom/content-engine`, inherited environment and permission mode
 (never `plan`), `model` exactly `claude-opus-5-5` (§1.37, never inherit, never Fable), and `prompt`
