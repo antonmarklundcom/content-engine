@@ -47,7 +47,8 @@ export async function saveMetaAppAction(
     return { ok: false, error: "The Meta app keys can only be saved on localhost." };
   }
 
-  const get = (k: string) => (typeof form.get(k) === "string" ? (form.get(k) as string).trim() : "");
+  const get = (k: string) =>
+    typeof form.get(k) === "string" ? (form.get(k) as string).trim() : "";
   const appId = get("META_APP_ID");
   const appSecret = get("META_APP_SECRET");
   const configId = get("META_LOGIN_CONFIG_ID");
@@ -101,7 +102,8 @@ export async function linkAccountAction(
   const accountId = Number(form.get("accountId"));
   const integrationId = Number(form.get("integrationId"));
   const externalId = String(form.get("externalId") ?? "").trim();
-  if (!Number.isInteger(accountId) || accountId <= 0) return { ok: false, error: "Pick an account." };
+  if (!Number.isInteger(accountId) || accountId <= 0)
+    return { ok: false, error: "Pick an account." };
   try {
     if (!externalId) {
       await unlinkAccount(accountId);

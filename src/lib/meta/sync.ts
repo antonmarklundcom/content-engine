@@ -162,7 +162,11 @@ async function syncInstagram(
   const igId = account.externalId!;
   const since = opts.now.getTime() - opts.days * 86_400_000;
   const media = (
-    await client.list<IgMedia>(`${igId}/media`, { fields: IG_MEDIA_FIELDS, limit: 50 }, opts.maxMedia)
+    await client.list<IgMedia>(
+      `${igId}/media`,
+      { fields: IG_MEDIA_FIELDS, limit: 50 },
+      opts.maxMedia,
+    )
   ).filter((m) => !m.timestamp || Date.parse(m.timestamp) >= since);
   report.mediaSeen += media.length;
 
@@ -175,7 +179,12 @@ async function syncInstagram(
       await db.update(posts).set({ externalMediaId: m.id }).where(eq(posts.id, hit.post.id));
     }
     const rows = await igInsights(client, m);
-    await snapshot(hit.post.id, mapIgMediaInsights(m, rows), { media: m, insights: rows }, opts.now);
+    await snapshot(
+      hit.post.id,
+      mapIgMediaInsights(m, rows),
+      { media: m, insights: rows },
+      opts.now,
+    );
     report.snapshots++;
   }
 
@@ -289,11 +298,12 @@ async function syncIntegration(
   for (const account of accounts) {
     try {
       if (account.platform === "instagram") await syncInstagram(client, account, opts, report);
-      else if (account.platform === "facebook") await syncFacebookPage(client, account, opts, report);
+      else if (account.platform === "facebook")
+        await syncFacebookPage(client, account, opts, report);
       else continue;
       report.accounts++;
     } catch (err) {
-      if (err instanceof TokenRejected) {
+      if (err instanceof TokenRejected || (err instanceof MetaGraphError && err.isTokenError)) {
         await setIntegrationStatus(row.id, "expired", `Meta rejected the login: ${err.message}`);
         report.expired.push(row.id);
         report.errors.push(`${row.label}: Meta rejected the login — reconnect in Settings.`);

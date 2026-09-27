@@ -72,7 +72,12 @@ async function parse<T>(res: Response): Promise<T> {
   try {
     body = text ? JSON.parse(text) : {};
   } catch {
-    throw new MetaGraphError(`Meta answered ${res.status} with a non-JSON body.`, res.status, null, null);
+    throw new MetaGraphError(
+      `Meta answered ${res.status} with a non-JSON body.`,
+      res.status,
+      null,
+      null,
+    );
   }
   const err = (body as GraphErrorBody).error;
   if (!res.ok || err) {

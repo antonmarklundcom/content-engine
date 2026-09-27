@@ -1491,7 +1491,33 @@ export type PostTarget = {
   playbook: string;
   /** `content/style/<language>.md`, whole. */
   styleGuide: string;
+  /** This account's best posts of the last 90 days (§1.51, O12); empty without insights. */
+  whatWorked?: PromptWhatWorked[];
 };
+
+/** One of an account's top posts by (saves + shares + comments) / reach (§1.51). */
+export type PromptWhatWorked = {
+  format: string;
+  hook: string;
+  caption: string;
+  reach: number;
+  saves: number;
+  shares: number;
+  comments: number;
+  /** (saves + shares + comments) / reach. */
+  rate: number;
+};
+
+function whatWorkedBlock(rows: PromptWhatWorked[] | undefined): string {
+  if (!rows?.length) return "";
+  const lines = rows
+    .map(
+      (r) =>
+        `- ${r.format}, ${(r.rate * 100).toFixed(1)}% engagement on ${r.reach} reached (${r.saves} saves, ${r.shares} shares, ${r.comments} comments). Hook: "${r.hook}". Caption start: "${r.caption}"`,
+    )
+    .join("\n");
+  return `\n\nWHAT WORKED on this account in the last 90 days (measured, best first) — learn from the PATTERNS (topic, hook shape, mechanic), never copy them word for word:\n${lines}`;
+}
 
 /** What a post is drafted from: an idea on file, or a bare topic. */
 export type PostSeed =
@@ -1563,7 +1589,7 @@ Format: ${t.format}. ${FORMAT_PARTS[t.format]}${
     t.lessons.length
       ? `\n\nLESSONS the owner saved (hooks, CTAs, caption patterns that worked) — use the PATTERNS, never copy them word for word:\n${lessonLines(t.lessons)}`
       : ""
-  }${postFactsBlock(t.facts)}`;
+  }${whatWorkedBlock(t.whatWorked)}${postFactsBlock(t.facts)}`;
 }
 
 const POST_SYSTEM = `You write social media posts that earn engagement — saves, shares, comments — for small businesses. You follow the platform playbook and the style guide you are given. One post has one hook, one engagement mechanic and one call to action.

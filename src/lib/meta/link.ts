@@ -67,11 +67,17 @@ export async function autoLinkByHandle(
   integrationId: number,
 ): Promise<number> {
   const byUsername = new Map(
-    targets.filter((t) => t.igUserId && t.igUsername).map((t) => [bare(t.igUsername!), t.igUserId!]),
+    targets
+      .filter((t) => t.igUserId && t.igUsername)
+      .map((t) => [bare(t.igUsername!), t.igUserId!]),
   );
   if (byUsername.size === 0) return 0;
   const accounts = await db
-    .select({ id: socialAccounts.id, handle: socialAccounts.handle, externalId: socialAccounts.externalId })
+    .select({
+      id: socialAccounts.id,
+      handle: socialAccounts.handle,
+      externalId: socialAccounts.externalId,
+    })
     .from(socialAccounts)
     .where(inArray(socialAccounts.platform, ["instagram"]));
   let linked = 0;

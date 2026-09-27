@@ -28,7 +28,8 @@ function back(request: Request, params: Record<string, string>): NextResponse {
 export async function GET(request: Request): Promise<NextResponse> {
   const url = new URL(request.url);
   const user = await getSession();
-  if (user?.role !== "owner") return back(request, { meta_error: "Only the owner can connect Meta." });
+  if (user?.role !== "owner")
+    return back(request, { meta_error: "Only the owner can connect Meta." });
 
   const denied = url.searchParams.get("error_description") ?? url.searchParams.get("error");
   if (denied) return back(request, { meta_error: `Meta said: ${denied}`.slice(0, 300) });
@@ -36,7 +37,9 @@ export async function GET(request: Request): Promise<NextResponse> {
   const state = url.searchParams.get("state");
   const expected = (await cookies()).get(META_STATE_COOKIE)?.value;
   if (!state || !expected || state !== expected) {
-    return back(request, { meta_error: "The login link expired or was opened in another browser. Try Connect again." });
+    return back(request, {
+      meta_error: "The login link expired or was opened in another browser. Try Connect again.",
+    });
   }
   const code = url.searchParams.get("code");
   if (!code) return back(request, { meta_error: "Meta sent no code. Try Connect again." });

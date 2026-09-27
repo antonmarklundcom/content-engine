@@ -54,7 +54,8 @@ export function setupSteps(f: SetupFacts): SetupStep[] {
     },
     {
       id: "pageLink",
-      state: ig.length === 0 ? "todo" : !seen ? "unknown" : notOnPage.length === 0 ? "done" : "todo",
+      state:
+        ig.length === 0 ? "todo" : !seen ? "unknown" : notOnPage.length === 0 ? "done" : "todo",
       missing: notOnPage.map((a) => a.handle),
     },
     // The app's type, admin and mode are not visible to us; an App ID is the proof we have.

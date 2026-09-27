@@ -45,7 +45,10 @@ test("credentials need the encryption key too", () => {
   const s = state({ ...base, appIdSet: true, appSecretSet: true });
   assert.equal(s.app, "done");
   assert.equal(s.credentials, "todo");
-  assert.equal(state({ ...base, appIdSet: true, appSecretSet: true, encryptionKeyOk: true }).credentials, "done");
+  assert.equal(
+    state({ ...base, appIdSet: true, appSecretSet: true, encryptionKeyOk: true }).credentials,
+    "done",
+  );
 });
 
 test("after connecting, Meta's list proves Professional + Page link and mapping counts", () => {

@@ -94,7 +94,9 @@ export async function disconnectMeta(id: number): Promise<void> {
     .update(socialAccounts)
     .set({ integrationId: null })
     .where(eq(socialAccounts.integrationId, id));
-  await db.delete(integrations).where(and(eq(integrations.id, id), eq(integrations.provider, "meta")));
+  await db
+    .delete(integrations)
+    .where(and(eq(integrations.id, id), eq(integrations.provider, "meta")));
 }
 
 export type ExpiryBanner = { level: "expired" | "error" | "soon"; message: string } | null;
