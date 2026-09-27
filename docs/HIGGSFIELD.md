@@ -1,4 +1,24 @@
-# Higgsfield hand-off (PLAN.md §1.34, §6.S12)
+# Higgsfield hand-off (PLAN.md §1.34, §1.45, §6.S12, §6.S14)
+
+Every Higgsfield command runs **in Claude Code on Anton's PC**, with the Higgsfield MCP connected: they write into `MEDIA_ROOT` (the external media drive, e.g. `E:\ContentEngine`; unset = `<repo>/media`), which a cloud session cannot reach. Commands that generate always ask `models_explore` (`action: "recommend"`) first, batch the jobs and wait with `jobs_wait`, write a `manifest.json` next to the files, and resume on re-run.
+
+## Posts (build 3)
+
+1. Open the post, then **Brief → Copy** — or `GET /api/posts/<id>/export?format=brief` (`&as=json` for just the JSON). Every visual has its prompt, aspect ratio and a `targetFile` relative to `MEDIA_ROOT` in the post's folder (`<brand>/<handle|_brand>/<YYYY-MM>/<post-id>-<slug>/NN-<slug>.<ext>`), plus the brand kit's Higgsfield element/character ids and style notes.
+2. Run `/higgsfield-post <post-id>` (or paste the brief after it). It recommends models, uses the cheapest that fits, stops to ask before spending more than its estimate, generates the stills in one batch and image-to-video only for shots with a video prompt.
+3. Files and `manifest.json` land in the post's folder. Then `npm run media:scan` or **Scan now** on `/media` registers them as assets for the brand (deduped by sha256, so re-running is safe).
+
+## Importing existing Higgsfield history
+
+1. Run `/higgsfield-import` (optionally `since 2026-09-01`, `last 50` or `all`). It spends nothing: it lists the account's past generations and downloads the ones not yet imported into `_inbox/higgsfield/<YYYY-MM-DD>/` with a manifest (prompt, model, job id, URL).
+2. **Scan now** on `/media`; the files appear in **`/media/inbox`** (unsorted = no brand yet).
+3. There, select files and tag, approve/reject/archive, or **Assign brand / account**. Assigning moves each inbox file into `<brand>/<handle|_brand>/<YYYY-MM>/` and repoints the inbox manifest, so a later scan keeps its prompt and reports nothing missing.
+
+## The library (`/media`)
+
+Filters (brand or unsorted, account, status, source, kind, tag, date) are URL parameters, so every view is a link. The grid only loads thumbnails (`/api/media/asset/<id>/thumb`); the full file loads in the detail drawer (prompt, model, source link, the posts it is used in). With the drive unplugged the page says "media drive not connected" and still filters and edits metadata; moves wait for the drive.
+
+## Scripts (build 2)
 
 1. Write and edit a script in the studio (`/studio/new` → `/studio/<id>`), then **Save**.
 2. On `/studio/<id>`, **Export → Shot list → Copy** (or download it). It is Markdown for you plus a fenced JSON block for Claude Code; every shot already has its image/video prompt, aspect ratio and target file name.

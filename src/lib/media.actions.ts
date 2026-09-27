@@ -20,6 +20,7 @@ import { getAccount, type AccountWithBrand } from "@/lib/bridge/accounts";
 import { getAsset } from "@/lib/bridge/assets";
 import { getBrand } from "@/lib/bridge/brands";
 import { requireUser } from "@/lib/auth/session";
+import { entryCandidates } from "@/lib/media/manifest";
 import { scanMediaRoot } from "@/lib/media/scan";
 import { localDriver } from "@/lib/storage/local";
 import { handleSegment, INBOX_DIR, segment } from "@/lib/storage/paths";
@@ -108,7 +109,7 @@ async function moveOutOfInbox(
   asset: Asset,
   brandId: string,
   handle: string | null,
-): Promise<{ ok: true; warning?: string } | { ok: false; message: string }> {
+): Promise<{ ok: true; key: string; warning?: string } | { ok: false; message: string }> {
   const from = asset.localPath!;
   const segments = splitRelative(from);
   if (!segments) return { ok: false, message: `Unsafe media path: ${from}` };
@@ -130,8 +131,53 @@ async function moveOutOfInbox(
     .where(eq(assets.id, asset.id));
   const removed = await driver.remove(from);
   return removed.ok
-    ? { ok: true }
-    : { ok: true, warning: `copied, but ${from} stays: ${removed.message}` };
+    ? { ok: true, key: put.key }
+    : { ok: true, key: put.key, warning: `copied, but ${from} stays: ${removed.message}` };
+}
+
+/**
+ * Point the inbox folder's `manifest.json` at the moved files, so the next scan
+ * neither reports them as missing nor loses their prompt/model. Best effort:
+ * a manifest that is not there or not JSON is left alone.
+ */
+async function repointManifests(moves: Map<string, string>): Promise<void> {
+  const byFolder = new Map<string, Map<string, string>>();
+  for (const [from, to] of moves) {
+    const dir = path.posix.dirname(from);
+    if (!byFolder.has(dir)) byFolder.set(dir, new Map());
+    byFolder.get(dir)!.set(from, to);
+  }
+  const driver = localDriver();
+  for (const [dir, folderMoves] of byFolder) {
+    const key = `${dir}/manifest.json`;
+    const got = await driver.get(key);
+    if (!got.ok) continue;
+    let data: unknown;
+    try {
+      data = JSON.parse(got.data.toString("utf8"));
+    } catch {
+      continue;
+    }
+    if (!data || typeof data !== "object" || Array.isArray(data)) continue;
+    let changed = false;
+    for (const value of Object.values(data as Record<string, unknown>)) {
+      if (!Array.isArray(value)) continue;
+      for (const item of value) {
+        if (!item || typeof item !== "object") continue;
+        const entry = item as Record<string, unknown>;
+        if (typeof entry.file !== "string") continue;
+        const hit = entryCandidates(entry.file, dir).find((c) => folderMoves.has(c));
+        if (!hit) continue;
+        entry.file = folderMoves.get(hit);
+        changed = true;
+      }
+    }
+    if (changed) {
+      await driver.put(key, Buffer.from(`${JSON.stringify(data, null, 2)}\n`), {
+        overwrite: true,
+      });
+    }
+  }
 }
 
 function isInInbox(localPath: string | null): boolean {
@@ -187,6 +233,7 @@ export async function bulkMediaAction(input: BulkMediaInput): Promise<BulkMediaR
 
   const warnings: string[] = [];
   let moved = 0;
+  const moves = new Map<string, string>();
   const now = new Date();
   const driveStatus = op === "assign" && brandId ? await mediaRootStatus() : "ok";
 
@@ -222,11 +269,14 @@ export async function bulkMediaAction(input: BulkMediaInput): Promise<BulkMediaR
         if (!result.ok) warnings.push(`#${asset.id}: ${result.message}`);
         else {
           moved++;
+          moves.set(asset.localPath!.replace(/\\/g, "/"), result.key);
           if (result.warning) warnings.push(`#${asset.id}: ${result.warning}`);
         }
       }
     }
   }
+
+  if (moves.size) await repointManifests(moves);
 
   revalidatePath("/media");
   revalidatePath("/media/inbox");

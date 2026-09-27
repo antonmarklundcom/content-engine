@@ -289,6 +289,40 @@ test("assigning a brand moves an inbox file into <brand>/<handle>/<YYYY-MM>/ via
   assert.equal(back.localPath, movedFirst.localPath);
 });
 
+test("a moved inbox file's manifest entry follows it: the rescan keeps its prompt and reports no error", async () => {
+  write("_inbox/higgsfield/2026-09-27/hero.png", png);
+  write(
+    "_inbox/higgsfield/2026-09-27/manifest.json",
+    JSON.stringify({
+      source: "higgsfield",
+      files: [
+        { file: "hero.png", prompt: "Asunción skyline at dusk", model: "m1", jobId: "job-1" },
+      ],
+    }),
+  );
+  const scan = await as(user, () => scanNowAction());
+  assert.equal(scan.ok && scan.created, 1);
+  const [row] = await db.select().from(schema.assets);
+  assert.equal(row.prompt, "Asunción skyline at dusk");
+
+  const result = await as(user, () =>
+    bulkMediaAction({ ids: [row.id], op: "assign", brandId: "flytta" }),
+  );
+  assert.equal(result.ok && result.moved, 1);
+  const moved = (await getAsset(row.id))!;
+  const manifest = JSON.parse(
+    readFileSync(path.join(root, "_inbox/higgsfield/2026-09-27/manifest.json"), "utf8"),
+  );
+  assert.equal(manifest.files[0].file, moved.localPath);
+  assert.equal(manifest.files[0].prompt, "Asunción skyline at dusk");
+
+  const rescan = await as(user, () => scanNowAction());
+  assert.deepEqual(rescan.ok && [rescan.created, rescan.errors], [0, 0]);
+  const after = (await getAsset(row.id))!;
+  assert.equal(after.localPath, moved.localPath);
+  assert.equal(after.brandId, "flytta");
+});
+
 test("brand-level assign uses _brand; files outside the inbox never move", async () => {
   const inInbox = await asset({ localPath: "_inbox/higgsfield/2026-09-27/a.png" });
   write("_inbox/higgsfield/2026-09-27/a.png", png);
