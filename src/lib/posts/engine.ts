@@ -295,8 +295,10 @@ export async function regenerateSection(
     .update(posts)
     .set({
       body: next,
-      caption: captionText(next),
-      firstComment: next.firstComment ?? null,
+      // The posted caption and first comment may have been edited by hand;
+      // only a rewrite of what they are made of replaces them.
+      ...(section === "caption" || section === "hashtags" ? { caption: captionText(next) } : {}),
+      ...(section === "firstComment" ? { firstComment: next.firstComment ?? null } : {}),
       updatedAt: new Date(),
     })
     .where(eq(posts.id, postId))
@@ -420,6 +422,16 @@ export type PostPatch = {
 export async function updatePost(postId: number, patch: PostPatch): Promise<Post> {
   const post = await requirePost(postId);
   const set: Partial<typeof posts.$inferInsert> = {};
+
+  // Refuse an illegal move before writing anything, judged on the post as it
+  // will be after this patch ("set a date and schedule" is one request).
+  if (patch.status !== undefined) {
+    const check = checkTransition(post.status, patch.status, {
+      hasBody: patch.body !== undefined || post.body != null,
+      scheduledFor: patch.scheduledFor !== undefined ? patch.scheduledFor : post.scheduledFor,
+    });
+    if (!check.ok) throw new PostEngineError(check.error, 409);
+  }
 
   if (patch.title !== undefined) set.title = patch.title.trim();
   if (patch.body !== undefined) {

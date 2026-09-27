@@ -438,6 +438,11 @@ test("regenerating one section replaces it and keeps the owner's edits elsewhere
   const { post: saved } = (await response.json()) as { post: PostJson };
   assert.equal(saved.body.hook, (PAYLOADS.post as { hook: string }).hook);
   assert.equal(saved.body.caption, "MY OWN CAPTION");
+  assert.match(
+    saved.caption,
+    /^MY OWN CAPTION/,
+    "the posted caption is not reset by a hook rewrite",
+  );
   const call = fakeGeminiClient().callsOf("generateContent").at(-1)!;
   assert.match(promptOf(call), /Rewrite ONLY "hook"/);
   assert.match(promptOf(call), /OLD HOOK/);
@@ -480,9 +485,11 @@ test("PATCH validates the body, enforces legal status moves and stamps publishin
   assert.equal(skip.status, 409, "drafting cannot jump to published");
 
   assert.equal((await patch(source.id, { status: "ready" })).status, 200);
-  const noDate = await patch(source.id, { status: "scheduled" });
+  const noDate = await patch(source.id, { status: "scheduled", title: "NOT SAVED" });
   assert.equal(noDate.status, 409);
   assert.match(((await noDate.json()) as { error: string }).error, /scheduledFor/);
+  const [unchanged] = await db.select().from(schema.posts).where(eq(schema.posts.id, source.id));
+  assert.notEqual(unchanged.title, "NOT SAVED", "a refused move writes nothing");
 
   const scheduled = await patch(source.id, {
     scheduledFor: "2026-10-01T09:00:00.000Z",
