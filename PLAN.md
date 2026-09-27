@@ -592,8 +592,8 @@ their archived plans.
 
 | Phase | PR | Log | State |
 |---|---|---|---|
-| Plan v3 | this PR | — | — |
-| O9 Social schema + contracts | phase/o9-social-schema | `docs/log/o9.md` | PR open; seed values pending |
+| Plan v3 | #46, #47 | — | merged |
+| O9 Social schema + contracts | #48 | `docs/log/o9.md` | merged (seed filled by parent session) |
 
 ## §10. Backlog
 
