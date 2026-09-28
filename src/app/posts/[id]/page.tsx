@@ -12,6 +12,7 @@ import { PostAssets, type PostAssetItem } from "@/components/PostAssets";
 import { PostEditor } from "@/components/PostEditor";
 import { PostSchedule } from "@/components/PostSchedule";
 import { PostStatusButtons } from "@/components/PostStatusButtons";
+import { PublishNow } from "@/components/PublishNow";
 import { STUDIO_BUTTON } from "@/components/StudioStyles";
 import { FORMAT_LABEL, STATUS_LABEL, statusTone } from "../model";
 
@@ -142,6 +143,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
               scheduledFor={post.scheduledFor?.toISOString() ?? null}
             />
           </section>
+          {isOwner(user) && <PublishNow post={post} />}
           <section className={SECTION}>
             <h2 className={HEADING}>{t("posts.section.schedule")}</h2>
             <PostSchedule

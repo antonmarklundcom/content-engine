@@ -45,6 +45,7 @@ import * as clipFetch from "./dict/clipFetch";
 import * as home from "./dict/home";
 import * as meta from "./dict/meta";
 import * as igCompetitors from "./dict/igCompetitors";
+import * as publishNow from "./dict/publishNow";
 
 export const en = {
   ...app.en,
@@ -74,6 +75,7 @@ export const en = {
   ...home.en,
   ...meta.en,
   ...igCompetitors.en,
+  ...publishNow.en,
 } as const;
 
 export type TranslationKey = keyof typeof en;
@@ -106,6 +108,7 @@ export const sv: Record<TranslationKey, string> = {
   ...home.sv,
   ...meta.sv,
   ...igCompetitors.sv,
+  ...publishNow.sv,
 };
 
 export const DICTIONARIES = { en, sv } as const;

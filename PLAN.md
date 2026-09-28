@@ -611,6 +611,7 @@ their archived plans.
 | S20 Link pass | #64 | `docs/log/s20.md` | merged |
 | O12 Meta connect + insights | #66 | `docs/log/o12.md` | merged; O13 + S21 spawned 2026-09-27 |
 | S21 IG competitors + weekly report | #68 | `docs/log/s21.md` | merged; spawns nothing (lane 3 end) |
+| O13 Publishing | #69 | `docs/log/o13.md` | merged; O14 not spawned yet (Anton starts it) |
 
 ## §10. Backlog
 
